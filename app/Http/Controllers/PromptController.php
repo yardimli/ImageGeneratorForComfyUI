@@ -1,0 +1,175 @@
+<?php
+	namespace App\Http\Controllers;
+
+	use App\Models\Prompt;
+	use App\Models\PromptSetting;
+	use App\Services\ChatGPTService;
+	use Illuminate\Http\Request;
+
+	class PromptController extends Controller
+	{
+		protected $chatgpt;
+
+		public function __construct(ChatGPTService $chatgpt)
+		{
+			$this->chatgpt = $chatgpt;
+		}
+
+		public function index()
+		{
+			$templates = $this->getTemplates(resource_path('templates'));
+			$settings = PromptSetting::orderBy('created_at', 'desc')->get();
+
+			return view('prompts.index', compact('templates', 'settings'));
+		}
+
+		public function generate(Request $request)
+		{
+			try {
+				$validated = $request->validate([
+					'prompt' => 'required',
+					'precision' => 'required',
+					'count' => 'required|integer|min:1',
+					'render_each_prompt_times' => 'required|integer|min:1',
+					'width' => 'required|integer',
+					'height' => 'required|integer',
+					'aspect_ratio' => 'required|string',
+					'original_prompt' => 'nullable',
+					'template' => 'required',
+					'prepend_text' => 'nullable',
+					'append_text' => 'nullable',
+					'generate_original_prompt' => 'nullable|boolean',
+					'append_to_prompt' => 'nullable|boolean',
+				]);
+
+				$results = [];
+
+				if ($request->generate_original_prompt && $request->original_prompt) {
+					$results[] = $request->original_prompt;
+				}
+
+				$generatedPrompts = $this->chatgpt->generatePrompts(
+					$request->prompt,
+					(int)$request->count,
+					$request->precision,
+					$request->original_prompt
+				);
+
+				// Store the settings
+				PromptSetting::create([
+					'user_id' => auth()->id(),
+					'template_path' => $request->template,
+					'prompt' => $request->prompt,
+					'original_prompt' => $request->original_prompt,
+					'precision' => $request->precision,
+					'count' => $request->count,
+					'render_each_prompt_times' => $request->render_each_prompt_times,
+					'width' => $request->width,
+					'height' => $request->height,
+					'aspect_ratio' => $request->aspect_ratio,
+					'prepend_text' => $request->prepend_text,
+					'append_text' => $request->append_text,
+					'generate_original_prompt' => $request->boolean('generate_original_prompt'),
+					'append_to_prompt' => $request->boolean('append_to_prompt'),
+				]);
+
+				$prompt_setting_id = PromptSetting::latest()->first()->id;
+
+
+				foreach ($generatedPrompts as $generatedPrompt) {
+					$finalPrompt = '';
+
+					if ($request->append_to_prompt && $request->original_prompt) {
+						$finalPrompt .= $request->original_prompt . ', ';
+					}
+
+					if ($request->prepend_text) {
+						$finalPrompt .= $request->prepend_text . ' ';
+					}
+
+					$finalPrompt .= $generatedPrompt;
+
+					if ($request->append_text) {
+						$finalPrompt .= ' ' . $request->append_text;
+					}
+
+					$finalPrompt = trim($finalPrompt);
+					$results[] = $finalPrompt;
+
+					for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+						// Store the prompt
+						Prompt::create([
+							'user_id' => auth()->id(),
+							'prompt_setting_id' => $prompt_setting_id,
+							'original_prompt' => $request->original_prompt,
+							'generated_prompt' => $finalPrompt,
+							'width' => $request->width,
+							'height' => $request->height,
+						]);
+					}
+				}
+
+				return response()->json([
+					'success' => true,
+					'prompts' => $results,
+					'settings' => [
+						'count' => $request->count,
+						'precision' => $request->precision,
+					],
+				]);
+
+			} catch (\Exception $e) {
+				return response()->json([
+					'success' => false,
+					'error' => $e->getMessage(),
+				]);
+			}
+		}
+
+		public function loadSettings($id)
+		{
+			$settings = PromptSetting::findOrFail($id);
+			$prompts = Prompt::where('prompt_setting_id', $id)->get();
+
+			return response()->json([
+				'template_path' => $settings->template_path,
+				'prompt' => $settings->prompt,
+				'original_prompt' => $settings->original_prompt,
+				'precision' => $settings->precision,
+				'count' => $settings->count,
+				'render_each_prompt_times' => $settings->render_each_prompt_times,
+				'width' => $settings->width,
+				'height' => $settings->height,
+				'aspect_ratio' => $settings->aspect_ratio,
+				'prepend_text' => $settings->prepend_text,
+				'append_text' => $settings->append_text,
+				'generate_original_prompt' => $settings->generate_original_prompt,
+				'append_to_prompt' => $settings->append_to_prompt,
+				'prompts' => $prompts
+			]);
+		}
+
+		protected function getTemplates($directory)
+		{
+			$templates = [];
+
+			$files = glob($directory . '/**/*.txt', GLOB_BRACE);
+
+			foreach ($files as $file) {
+				$type = (basename(dirname($file)) === 'append') ? 'A' : 'R';
+				$name = pathinfo($file, PATHINFO_FILENAME);
+				$content = file_get_contents($file);
+				$templates[] = [
+					'name' => "$type - $name",
+					'path' => $file,
+					'content' => $content,
+				];
+			}
+
+			usort($templates, function ($a, $b) {
+				return strcmp($a['name'], $b['name']);
+			});
+
+			return $templates;
+		}
+	}

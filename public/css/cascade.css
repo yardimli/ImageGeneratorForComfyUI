@@ -1,0 +1,175 @@
+/* cascade.css */
+.no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+/* Make sure the cell editor can still select text */
+.cell-editor {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+#grid-container {
+    position: relative;
+    border: 1px solid #ccc;
+    overflow: hidden;
+    margin: 20px;
+    width: 800px;
+    height: 600px;
+}
+
+.grid-content {
+    position: absolute;
+    top: 25px;    /* Height of header row */
+    left: 100px;  /* Width of first column */
+    right: 0;
+    bottom: 0;
+    overflow: auto;
+    width: calc(100% - 100px);
+    height: calc(100% - 25px);
+    user-select: none;
+}
+
+/* Add to cascade.css */
+.grid-cell.selected-cell {
+    background-color: rgba(51, 153, 255, 0.2) !important;
+    cursor: move;
+}
+
+.selection-ghost {
+    pointer-events: none;
+    position: absolute;
+    z-index: 1000;
+    box-sizing: border-box;
+}
+
+
+.grid-cell {
+    position: absolute;
+    border: 1px solid #ccc;
+    overflow: hidden;
+    white-space: nowrap;
+    box-sizing: border-box;
+    padding: 2px;
+    text-align: left; /* Changed from center to left */
+    vertical-align: top; /* Add this line */
+    display: flex; /* Add this line */
+    align-items: flex-start; /* Add this line */
+}
+
+/* Add this to cascade.css */
+.grid-cell.word-wrap {
+    white-space: normal;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+/* Add these styles */
+.grid-cell.has-content {
+    z-index: 4; /* Higher than other cells */
+}
+
+.grid-cell.expand-right {
+    white-space: nowrap;
+    overflow: visible;
+    z-index: 5; /* Even higher to ensure it shows above other cells */
+}
+
+.header-row {
+    position: absolute;
+    top: 0;
+    left: 100px; /* Width of first column */
+    right: 0;
+    height: 25px;
+    overflow: hidden;
+    z-index: 2;
+}
+
+.header-column {
+    position: absolute;
+    top: 25px; /* Height of header row */
+    left: 0;
+    width: 100px;
+    bottom: 0;
+    overflow: hidden;
+    z-index: 2;
+}
+
+.corner-cell {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100px;
+    height: 25px;
+    z-index: 3;
+    background-color: #f0f0f0;
+    border: 1px solid #ccc;
+}
+
+/* Add these styles to cascade.css */
+.resize-handle-col {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    cursor: col-resize;
+    background-color: transparent;
+}
+
+.resize-handle-row {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    cursor: row-resize;
+    background-color: transparent;
+}
+
+.resize-handle-col:hover,
+.resize-handle-row:hover {
+    background-color: #999;
+}
+
+.resize-guide {
+    position: absolute;
+    background-color: #0066ff;
+    z-index: 1000;
+    pointer-events: none;
+}
+
+.resize-guide-vertical {
+    width: 2px;
+    height: 100%;
+    top: 0;
+}
+
+.resize-guide-horizontal {
+    height: 2px;
+    width: 100%;
+    left: 0;
+}
+
+/* NAVIGATION AND EDITING */
+
+.grid-cell.selected {
+    background-color: #e6f3ff !important;
+    border: 2px solid #1a73e8 !important;
+}
+
+.cell-editor {
+    position: absolute;
+    border: 2px solid #1a73e8;
+    padding: 1px;
+    font-family: inherit;
+    font-size: inherit;
+    outline: none;
+    box-sizing: border-box;
+    background-color: white;
+}
