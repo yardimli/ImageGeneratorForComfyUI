@@ -22,4 +22,3 @@ composer.lock
 package-lock.json
 php_errors.log
 public/log.txt
-/resources/python

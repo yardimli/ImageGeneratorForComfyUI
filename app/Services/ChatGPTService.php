@@ -172,7 +172,7 @@
 			}
 
 			$data = array(
-				'model' => 'gpt-4o',
+				'model' =>  env('OPEN_AI_MODEL'),
 				'messages' => $messages,
 				'max_tokens' => 1024,
 				'temperature' => $this->temperature,
@@ -198,7 +198,7 @@
 
 			$headers = array();
 			$headers[] = 'Content-Type: application/json';
-			$headers[] = "Authorization: Bearer " . env('OPENAI_API_KEY');
+			$headers[] = "Authorization: Bearer " . env('OPEN_AI_API_KEY');
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
 
 			$response = curl_exec($ch);
