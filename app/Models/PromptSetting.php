@@ -16,6 +16,8 @@
 			'count',
 			'width',
 			'height',
+			'model',
+			'upload_to_s3',
 			'aspect_ratio',
 			'prepend_text',
 			'append_text',
@@ -27,6 +29,7 @@
 		protected $casts = [
 			'generate_original_prompt' => 'boolean',
 			'append_to_prompt' => 'boolean',
+			'upload_to_s3' => 'boolean',
 		];
 
 

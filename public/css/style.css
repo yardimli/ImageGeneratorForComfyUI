@@ -80,3 +80,28 @@ body {
     background-color: #0d6efd;
     border-color: #0d6efd;
 }
+
+.result-item img {
+    border-radius: 4px;
+    display: block;
+    object-fit: contain;
+    background-color: #1a1a1a;
+}
+
+.badge {
+    transition: background-color 0.3s ease;
+}
+
+.queue-status {
+    width: 100px;
+    height: 30px;
+    position: fixed;
+    top: 0px;
+    right: 0px;
+    z-index: 9999;
+    background-color: #000000;
+    color: #ffffff;
+    font-size: 12px;
+    padding: 5px;
+    text-align: center;
+}

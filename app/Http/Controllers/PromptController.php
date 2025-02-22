@@ -33,6 +33,8 @@
 					'render_each_prompt_times' => 'required|integer|min:1',
 					'width' => 'required|integer',
 					'height' => 'required|integer',
+					'model' => 'required|in:schnell,dev,outpaint',
+					'upload_to_s3' => 'required|in:0,1,true,false', // Modified this line
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'nullable',
 					'template' => 'required',
@@ -66,6 +68,8 @@
 					'render_each_prompt_times' => $request->render_each_prompt_times,
 					'width' => $request->width,
 					'height' => $request->height,
+					'model' => $request->model,
+					'upload_to_s3' => $request->boolean('upload_to_s3'),
 					'aspect_ratio' => $request->aspect_ratio,
 					'prepend_text' => $request->prepend_text,
 					'append_text' => $request->append_text,
@@ -105,6 +109,8 @@
 							'generated_prompt' => $finalPrompt,
 							'width' => $request->width,
 							'height' => $request->height,
+							'model' => $request->model,
+							'upload_to_s3' => $request->boolean('upload_to_s3'),
 						]);
 					}
 				}
@@ -140,12 +146,33 @@
 				'render_each_prompt_times' => $settings->render_each_prompt_times,
 				'width' => $settings->width,
 				'height' => $settings->height,
+				'model' => $settings->model,
+				'upload_to_s3' => $settings->upload_to_s3,
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,
 				'generate_original_prompt' => $settings->generate_original_prompt,
 				'append_to_prompt' => $settings->append_to_prompt,
 				'prompts' => $prompts
+			]);
+		}
+
+		public function saveTemplate(Request $request)
+		{
+			$validated = $request->validate([
+				'name' => 'required|string|max:255',
+				'content' => 'required|string'
+			]);
+
+			$template = UserTemplate::create([
+				'user_id' => auth()->id(),
+				'name' => $validated['name'],
+				'content' => $validated['content']
+			]);
+
+			return response()->json([
+				'success' => true,
+				'template' => $template
 			]);
 		}
 
@@ -165,6 +192,22 @@
 					'content' => $content,
 				];
 			}
+
+			// Get user templates
+			$userTemplates = UserTemplate::where('user_id', auth()->id())->get();
+			foreach ($userTemplates as $template) {
+				$templates[] = [
+					'name' => "U - " . $template->name,
+					'path' => null,
+					'content' => $template->content,
+					'type' => 'user',
+					'id' => $template->id
+				];
+			}
+
+			usort($templates, function ($a, $b) {
+				return strcmp($a['name'], $b['name']);
+			});
 
 			usort($templates, function ($a, $b) {
 				return strcmp($a['name'], $b['name']);

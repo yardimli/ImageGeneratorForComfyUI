@@ -1,6 +1,33 @@
-
-
 document.addEventListener('DOMContentLoaded', function () {
+	
+	let queueUpdateInterval;
+	
+	function updateQueueCount() {
+		fetch('/api/prompts/queue-count')
+			.then(response => response.json())
+			.then(data => {
+				const queueCountElement = document.getElementById('queueCount');
+				queueCountElement.textContent = data.count;
+				
+				// Optional: Change badge color based on count
+				queueCountElement.className = 'badge ' +
+					(data.count > 10 ? 'bg-danger' :
+						data.count > 5 ? 'bg-warning' :
+							'bg-primary');
+			})
+			.catch(error => console.error('Error fetching queue count:', error));
+	}
+
+	queueUpdateInterval = setInterval(updateQueueCount, 3000);
+	updateQueueCount();
+
+	window.addEventListener('beforeunload', () => {
+		if (queueUpdateInterval) {
+			clearInterval(queueUpdateInterval);
+		}
+	});
+	
+	
 	const form = document.getElementById('promptForm');
 	const resultContainer = document.getElementById('resultContainer');
 	
@@ -68,25 +95,69 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	if (aspectRatioSelect) {
-		aspectRatioSelect.addEventListener('change', function() {
+		aspectRatioSelect.addEventListener('change', function () {
 			const [ratio, baseSize] = this.value.split('-');
 			const [w, h] = ratio.split(':');
 			
 			if (baseSize === '1024') {
-				switch(ratio) {
-					case '1:1': setDimensions(1024, 1024); break;
-					case '3:2': setDimensions(1216, 832); break;
-					case '4:3': setDimensions(1152, 896); break;
-					case '16:9': setDimensions(1344, 768); break;
-					case '21:9': setDimensions(1536, 640); break;
+				switch (ratio) {
+					case '1:1':
+						setDimensions(1024, 1024);
+						break;
+					case '3:2':
+						setDimensions(1216, 832);
+						break;
+					case '4:3':
+						setDimensions(1152, 896);
+						break;
+					case '16:9':
+						setDimensions(1344, 768);
+						break;
+					case '21:9':
+						setDimensions(1536, 640);
+						break;
+					case '2:3':
+						setDimensions(832, 1216);
+						break;
+					case '3:4':
+						setDimensions(896, 1152);
+						break;
+					case '9:16':
+						setDimensions(768, 1344);
+						break;
+					case '9:21':
+						setDimensions(640, 1536);
+						break;
 				}
 			} else {
-				switch(ratio) {
-					case '1:1': setDimensions(1408, 1408); break;
-					case '3:2': setDimensions(1728, 1152); break;
-					case '4:3': setDimensions(1664, 1216); break;
-					case '16:9': setDimensions(1920, 1088); break;
-					case '21:9': setDimensions(2176, 960); break;
+				switch (ratio) {
+					case '1:1':
+						setDimensions(1408, 1408);
+						break;
+					case '3:2':
+						setDimensions(1728, 1152);
+						break;
+					case '4:3':
+						setDimensions(1664, 1216);
+						break;
+					case '16:9':
+						setDimensions(1920, 1088);
+						break;
+					case '21:9':
+						setDimensions(2176, 960);
+						break;
+					case '2:3':
+						setDimensions(1152, 1728);
+						break;
+					case '3:4':
+						setDimensions(1216, 1664);
+						break;
+					case '9:16':
+						setDimensions(1088, 1920);
+						break;
+					case '9:21':
+						setDimensions(960, 2176);
+						break;
 				}
 			}
 		});
@@ -108,12 +179,25 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
+	if (templateSelect && mainPromptArea) {
+		const firstTemplateContent = templateSelect.options[0].value;
+		mainPromptArea.value = firstTemplateContent;
+		
+		// Enable/disable original prompt based on whether template contains {prompt}
+		if (firstTemplateContent.includes('{prompt}')) {
+			originalPromptArea.disabled = false;
+			originalPromptArea.placeholder = "This text will replace {prompt} in the template";
+		} else {
+			originalPromptArea.disabled = true;
+			originalPromptArea.placeholder = "This template doesn't use {prompt}";
+		}
+	}
 	
 	
 	//---- load saved data
 	const savedSettingsSelect = document.getElementById('savedSettings');
 	if (savedSettingsSelect) {
-		savedSettingsSelect.addEventListener('change', async function() {
+		savedSettingsSelect.addEventListener('change', async function () {
 			const settingId = this.value;
 			if (settingId) {
 				try {
@@ -145,19 +229,29 @@ document.addEventListener('DOMContentLoaded', function () {
 					document.querySelector('input[name="width"]').value = data.width;
 					document.querySelector('input[name="height"]').value = data.height;
 					
-					
+					document.querySelector('select[name="model"]').value = data.model;
+					document.querySelector('input[name="upload_to_s3"]').checked = data.upload_to_s3;
 					
 					
 					// Display previously generated prompts
+					// Replace the existing code for displaying previously generated prompts with this:
 					if (data.prompts && data.prompts.length > 0) {
 						let html = '<h4 class="mb-3">Previously Generated Prompts:</h4>';
+						html += `<div class="row">`;
 						data.prompts.forEach(prompt => {
 							html += `
-                                <div class="result-item">
-                                    <div>${prompt.generated_prompt}</div>
-                                </div>
-                            `;
+            <div class="result-item col-3">
+                <div>${prompt.generated_prompt}</div>
+                ${prompt.filename ?
+								`<div class="mt-2">
+                        <img src="${prompt.filename}" style="max-width: 300px; width: 100%; height: auto;" alt="Generated Image">
+                    </div>`
+								: ''
+							}
+            </div>
+        `;
 						});
+						html += `</div>`;
 						document.getElementById('resultContainer').innerHTML = html;
 						document.getElementById('resultContainer').classList.remove('d-none');
 					}
@@ -168,5 +262,43 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
+	
+	document.getElementById('saveTemplateBtn').addEventListener('click', async function() {
+		const promptContent = document.querySelector('textarea[name="prompt"]').value;
+		
+		if (!promptContent) {
+			alert('Please enter a prompt template first');
+			return;
+		}
+		
+		const templateName = prompt('Enter a name for this template:');
+		if (!templateName) return;
+		
+		try {
+			const response = await fetch('/templates/save', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+				},
+				body: JSON.stringify({
+					name: templateName,
+					content: promptContent
+				})
+			});
+			
+			const data = await response.json();
+			
+			if (data.success) {
+				// Refresh the page to update the template list
+				location.reload();
+			} else {
+				alert('Error saving template');
+			}
+		} catch (error) {
+			console.error('Error:', error);
+			alert('Error saving template');
+		}
+	});
 });
 

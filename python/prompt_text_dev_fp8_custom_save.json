@@ -1,1 +1,440 @@
-{"last_node_id":37,"last_link_id":22,"nodes":[{"id":6,"type":"CLIPTextEncode","pos":[515,130],"size":[400,200],"flags":{},"order":2,"mode":0,"inputs":[{"name":"clip","type":"CLIP","link":11}],"outputs":[{"name":"CONDITIONING","type":"CONDITIONING","links":[20]}],"title":"CLIP Text Encode (Positive Prompt)","properties":{"Node name for S&R":"CLIPTextEncode"},"widgets_values":["A rural countryside road scene with an elderly vendor selling plums from a modest roadside stand, while a car and tractor interact in the background. Warm afternoon lighting with dusty road atmosphere and scattered trees framing the scene."]},{"id":27,"type":"EmptySD3LatentImage","pos":[100,130],"size":[315,106],"flags":{},"order":0,"mode":0,"inputs":[],"outputs":[{"name":"LATENT","type":"LATENT","links":[18]}],"properties":{"Node name for S&R":"EmptySD3LatentImage"},"widgets_values":[1280,768,1]},{"id":30,"type":"CheckpointLoaderSimple","pos":[100,366],"size":[315,98],"flags":{},"order":1,"mode":0,"inputs":[],"outputs":[{"name":"MODEL","type":"MODEL","links":[15]},{"name":"CLIP","type":"CLIP","links":[11,19]},{"name":"VAE","type":"VAE","links":[13]}],"properties":{"Node name for S&R":"CheckpointLoaderSimple"},"widgets_values":["flux1-dev-fp8.safetensors"]},{"id":31,"type":"KSampler","pos":[1432.4000244140625,130],"size":[315,262],"flags":{},"order":5,"mode":0,"inputs":[{"name":"model","type":"MODEL","link":15},{"name":"positive","type":"CONDITIONING","link":16},{"name":"negative","type":"CONDITIONING","link":17},{"name":"latent_image","type":"LATENT","link":18}],"outputs":[{"name":"LATENT","type":"LATENT","links":[12]}],"properties":{"Node name for S&R":"KSampler"},"widgets_values":[427204728614641,"randomize",20,1,"euler","simple",1]},{"id":33,"type":"CLIPTextEncode","pos":[515,460],"size":[400,200],"flags":{},"order":3,"mode":0,"inputs":[{"name":"clip","type":"CLIP","link":19}],"outputs":[{"name":"CONDITIONING","type":"CONDITIONING","links":[17]}],"title":"CLIP Text Encode (Negative Prompt)","properties":{"Node name for S&R":"CLIPTextEncode"},"widgets_values":[""]},{"id":35,"type":"FluxGuidance","pos":[1015,130],"size":[317.4000244140625,58],"flags":{},"order":4,"mode":0,"inputs":[{"name":"conditioning","type":"CONDITIONING","link":20}],"outputs":[{"name":"CONDITIONING","type":"CONDITIONING","links":[16]}],"properties":{"Node name for S&R":"FluxGuidance"},"widgets_values":[3.5]},{"id":8,"type":"VAEDecode","pos":[1847.4000244140625,130],"size":[210,46],"flags":{},"order":6,"mode":0,"inputs":[{"name":"samples","type":"LATENT","link":12},{"name":"vae","type":"VAE","link":13}],"outputs":[{"name":"IMAGE","type":"IMAGE","links":[22],"slot_index":0}],"properties":{"Node name for S&R":"VAEDecode"},"widgets_values":[]},{"id":37,"type":"Save Image w/Metadata","pos":[2132.24365234375,272.005615234375],"size":[400,706],"flags":{},"order":7,"mode":0,"inputs":[{"name":"images","type":"IMAGE","link":22}],"outputs":[],"properties":{"Node name for S&R":"Save Image w/Metadata"},"widgets_values":["331","c:/Users/ekim/Documents/GitHub/image-generator/storage/app/public/images","png",20,1,"flux1-dev-fp8.safetensors","euler","simple","","",0,512,512,true,100,0,"%Y-%m-%d-%H%M%S"]}],"links":[[11,30,1,6,0,"CLIP"],[12,31,0,8,0,"LATENT"],[13,30,2,8,1,"VAE"],[15,30,0,31,0,"MODEL"],[16,35,0,31,1,"CONDITIONING"],[17,33,0,31,2,"CONDITIONING"],[18,27,0,31,3,"LATENT"],[19,30,1,33,0,"CLIP"],[20,6,0,35,0,"CONDITIONING"],[22,8,0,37,0,"IMAGE"]],"groups":[],"config":{},"extra":{"ds":{"scale":0.5559917313492238,"offset":[-45.45636269542617,254.16005752815704]},"node_versions":{"comfy-core":"0.3.13","comfy-image-saver":"65e6903eff274a50f8b5cd768f0f96baf37baea1"}},"version":0.4}
+{
+  "last_node_id": 37,
+  "last_link_id": 22,
+  "nodes": [
+    {
+      "id": 6,
+      "type": "CLIPTextEncode",
+      "pos": [
+        515,
+        130
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 2,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 11
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            20
+          ]
+        }
+      ],
+      "title": "CLIP Text Encode (Positive Prompt)",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        "A rural countryside road scene with an elderly vendor selling plums from a modest roadside stand, while a car and tractor interact in the background. Warm afternoon lighting with dusty road atmosphere and scattered trees framing the scene."
+      ]
+    },
+    {
+      "id": 27,
+      "type": "EmptySD3LatentImage",
+      "pos": [
+        100,
+        130
+      ],
+      "size": [
+        315,
+        106
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            18
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "EmptySD3LatentImage"
+      },
+      "widgets_values": [
+        1280,
+        768,
+        1
+      ]
+    },
+    {
+      "id": 30,
+      "type": "CheckpointLoaderSimple",
+      "pos": [
+        100,
+        366
+      ],
+      "size": [
+        315,
+        98
+      ],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MODEL",
+          "type": "MODEL",
+          "links": [
+            15
+          ]
+        },
+        {
+          "name": "CLIP",
+          "type": "CLIP",
+          "links": [
+            11,
+            19
+          ]
+        },
+        {
+          "name": "VAE",
+          "type": "VAE",
+          "links": [
+            13
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "CheckpointLoaderSimple"
+      },
+      "widgets_values": [
+        "flux1-dev-fp8.safetensors"
+      ]
+    },
+    {
+      "id": 31,
+      "type": "KSampler",
+      "pos": [
+        1432.4000244140625,
+        130
+      ],
+      "size": [
+        315,
+        262
+      ],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "model",
+          "type": "MODEL",
+          "link": 15
+        },
+        {
+          "name": "positive",
+          "type": "CONDITIONING",
+          "link": 16
+        },
+        {
+          "name": "negative",
+          "type": "CONDITIONING",
+          "link": 17
+        },
+        {
+          "name": "latent_image",
+          "type": "LATENT",
+          "link": 18
+        }
+      ],
+      "outputs": [
+        {
+          "name": "LATENT",
+          "type": "LATENT",
+          "links": [
+            12
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "KSampler"
+      },
+      "widgets_values": [
+        427204728614641,
+        "randomize",
+        20,
+        1,
+        "euler",
+        "simple",
+        1
+      ]
+    },
+    {
+      "id": 33,
+      "type": "CLIPTextEncode",
+      "pos": [
+        515,
+        460
+      ],
+      "size": [
+        400,
+        200
+      ],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "clip",
+          "type": "CLIP",
+          "link": 19
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            17
+          ]
+        }
+      ],
+      "title": "CLIP Text Encode (Negative Prompt)",
+      "properties": {
+        "Node name for S&R": "CLIPTextEncode"
+      },
+      "widgets_values": [
+        ""
+      ]
+    },
+    {
+      "id": 35,
+      "type": "FluxGuidance",
+      "pos": [
+        1015,
+        130
+      ],
+      "size": [
+        317.4000244140625,
+        58
+      ],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "conditioning",
+          "type": "CONDITIONING",
+          "link": 20
+        }
+      ],
+      "outputs": [
+        {
+          "name": "CONDITIONING",
+          "type": "CONDITIONING",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "FluxGuidance"
+      },
+      "widgets_values": [
+        3.5
+      ]
+    },
+    {
+      "id": 8,
+      "type": "VAEDecode",
+      "pos": [
+        1847.4000244140625,
+        130
+      ],
+      "size": [
+        210,
+        46
+      ],
+      "flags": {},
+      "order": 6,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "samples",
+          "type": "LATENT",
+          "link": 12
+        },
+        {
+          "name": "vae",
+          "type": "VAE",
+          "link": 13
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [
+            22
+          ],
+          "slot_index": 0
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "VAEDecode"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 37,
+      "type": "Save Image w/Metadata",
+      "pos": [
+        2132.24365234375,
+        272.005615234375
+      ],
+      "size": [
+        400,
+        706
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 22
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "Save Image w/Metadata"
+      },
+      "widgets_values": [
+        "331",
+        "c:/Users/ekim/Documents/GitHub/image-generator/storage/app/public/images",
+        "png",
+        20,
+        1,
+        "flux1-dev-fp8.safetensors",
+        "euler",
+        "simple",
+        "",
+        "",
+        0,
+        512,
+        512,
+        true,
+        100,
+        0,
+        "%Y-%m-%d-%H%M%S"
+      ]
+    }
+  ],
+  "links": [
+    [
+      11,
+      30,
+      1,
+      6,
+      0,
+      "CLIP"
+    ],
+    [
+      12,
+      31,
+      0,
+      8,
+      0,
+      "LATENT"
+    ],
+    [
+      13,
+      30,
+      2,
+      8,
+      1,
+      "VAE"
+    ],
+    [
+      15,
+      30,
+      0,
+      31,
+      0,
+      "MODEL"
+    ],
+    [
+      16,
+      35,
+      0,
+      31,
+      1,
+      "CONDITIONING"
+    ],
+    [
+      17,
+      33,
+      0,
+      31,
+      2,
+      "CONDITIONING"
+    ],
+    [
+      18,
+      27,
+      0,
+      31,
+      3,
+      "LATENT"
+    ],
+    [
+      19,
+      30,
+      1,
+      33,
+      0,
+      "CLIP"
+    ],
+    [
+      20,
+      6,
+      0,
+      35,
+      0,
+      "CONDITIONING"
+    ],
+    [
+      22,
+      8,
+      0,
+      37,
+      0,
+      "IMAGE"
+    ]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.5559917313492238,
+      "offset": [
+        -45.45636269542617,
+        254.16005752815704
+      ]
+    },
+    "node_versions": {
+      "comfy-core": "0.3.13",
+      "comfy-image-saver": "65e6903eff274a50f8b5cd768f0f96baf37baea1"
+    }
+  },
+  "version": 0.4
+}

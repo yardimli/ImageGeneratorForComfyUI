@@ -29,5 +29,8 @@
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');
 		Route::get('/prompts/settings/{id}', [PromptController::class, 'loadSettings'])->name('prompts.settings.load');
 
+		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');
+
+
 	});
 

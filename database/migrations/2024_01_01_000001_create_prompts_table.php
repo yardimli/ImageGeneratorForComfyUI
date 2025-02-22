@@ -11,11 +11,14 @@
 			Schema::create('prompts', function (Blueprint $table) {
 				$table->id();
 				$table->integer('user_id');
+				$table->integer('render_status')->default(0);
 				$table->integer('prompt_setting_id')->nullable();
 				$table->text('original_prompt')->nullable();
 				$table->text('generated_prompt');
 				$table->integer('width')->default(1024);
 				$table->integer('height')->default(1024);
+				$table->string('model')->default('schnell');
+				$table->integer('upload_to_s3')->default(0);
 				$table->string('file_path')->nullable();
 				$table->timestamps();
 			});
