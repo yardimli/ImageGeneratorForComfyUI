@@ -23,9 +23,9 @@
 				<div class="row mb-3">
 					<div class="col-md-4">
 						<label class="form-label">Templates</label>
-						<select class="form-select" name="template" id="template">
+						<select class="form-select" name="template_path" id="template_path">
 							@foreach ($templates as $index => $template)
-								<option value="{{ $template['content'] }}" {{ $index === 0 ? 'selected' : '' }}>
+								<option value="{{ $template['name'] }}" {{ $index === 0 ? 'selected' : '' }}>
 									{{ $template['name'] }}
 								</option>
 							@endforeach
@@ -179,7 +179,10 @@
 				<option value="">Select saved settings</option>
 				@foreach($settings as $setting)
 					<option value="{{ $setting->id }}">
-						{{ $setting->name ?? 'Settings from ' . $setting->created_at }}
+						{{ $setting->created_at->format('Y-m-d H:i') }} -
+						{{ $setting->width }}x{{ $setting->height }} -
+						{{ basename($setting->template_path) }} -
+						{{ $setting->count * $setting->render_each_prompt_times }} images
 					</option>
 				@endforeach
 			</select>
@@ -188,8 +191,32 @@
 
 </div>
 
+<!-- Image Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+	<div class="modal-dialog modal-xl">
+		<div class="modal-content bg-dark">
+			<div class="modal-header">
+				<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
+				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+			</div>
+			<div class="modal-body text-center">
+				<img id="modalImage" src="" style="max-width: 100%; height: auto;" alt="Full size image">
+			</div>
+		</div>
+	</div>
+</div>
+
+
+<script>
+	const templateContents = {
+		@foreach ($templates as $template)
+		"{{ $template['name'] }}": {!! json_encode($template['content']) !!},
+		@endforeach
+	};
+</script>
 <script src="{{ asset('js/bootstrap.min.js') }}"></script>
-<script src="{{ asset('js/script.js') }}"></script>
+<script src="{{ asset('js/prompt-script.js') }}"></script>
+<script src="{{ asset('js/image-results-script.js') }}"></script>
 
 </body>
 </html>

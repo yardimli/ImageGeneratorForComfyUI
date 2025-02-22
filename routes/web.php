@@ -2,6 +2,7 @@
 
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\PromptController;
+	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
 
 	/*
@@ -31,6 +32,9 @@
 
 		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');
 
+		Route::post('/images/{prompt}/update-notes', [UpscaleAndNotesController::class, 'updateNotes']);
+		Route::post('/images/{prompt}/upscale', [UpscaleAndNotesController::class, 'upscaleImage'])->name('image.upscale');
+		Route::get('/images/{prompt}/upscale-status/{prediction_id}', [UpscaleAndNotesController::class, 'checkUpscaleStatus'])->name('image.upscale.status');
 
 	});
 

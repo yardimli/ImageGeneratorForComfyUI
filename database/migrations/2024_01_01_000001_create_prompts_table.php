@@ -14,12 +14,18 @@
 				$table->integer('render_status')->default(0);
 				$table->integer('prompt_setting_id')->nullable();
 				$table->text('original_prompt')->nullable();
-				$table->text('generated_prompt');
+				$table->text('generated_prompt')->nullable();
 				$table->integer('width')->default(1024);
 				$table->integer('height')->default(1024);
 				$table->string('model')->default('schnell');
 				$table->integer('upload_to_s3')->default(0);
 				$table->string('file_path')->nullable();
+				$table->string('notes',512)->nullable();
+				$table->string('upscale_url',512)->nullable();
+				$table->mediumText('upscale_result')->nullable();
+				$table->string('upscale_prediction_id',256)->nullable();
+				$table->string('upscale_status_url',512)->nullable();
+				$table->integer('upscale_status')->default(0);
 				$table->timestamps();
 			});
 

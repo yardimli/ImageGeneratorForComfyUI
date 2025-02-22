@@ -118,11 +118,22 @@ def generate_images_from_api():
 
             try:
                 workflow_type = prompt['model']
-                workflow = get_workflow_file(workflow_type)
-
                 output_filename = f"{workflow_type}{prompt['id']}.png"
                 output_file = str(Path(OUTPUT_DIR) / output_filename)
                 s3_file_path = f"images/{output_filename}"
+
+                if prompt['render_status'] in (1, 3):
+                    if os.path.exists(output_file):
+                        print(f"Found existing image for prompt {prompt['id']}")
+                        if prompt['upload_to_s3']:
+                            s3_url = upload_to_s3(output_file, s3_file_path)
+                            if s3_url:
+                                update_image_filename(prompt['id'], s3_url)
+                        else:
+                            update_image_filename(prompt['id'], output_file, False)
+                    continue
+
+                workflow = get_workflow_file(workflow_type)
 
                 if workflow_type == "schnell":
                     workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
@@ -167,7 +178,7 @@ def generate_images_from_api():
                         else:
                             update_image_filename(prompt['id'], output_file, False)
                     else:
-                        print(f"Image generation failed for prompt {prompt['id']}")
+                        print(f"Image generation not yet ready for prompt {prompt['id']}")
                         update_render_status(prompt['id'], 3)
 
             except Exception as e:

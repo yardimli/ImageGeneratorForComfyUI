@@ -3,8 +3,14 @@
 
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
+	use App\Models\UserTemplate;
 	use App\Services\ChatGPTService;
+	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
+	use Illuminate\Support\Facades\Http;
+	use Illuminate\Support\Facades\Log;
+	use Illuminate\Support\Facades\Storage;
+	use Rolandstarke\Thumbnail\Facades\Thumbnail;
 
 	class PromptController extends Controller
 	{
@@ -37,7 +43,7 @@
 					'upload_to_s3' => 'required|in:0,1,true,false', // Modified this line
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'nullable',
-					'template' => 'required',
+					'template_path' => 'required', // Add this line
 					'prepend_text' => 'nullable',
 					'append_text' => 'nullable',
 					'generate_original_prompt' => 'nullable|boolean',
@@ -60,7 +66,7 @@
 				// Store the settings
 				PromptSetting::create([
 					'user_id' => auth()->id(),
-					'template_path' => $request->template,
+					'template_path' => $request->template_path,
 					'prompt' => $request->prompt,
 					'original_prompt' => $request->original_prompt,
 					'precision' => $request->precision,
@@ -136,6 +142,15 @@
 		{
 			$settings = PromptSetting::findOrFail($id);
 			$prompts = Prompt::where('prompt_setting_id', $id)->get();
+
+			$prompts = Prompt::where('prompt_setting_id', $id)->get()->map(function($prompt) {
+				if ($prompt->filename) {
+					$prompt->thumbnail = Thumbnail::src($prompt->filename)
+						->preset('thumbnail_350_jpg')
+						->url();
+				}
+				return $prompt;
+			});
 
 			return response()->json([
 				'template_path' => $settings->template_path,
@@ -215,4 +230,5 @@
 
 			return $templates;
 		}
+
 	}
