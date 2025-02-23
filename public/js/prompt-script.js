@@ -134,6 +134,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						true
 					);
 					savedSettingsSelect.add(option, 0);
+					savedSettingsSelect.dispatchEvent(new Event('change'));
 				}
 				
 			} else {
