@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers\Api;
 
 	use App\Http\Controllers\Controller;
+	use App\Http\Controllers\UpscaleAndNotesController;
 	use App\Models\Prompt;
 	use Illuminate\Http\Request;
 

@@ -19,7 +19,7 @@
 				$table->integer('height')->default(1024);
 				$table->string('model')->default('schnell');
 				$table->integer('upload_to_s3')->default(0);
-				$table->string('file_path')->nullable();
+				$table->string('filename')->nullable();
 				$table->string('notes',512)->nullable();
 				$table->string('upscale_url',512)->nullable();
 				$table->mediumText('upscale_result')->nullable();
@@ -41,6 +41,8 @@
 				$table->integer('render_each_prompt_times')->default(1);
 				$table->integer('width')->default(1024);
 				$table->integer('height')->default(1024);
+				$table->string('model')->default('schnell');
+				$table->integer('upload_to_s3')->default(0);
 				$table->string('aspect_ratio',50)->default('1:1');
 				$table->string('prepend_text')->nullable();
 				$table->string('append_text')->nullable();
