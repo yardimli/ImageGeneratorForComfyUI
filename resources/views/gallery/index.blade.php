@@ -16,6 +16,12 @@
 								     onclick="openImageModal('{{ $image->filename }}')"
 								     alt="Generated Image">
 								<div class="card-body">
+									<div class="mb-3">
+										<small class="text-muted">Prompt:</small>
+										<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
+											{{ $image->generated_prompt }}
+										</div>
+									</div>
 									<div class="mb-2">
 										<small class="text-muted">{{ $image->created_at->format('Y-m-d H:i') }}</small>
 									</div>
