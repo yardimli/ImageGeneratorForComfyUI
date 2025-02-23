@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	const mainPromptArea = document.querySelector('textarea[name="prompt_template"]');
 	const aspectRatioSelect = document.getElementById('aspectRatio');
 	
-	queueUpdateInterval = setInterval(updateQueueCount, 3000);
+	queueUpdateInterval = setInterval(updateQueueCount, 10000);
 	updateQueueCount();
 	
 	window.addEventListener('beforeunload', () => {

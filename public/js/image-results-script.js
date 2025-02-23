@@ -233,7 +233,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				if (!allPromptsHaveImages(data.prompts)) {
 					reloadAttempts = 0;
 					clearInterval(reloadInterval);
-					reloadInterval = setInterval(() => reloadPrompts(settingId), 10000);
+					reloadInterval = setInterval(() => reloadPrompts(settingId), 15000);
 				}
 				
 				
