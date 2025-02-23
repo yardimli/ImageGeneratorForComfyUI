@@ -150,7 +150,24 @@ def generate_images_from_api():
                     workflow["30"]["inputs"]["width"] = prompt['width']
                     workflow["30"]["inputs"]["height"] = prompt['height']
                 elif workflow_type == "outpaint":
-                    pass
+                    # load source image from absolute path
+                    workflow["17"]["inputs"]["image"] = prompt['source_image']
+
+                    workflow["23"]["inputs"]["text"] = prompt['generated_prompt']
+                    workflow["3"]["inputs"]["seed"] = random.randint(1, 2**32)
+                    workflow["41"]["inputs"]["file_name_template"] = f"outpaint{prompt['id']}.png"
+
+                    # postprocessing resize width and height (proportional)
+                    workflow["46"]["inputs"]["width"] = prompt['width']
+                    workflow["46"]["inputs"]["height"] = prompt['height']
+
+                    # padding
+                    workflow["44"]["inputs"]["left"] = prompt['left_padding']
+                    workflow["44"]["inputs"]["right"] = prompt['right_padding']
+                    workflow["44"]["inputs"]["top"] = prompt['top_padding']
+                    workflow["44"]["inputs"]["bottom"] = prompt['bottom_padding']
+                    workflow["44"]["inputs"]["feathering"] = prompt['feathering']
+
 
 
                 if os.path.exists(output_file):

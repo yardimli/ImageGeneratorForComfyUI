@@ -1,5 +1,6 @@
 <?php
 
+	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -25,6 +26,7 @@
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+		Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
 
 		Route::get('/generate', [PromptController::class, 'index'])->name('prompts.index');
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');

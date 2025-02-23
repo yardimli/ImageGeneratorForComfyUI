@@ -6,12 +6,15 @@
 
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
+{{--    <link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">--}}
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
     <!-- Fonts -->
     <link rel="dns-prefetch" href="//fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
+    
+    @yield('styles')
 
     <!-- Scripts -->
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
@@ -74,5 +77,7 @@
             @yield('content')
         </main>
     </div>
+    
+   @yield('scripts')
 </body>
 </html>
