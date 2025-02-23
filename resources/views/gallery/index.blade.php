@@ -68,6 +68,8 @@
 				
 				<div class="mt-4">
 					<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
+					<a href="{{ route('prompts.index') }}" class="btn btn-secondary">Back to Prompts</a>
+
 				</div>
 			</div>
 		</div>

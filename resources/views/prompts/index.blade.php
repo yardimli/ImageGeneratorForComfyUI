@@ -190,6 +190,7 @@
 	</div>
 	
 	<div class="container mb-4">
+		<a href="{{ route('gallery.index') }}" class="btn btn-secondary">Go to Gallery</a>
 		<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
 	</div>
 	
