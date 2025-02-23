@@ -160,8 +160,8 @@
 			});
 
 			return response()->json([
-				'template_path' => $settings->template_path,
-				'prompt_template' => $settings->prompt_template,
+				'template_path' => $settings->template_path ?? '',
+				'prompt_template' => $settings->prompt_template ?? '',
 				'original_prompt' => $settings->original_prompt,
 				'precision' => $settings->precision,
 				'count' => $settings->count,
@@ -252,7 +252,7 @@
 						'created_at' => $setting->created_at->format('Y-m-d H:i'),
 						'width' => $setting->width,
 						'height' => $setting->height,
-						'template_path' => basename($setting->template_path),
+						'template_path' => $setting->template_path,
 						'count' => $setting->count,
 						'render_each_prompt_times' => $setting->render_each_prompt_times,
 					]

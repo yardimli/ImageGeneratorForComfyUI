@@ -203,7 +203,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				document.querySelector('select[name="template_path"]').value = data.template_path;
 				document.querySelector('select[name="precision"]').value = data.precision;
 				document.querySelector('textarea[name="original_prompt"]').value = data.original_prompt;
-				document.querySelector('textarea[name="prompt_template"]').value = data.prompt;
+				document.querySelector('textarea[name="prompt_template"]').value = data.prompt_template;
 				document.querySelector('input[name="count"]').value = data.count;
 				document.querySelector('input[name="prepend_text"]').value = data.prepend_text;
 				document.querySelector('input[name="append_text"]').value = data.append_text;
