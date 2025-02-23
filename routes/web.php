@@ -30,9 +30,9 @@
 
 		Route::get('/generate', [PromptController::class, 'index'])->name('prompts.index');
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');
+		Route::get('/prompts/settings/latest', [PromptController::class, 'getLatestSetting'])->name('prompts.settings.latest');
 		Route::get('/prompts/settings/{id}', [PromptController::class, 'loadSettings'])->name('prompts.settings.load');
 
-		Route::get('/prompts/settings/latest', [PromptController::class, 'getLatestSetting'])->name('prompts.settings.latest');
 
 
 		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');
