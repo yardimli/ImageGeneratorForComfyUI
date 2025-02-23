@@ -24,7 +24,8 @@
 		public function index()
 		{
 			$templates = $this->getTemplates(resource_path('templates'));
-			$settings = PromptSetting::orderBy('created_at', 'desc')->get();
+			$settings = PromptSetting::where('user_id', auth()->id())->
+			orderBy('created_at', 'desc')->get();
 
 			return view('prompts.index', compact('templates', 'settings'));
 		}
