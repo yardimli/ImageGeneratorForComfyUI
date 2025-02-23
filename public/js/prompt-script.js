@@ -116,6 +116,26 @@ document.addEventListener('DOMContentLoaded', function () {
                                 `;
 				});
 				resultContainer.innerHTML = html;
+				
+				// Show the prompt queued modal
+				const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
+				promptQueuedModal.show();
+				
+				// Update saved settings dropdown
+				const savedSettingsSelect = document.getElementById('savedSettings');
+				const response2 = await fetch('/prompts/settings/latest');
+				const settingsData = await response2.json();
+				
+				if (settingsData.success) {
+					const option = new Option(
+						`${settingsData.setting.created_at} - ${settingsData.setting.width}x${settingsData.setting.height} - ${settingsData.setting.template_path} - ${settingsData.setting.count * settingsData.setting.render_each_prompt_times} images`,
+						settingsData.setting.id,
+						true,
+						true
+					);
+					savedSettingsSelect.add(option, 0);
+				}
+				
 			} else {
 				resultContainer.innerHTML = `
                             <div class="alert alert-danger" role="alert">

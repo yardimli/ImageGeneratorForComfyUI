@@ -238,4 +238,31 @@
 			return $templates;
 		}
 
+		public function getLatestSetting()
+		{
+			$setting = PromptSetting::where('user_id', auth()->id())
+				->latest()
+				->first();
+
+			if ($setting) {
+				return response()->json([
+					'success' => true,
+					'setting' => [
+						'id' => $setting->id,
+						'created_at' => $setting->created_at->format('Y-m-d H:i'),
+						'width' => $setting->width,
+						'height' => $setting->height,
+						'template_path' => basename($setting->template_path),
+						'count' => $setting->count,
+						'render_each_prompt_times' => $setting->render_each_prompt_times,
+					]
+				]);
+			}
+
+			return response()->json([
+				'success' => false,
+				'message' => 'No settings found'
+			]);
+		}
+
 	}
