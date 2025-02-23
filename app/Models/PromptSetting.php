@@ -10,7 +10,7 @@
 			'user_id',
 			'name',
 			'template_path',
-			'prompt',
+			'prompt_template',
 			'original_prompt',
 			'precision',
 			'count',

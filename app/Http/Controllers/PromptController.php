@@ -34,7 +34,7 @@
 		{
 			try {
 				$validated = $request->validate([
-					'prompt' => 'required',
+					'prompt_template' => 'nullable',
 					'precision' => 'required',
 					'count' => 'required|integer|min:1',
 					'render_each_prompt_times' => 'required|integer|min:1',
@@ -43,8 +43,8 @@
 					'model' => 'required|in:schnell,dev,outpaint',
 					'upload_to_s3' => 'required|in:0,1,true,false', // Modified this line
 					'aspect_ratio' => 'required|string',
-					'original_prompt' => 'nullable',
-					'template_path' => 'required', // Add this line
+					'original_prompt' => 'required',
+					'template_path' => 'nullable', // Add this line
 					'prepend_text' => 'nullable',
 					'append_text' => 'nullable',
 					'generate_original_prompt' => 'nullable|boolean',
@@ -57,18 +57,24 @@
 					$results[] = $request->original_prompt;
 				}
 
-				$generatedPrompts = $this->chatgpt->generatePrompts(
-					$request->prompt,
-					(int)$request->count,
-					$request->precision,
-					$request->original_prompt
-				);
+				// Only generate prompts if prompt field is not empty
+				if (!empty($request->prompt_template)) {
+					$generatedPrompts = $this->chatgpt->generatePrompts(
+						$request->prompt_template,
+						(int)$request->count,
+						$request->precision,
+						$request->original_prompt
+					);
+				} else {
+					// If prompt is empty, use original_prompt as the only result
+					$generatedPrompts = [$request->original_prompt];
+				}
 
 				// Store the settings
 				PromptSetting::create([
 					'user_id' => auth()->id(),
-					'template_path' => $request->template_path,
-					'prompt' => $request->prompt,
+					'template_path' => $request->template_path ?? '',
+					'prompt_template' => $request->prompt_template ?? '',
 					'original_prompt' => $request->original_prompt,
 					'precision' => $request->precision,
 					'count' => $request->count,
@@ -155,7 +161,7 @@
 
 			return response()->json([
 				'template_path' => $settings->template_path,
-				'prompt' => $settings->prompt,
+				'prompt_template' => $settings->prompt_template,
 				'original_prompt' => $settings->original_prompt,
 				'precision' => $settings->precision,
 				'count' => $settings->count,

@@ -24,7 +24,7 @@ function setDimensions(width, height) {
 }
 
 async function saveTemplate() {
-	const promptContent = document.querySelector('textarea[name="prompt"]').value;
+	const promptContent = document.querySelector('textarea[name="prompt_template"]').value;
 	
 	if (!promptContent) {
 		alert('Please enter a prompt template first');
@@ -66,7 +66,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	// Handle template selection
 	const templateSelect = document.getElementById('template_path');
 	const originalPromptArea = document.querySelector('textarea[name="original_prompt"]');
-	const mainPromptArea = document.querySelector('textarea[name="prompt"]');
+	const mainPromptArea = document.querySelector('textarea[name="prompt_template"]');
 	const aspectRatioSelect = document.getElementById('aspectRatio');
 	
 	queueUpdateInterval = setInterval(updateQueueCount, 3000);
@@ -203,33 +203,26 @@ document.addEventListener('DOMContentLoaded', function () {
 	templateSelect.addEventListener('change', async function () {
 		const selectedTemplateName = this.value;
 		console.log(selectedTemplateName);
-		const templateContent = templateContents[selectedTemplateName];
+		const templateContent = selectedTemplateName ? templateContents[selectedTemplateName] : '';
 		
 		mainPromptArea.value = templateContent;
 		
-		// Enable/disable original prompt based on whether template contains {prompt}
-		if (templateContent.includes('{prompt}')) {
+		if (!selectedTemplateName) {
+			// If "No Template" is selected
+			originalPromptArea.disabled = false;
+			originalPromptArea.placeholder = "Enter your prompt here";
+			mainPromptArea.value = '';  // Clear the main prompt area
+		} else if (templateContent.includes('{prompt}')) {
+			// If template contains {prompt}
 			originalPromptArea.disabled = false;
 			originalPromptArea.placeholder = "This text will replace {prompt} in the template";
 		} else {
+			// If template doesn't use {prompt}
 			originalPromptArea.disabled = true;
 			originalPromptArea.placeholder = "This template doesn't use {prompt}";
 		}
 	});
-
-// Initial load
-	const firstTemplateName = templateSelect.options[0].value;
-	const firstTemplateContent = templateContents[firstTemplateName];
-	mainPromptArea.value = firstTemplateContent;
 	
-	// Enable/disable original prompt based on whether template contains {prompt}
-	if (firstTemplateContent.includes('{prompt}')) {
-		originalPromptArea.disabled = false;
-		originalPromptArea.placeholder = "This text will replace {prompt} in the template";
-	} else {
-		originalPromptArea.disabled = true;
-		originalPromptArea.placeholder = "This template doesn't use {prompt}";
-	}
 	
 	
 	//---- load saved data

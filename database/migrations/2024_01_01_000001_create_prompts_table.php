@@ -34,7 +34,7 @@
 				$table->integer('user_id');
 				$table->string('name')->nullable();
 				$table->text('template_path');
-				$table->text('prompt');
+				$table->text('prompt_template');
 				$table->text('original_prompt')->nullable();
 				$table->string('precision');
 				$table->integer('count')->default(1);

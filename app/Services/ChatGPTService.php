@@ -45,14 +45,14 @@
 				if (trim($prompt) !== '') {
 					$prompts[] = [
 						'count' => $promptCount,
-						'prompt' => trim($prompt)
+						'prompt_template' => trim($prompt)
 					];
 				}
 			}
 
 			$results = [];
 			foreach ($prompts as $promptData) {
-				$prompt = str_replace('{prompt}', "\"$originalPrompt\"", $promptData['prompt']);
+				$prompt = str_replace('{prompt}', "\"$originalPrompt\"", $promptData['prompt_template']);
 				$chatgptAnswers = $this->retryQueryChatGPT($prompt, $promptData['count']);
 
 				if (empty($results)) {

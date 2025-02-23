@@ -24,8 +24,9 @@
 					<div class="col-md-4">
 						<label class="form-label">Templates</label>
 						<select class="form-select" name="template_path" id="template_path">
+							<option value="">No Template</option>
 							@foreach ($templates as $index => $template)
-								<option value="{{ $template['name'] }}" {{ $index === 0 ? 'selected' : '' }}>
+								<option value="{{ $template['name'] }}">
 									{{ $template['name'] }}
 								</option>
 							@endforeach
@@ -55,7 +56,7 @@
 						<label class="form-label">Model</label>
 						<select class="form-select" name="model">
 							<option value="schnell" selected>Schnell</option>
-							<option value="dev">Dev</option>
+							<option value="dev" selected>Dev</option>
 							<option value="outpaint">Outpaint</option>
 						</select>
 					</div>
@@ -112,14 +113,14 @@
 				</div>
 				
 				<div class="mb-3">
-					<label class="form-label">Original Prompt</label>
+					<label class="form-label">Prompt</label>
 					<textarea class="form-control" name="original_prompt" rows="2"
 					          placeholder="This text will replace {prompt} in the template"></textarea>
 				</div>
 				
 				<div class="mb-3">
-					<label class="form-label">Prompt</label>
-					<textarea class="form-control" name="prompt" rows="4"
+					<label class="form-label">Prompt Template</label>
+					<textarea class="form-control" name="prompt_template" rows="4"
 					          placeholder="ChatGPT prompt (Try some templates for inspiration)"></textarea>
 				</div>
 				<div class="mb-3">

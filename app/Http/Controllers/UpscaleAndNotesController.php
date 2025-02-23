@@ -74,6 +74,13 @@
 			Log::info($body);
 
 			if ($body['status'] === 'succeeded') {
+				if (!isset($body['output'][0])) {
+					$prompt->upscale_result = json_encode($body);
+					$prompt->upscale_status = 3;
+					$prompt->save();
+					return ['message' => 'Image upscale succeeded but no output URL found.'];
+				}
+
 				$upscaledImageUrl = $body['output'][0]; // Assuming this is the correct path to the output image URL
 				$imageName = "{$prompt->id}_upscaled.jpg";
 				$storagePath = "public/upscaled/{$imageName}";
