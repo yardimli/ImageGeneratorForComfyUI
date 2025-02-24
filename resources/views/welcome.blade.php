@@ -12,6 +12,10 @@
                             {{-- The user is authenticated (logged in) --}}
                             <p>Welcome to your dashboard!</p>
                             {{-- You can add more authenticated user content here --}}
+                            <div class="mt-3">
+                                <a href="{{ route('prompts.index') }}" class="btn btn-primary me-2">Prompts</a>
+                                <a href="{{ route('gallery.index') }}" class="btn btn-primary">Gallery</a>
+                            </div>
                         @else
                             {{-- The user is not authenticated (not logged in) --}}
                             <p>Please login to view the dashboard.</p>
