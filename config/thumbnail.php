@@ -67,6 +67,16 @@ return [
 		    'format' => 'jpg',
 		    'quality' => '95',
 	    ],
+
+	    'thumbnail_450_jpg' => [
+		    'destination' => ['disk' => 'public', 'path' => 'thumbnails/thumbnail/'],
+		    /**
+		     * add default params for this preset
+		     */
+		    'widen' => 450,
+		    'format' => 'jpg',
+		    'quality' => '97',
+	    ],
     ],
 
 

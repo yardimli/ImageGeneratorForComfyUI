@@ -153,7 +153,7 @@
 			$prompts = Prompt::where('prompt_setting_id', $id)->get()->map(function($prompt) {
 				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
 					$prompt->thumbnail = Thumbnail::src($prompt->filename)
-						->preset('thumbnail_350_jpg')
+						->preset('thumbnail_450_jpg')
 						->url();
 				}
 				return $prompt;
