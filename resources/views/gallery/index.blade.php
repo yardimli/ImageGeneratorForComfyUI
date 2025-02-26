@@ -39,7 +39,9 @@
 									        data-prompt-id="{{ $image->id }}">
 										Update Notes
 									</button>
-									
+									<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
+										Delete Image
+									</button>
 									@if($image->upscale_status === 0)
 										<button class="btn btn-success btn-sm upscale-btn mb-2"
 										        data-prompt-id="{{ $image->id }}"
@@ -205,6 +207,39 @@
 					}
 				});
 			});
+			
+			
+			// Add this to the DOMContentLoaded event listener in gallery/index.blade.php
+			document.querySelectorAll('.delete-image-btn').forEach(button => {
+				button.addEventListener('click', async function() {
+					if (!confirm('Are you sure you want to delete this image?')) return;
+					
+					const promptId = this.dataset.promptId;
+					
+					try {
+						const response = await fetch(`/prompts/${promptId}`, {
+							method: 'DELETE',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+							}
+						});
+						
+						const data = await response.json();
+						
+						if (data.success) {
+							// Remove the image card from the UI
+							this.closest('.col-md-4').remove();
+							alert('Image deleted successfully');
+						} else {
+							alert('Error: ' + (data.message || 'Failed to delete image'));
+						}
+					} catch (error) {
+						console.error('Error deleting image:', error);
+						alert('Error deleting image');
+					}
+				});
+			});
+			
 		});
 	</script>
 @endsection
