@@ -30,9 +30,13 @@
 
 		Route::get('/generate', [PromptController::class, 'index'])->name('prompts.index');
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');
+		Route::post('/store-generated-prompts', [PromptController::class, 'storeGeneratedPrompts'])->name('prompts.store-generated');
+
 		Route::get('/prompts/settings/latest', [PromptController::class, 'getLatestSetting'])->name('prompts.settings.latest');
 		Route::get('/prompts/settings/{id}', [PromptController::class, 'loadSettings'])->name('prompts.settings.load');
 
+		Route::delete('/prompts/{prompt}', [PromptController::class, 'deletePrompt'])->name('prompts.delete');
+		Route::delete('/prompt-settings/{id}', [PromptController::class, 'deleteSettingWithImages'])->name('prompt-settings.delete');
 
 
 		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');

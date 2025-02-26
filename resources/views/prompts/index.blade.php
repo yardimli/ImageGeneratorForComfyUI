@@ -120,9 +120,16 @@
 				
 				<div class="mb-3">
 					<label class="form-label">Prompt Template</label>
-					<textarea class="form-control" name="prompt_template" rows="4"
-					          placeholder="ChatGPT prompt (Try some templates for inspiration)"></textarea>
+					<div id="prompt-template-container">
+						<div class="prompt-template-row mb-2 d-flex">
+							<textarea class="form-control prompt-template-part me-2" rows="2" placeholder="Prompt section"></textarea>
+							<button type="button" style="width: 100px;" class="btn btn-success add-template-row">Add</button>
+						</div>
+					</div>
+					<!-- Hidden field to store the combined prompt template value -->
+					<input type="hidden" name="prompt_template" id="combined-prompt-template">
 				</div>
+				
 				<div class="mb-3">
 					<button type="button" class="btn btn-secondary" id="saveTemplateBtn">Save as Template</button>
 				</div>
@@ -221,7 +228,7 @@
 				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
-				Your prompt has been queued for generation.
+				Your prompts have been queued for image generation!
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>

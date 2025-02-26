@@ -144,3 +144,13 @@ body {
 .cursor-pointer {
     cursor: pointer;
 }
+
+.prompt-template-row {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.prompt-template-part {
+    flex-grow: 1;
+    margin-right: 10px;
+}

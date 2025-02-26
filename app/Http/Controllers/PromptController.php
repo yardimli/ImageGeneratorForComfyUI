@@ -41,10 +41,10 @@
 					'width' => 'required|integer',
 					'height' => 'required|integer',
 					'model' => 'required|in:schnell,dev,outpaint',
-					'upload_to_s3' => 'required|in:0,1,true,false', // Modified this line
+					'upload_to_s3' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
-					'template_path' => 'nullable', // Add this line
+					'template_path' => 'nullable',
 					'prepend_text' => 'nullable',
 					'append_text' => 'nullable',
 					'generate_original_prompt' => 'nullable|boolean',
@@ -52,7 +52,6 @@
 				]);
 
 				$results = [];
-
 				if ($request->generate_original_prompt && $request->original_prompt) {
 					$results[] = $request->original_prompt;
 				}
@@ -70,73 +69,88 @@
 					$generatedPrompts = [$request->original_prompt];
 				}
 
-				// Store the settings
-				PromptSetting::create([
-					'user_id' => auth()->id(),
-					'template_path' => $request->template_path ?? '',
-					'prompt_template' => $request->prompt_template ?? '',
-					'original_prompt' => $request->original_prompt,
-					'precision' => $request->precision,
-					'count' => $request->count,
-					'render_each_prompt_times' => $request->render_each_prompt_times,
-					'width' => $request->width,
-					'height' => $request->height,
-					'model' => $request->model,
-					'upload_to_s3' => $request->boolean('upload_to_s3'),
-					'aspect_ratio' => $request->aspect_ratio,
-					'prepend_text' => $request->prepend_text,
-					'append_text' => $request->append_text,
-					'generate_original_prompt' => $request->boolean('generate_original_prompt'),
-					'append_to_prompt' => $request->boolean('append_to_prompt'),
-				]);
-
-				$prompt_setting_id = PromptSetting::latest()->first()->id;
-
-
+				$finalResults = [];
 				foreach ($generatedPrompts as $generatedPrompt) {
 					$finalPrompt = '';
-
 					if ($request->append_to_prompt && $request->original_prompt) {
 						$finalPrompt .= $request->original_prompt . ', ';
 					}
-
 					if ($request->prepend_text) {
 						$finalPrompt .= $request->prepend_text . ' ';
 					}
-
 					$finalPrompt .= $generatedPrompt;
-
 					if ($request->append_text) {
 						$finalPrompt .= ' ' . $request->append_text;
 					}
-
 					$finalPrompt = trim($finalPrompt);
-					$results[] = $finalPrompt;
+					$finalResults[] = $finalPrompt;
+				}
 
-					for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+				return response()->json([
+					'success' => true,
+					'prompts' => $finalResults,
+					'settings' => $request->all(),
+				]);
+			} catch (\Exception $e) {
+				return response()->json([
+					'success' => false,
+					'error' => $e->getMessage(),
+				]);
+			}
+		}
+
+		public function storeGeneratedPrompts(Request $request)
+		{
+			try {
+				$validated = $request->validate([
+					'prompts' => 'required|array',
+					'settings' => 'required|array',
+				]);
+
+				$settings = $request->settings;
+
+				// Store the settings
+				$promptSetting = PromptSetting::create([
+					'user_id' => auth()->id(),
+					'template_path' => $settings['template_path'] ?? '',
+					'prompt_template' => $settings['prompt_template'] ?? '',
+					'original_prompt' => $settings['original_prompt'],
+					'precision' => $settings['precision'],
+					'count' => $settings['count'],
+					'render_each_prompt_times' => $settings['render_each_prompt_times'],
+					'width' => $settings['width'],
+					'height' => $settings['height'],
+					'model' => $settings['model'],
+					'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+					'aspect_ratio' => $settings['aspect_ratio'],
+					'prepend_text' => $settings['prepend_text'] ?? null,
+					'append_text' => $settings['append_text'] ?? null,
+					'generate_original_prompt' => filter_var($settings['generate_original_prompt'] ?? false, FILTER_VALIDATE_BOOLEAN),
+					'append_to_prompt' => filter_var($settings['append_to_prompt'] ?? false, FILTER_VALIDATE_BOOLEAN),
+				]);
+
+				$prompt_setting_id = $promptSetting->id;
+
+				foreach ($request->prompts as $finalPrompt) {
+					for ($i = 0; $i < $settings['render_each_prompt_times']; $i++) {
 						// Store the prompt
 						Prompt::create([
 							'user_id' => auth()->id(),
 							'prompt_setting_id' => $prompt_setting_id,
-							'original_prompt' => $request->original_prompt,
+							'original_prompt' => $settings['original_prompt'],
 							'generated_prompt' => $finalPrompt,
-							'width' => $request->width,
-							'height' => $request->height,
-							'model' => $request->model,
-							'upload_to_s3' => $request->boolean('upload_to_s3'),
+							'width' => $settings['width'],
+							'height' => $settings['height'],
+							'model' => $settings['model'],
+							'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 						]);
 					}
 				}
 
 				return response()->json([
 					'success' => true,
-					'prompts' => $results,
-					'settings' => [
-						'count' => $request->count,
-						'precision' => $request->precision,
-					],
+					'setting_id' => $prompt_setting_id,
 				]);
-
 			} catch (\Exception $e) {
 				return response()->json([
 					'success' => false,
@@ -263,6 +277,60 @@
 				'success' => false,
 				'message' => 'No settings found'
 			]);
+		}
+
+
+		public function deletePrompt(Prompt $prompt)
+		{
+			// Check authorization
+			if ($prompt->user_id !== auth()->id()) {
+				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			}
+
+			// Delete image file if exists and is not an S3 URL
+			if ($prompt->filename && !str_contains($prompt->filename, 'https://')) {
+				Storage::delete('public/images/' . $prompt->filename);
+			}
+
+			// Delete upscaled image if exists
+			if ($prompt->upscale_url) {
+				Storage::delete('public/upscaled/' . $prompt->upscale_url);
+			}
+
+			$prompt->delete();
+
+			return response()->json(['success' => true, 'message' => 'Image deleted successfully']);
+		}
+
+		public function deleteSettingWithImages($id)
+		{
+			$setting = PromptSetting::findOrFail($id);
+
+			// Check authorization
+			if ($setting->user_id !== auth()->id()) {
+				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			}
+
+			// Get all associated prompts
+			$prompts = Prompt::where('prompt_setting_id', $id)->get();
+
+			// Delete all image files
+			foreach ($prompts as $prompt) {
+				if ($prompt->filename && !str_contains($prompt->filename, 'https://')) {
+					Storage::delete('public/images/' . $prompt->filename);
+				}
+
+				if ($prompt->upscale_url) {
+					Storage::delete('public/upscaled/' . $prompt->upscale_url);
+				}
+
+				$prompt->delete();
+			}
+
+			// Delete the setting
+			$setting->delete();
+
+			return response()->json(['success' => true, 'message' => 'Settings and images deleted successfully']);
 		}
 
 	}

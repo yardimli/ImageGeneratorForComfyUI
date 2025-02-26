@@ -1,1 +1,1 @@
-Make a color description
+Use the input {prompt} and make a color description from it.
