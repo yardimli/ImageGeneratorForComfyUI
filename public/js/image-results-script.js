@@ -252,7 +252,31 @@ function getUpscaleButton(prompt) {
 	return '';
 }
 
+function updateQueueCount() {
+	fetch('/api/prompts/queue-count')
+		.then(response => response.json())
+		.then(data => {
+			const queueCountElement = document.getElementById('queueCount');
+			queueCountElement.textContent = data.count;
+			
+			// Optional: Change badge color based on count
+			queueCountElement.className = 'badge ' +
+				(data.count > 10 ? 'bg-danger' :
+					data.count > 5 ? 'bg-warning' :
+						'bg-primary');
+		})
+		.catch(error => console.error('Error fetching queue count:', error));
+}
+
 document.addEventListener('DOMContentLoaded', function () {
+	queueUpdateInterval = setInterval(updateQueueCount, 3000);
+	updateQueueCount();
+	
+	window.addEventListener('beforeunload', () => {
+		if (queueUpdateInterval) {
+			clearInterval(queueUpdateInterval);
+		}
+	});
 	
 	imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
 	

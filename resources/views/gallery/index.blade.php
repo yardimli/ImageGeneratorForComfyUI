@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.bootstrap-app')
 
 @section('content')
 	<div class="queue-status">
@@ -96,38 +96,12 @@
 @endsection
 
 @section('styles')
-	<link rel="stylesheet" href="{{ asset('css/style.css') }}">
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/bootstrap.min.js') }}"></script>
 	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script>
-		function updateQueueCount() {
-			fetch('/api/prompts/queue-count')
-				.then(response => response.json())
-				.then(data => {
-					const queueCountElement = document.getElementById('queueCount');
-					queueCountElement.textContent = data.count;
-					
-					// Optional: Change badge color based on count
-					queueCountElement.className = 'badge ' +
-						(data.count > 10 ? 'bg-danger' :
-							data.count > 5 ? 'bg-warning' :
-								'bg-primary');
-				})
-				.catch(error => console.error('Error fetching queue count:', error));
-		}
-		
 		document.addEventListener('DOMContentLoaded', function () {
-			queueUpdateInterval = setInterval(updateQueueCount, 3000);
-			updateQueueCount();
-			
-			window.addEventListener('beforeunload', () => {
-				if (queueUpdateInterval) {
-					clearInterval(queueUpdateInterval);
-				}
-			});
 			
 			// Add event listeners for update notes buttons
 			document.querySelectorAll('.update-notes-btn').forEach(button => {

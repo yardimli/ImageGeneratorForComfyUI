@@ -1,21 +1,5 @@
 let queueUpdateInterval;
 
-function updateQueueCount() {
-	fetch('/api/prompts/queue-count')
-		.then(response => response.json())
-		.then(data => {
-			const queueCountElement = document.getElementById('queueCount');
-			queueCountElement.textContent = data.count;
-			
-			// Optional: Change badge color based on count
-			queueCountElement.className = 'badge ' +
-				(data.count > 10 ? 'bg-danger' :
-					data.count > 5 ? 'bg-warning' :
-						'bg-primary');
-		})
-		.catch(error => console.error('Error fetching queue count:', error));
-}
-
 function setDimensions(width, height) {
 	const widthInput = document.getElementById('width');
 	const heightInput = document.getElementById('height');
@@ -36,16 +20,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	const originalPromptArea = document.querySelector('textarea[name="original_prompt"]');
 	const mainPromptArea = document.querySelector('textarea[name="prompt_template"]');
 	const aspectRatioSelect = document.getElementById('aspectRatio');
-	
-	queueUpdateInterval = setInterval(updateQueueCount, 10000);
-	updateQueueCount();
-	
-	window.addEventListener('beforeunload', () => {
-		if (queueUpdateInterval) {
-			clearInterval(queueUpdateInterval);
-		}
-	});
-
 	
 	
 	

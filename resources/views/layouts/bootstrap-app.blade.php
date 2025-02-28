@@ -6,6 +6,9 @@
 	
 	<!-- CSRF Token -->
 	<meta name="csrf-token" content="{{ csrf_token() }}">
+	<link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
+	
 	<title>{{ config('app.name', 'Laravel') }}</title>
 	
 	<!-- Fonts -->
@@ -13,9 +16,7 @@
 	<link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
 	
 	@yield('styles')
-	
-	<!-- Scripts -->
-	@vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
 </head>
 <body>
 <div id="app">
@@ -78,6 +79,7 @@
 	</main>
 </div>
 
+<script src="{{ asset('js/bootstrap.min.js') }}"></script>
 @yield('scripts')
 </body>
 </html>
