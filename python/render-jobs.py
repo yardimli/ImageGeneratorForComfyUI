@@ -200,7 +200,7 @@ def generate_images_from_api():
                     workflow["44"]["inputs"]["bottom"] = prompt['bottom_padding']
                     workflow["44"]["inputs"]["feathering"] = prompt['feathering']
                 elif generation_type == "mix":
-                     temp_dir = tempfile.mkdtemp()
+                    temp_dir = tempfile.mkdtemp()
 
                     # Download images
                     image1_path = os.path.join(temp_dir, "image1.png")
