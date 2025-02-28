@@ -1,0 +1,180 @@
+<?php
+
+	namespace App\Http\Controllers;
+
+	use App\Models\Prompt;
+	use App\Models\PromptSetting;
+	use Illuminate\Http\Request;
+	use Illuminate\Support\Facades\Storage;
+
+	class ImageMixController extends Controller
+	{
+		public function index()
+		{
+			// Get saved settings with generation_type 'mix'
+			$settings = PromptSetting::where('user_id', auth()->id())
+				->where('generation_type', 'mix')
+				->orderBy('created_at', 'desc')
+				->get();
+
+			return view('image-mix.index', compact('settings'));
+		}
+
+		public function store(Request $request)
+		{
+			try {
+				$validated = $request->validate([
+					'input_images_1' => 'required|json',
+					'input_images_2' => 'required|json',
+					'width' => 'required|integer',
+					'height' => 'required|integer',
+					'model' => 'required|in:schnell,dev,outpaint',
+					'upload_to_s3' => 'required|in:0,1,true,false',
+					'aspect_ratio' => 'required|string',
+					'render_each_prompt_times' => 'required|integer|min:1',
+				]);
+
+				// Store the settings
+				$promptSetting = PromptSetting::create([
+					'user_id' => auth()->id(),
+					'generation_type' => 'mix',
+					'template_path' => '',
+					'prompt_template' => '',
+					'original_prompt' => '',
+					'precision' => 'Normal',
+					'count' => 1,
+					'render_each_prompt_times' => $request->render_each_prompt_times,
+					'width' => $request->width,
+					'height' => $request->height,
+					'model' => $request->model,
+					'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
+					'aspect_ratio' => $request->aspect_ratio,
+					'prepend_text' => '',
+					'append_text' => '',
+					'generate_original_prompt' => false,
+					'append_to_prompt' => false,
+					'input_images_1' => $request->input_images_1,
+					'input_images_2' => $request->input_images_2,
+				]);
+
+				// Create prompts based on the number of times to render
+				$inputImages1 = json_decode($request->input_images_1, true);
+				$inputImages2 = json_decode($request->input_images_2, true);
+
+				foreach ($inputImages1 as $image1) {
+					foreach ($inputImages2 as $image2) {
+
+						// For each combination of images, create the prompt
+						for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'mix',
+								'prompt_setting_id' => $promptSetting->id,
+								'original_prompt' => '', // Empty for image mix
+								'generated_prompt' => $image1['prompt'],
+								'width' => $request->width,
+								'height' => $request->height,
+								'model' => $request->model,
+								'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
+								'input_image_1' => $image1['path'],
+								'input_image_1_strength' => $image1['strength'],
+								'input_image_2' => $image2['path'],
+								'input_image_2_strength' => $image2['strength'],
+							]);
+						}
+					}
+				}
+
+				return response()->json([
+					'success' => true,
+					'setting_id' => $promptSetting->id,
+				]);
+			} catch (\Exception $e) {
+				return response()->json([
+					'success' => false,
+					'error' => $e->getMessage(),
+				]);
+			}
+		}
+
+		public function loadSettings($id)
+		{
+			$settings = PromptSetting::findOrFail($id);
+
+			// Ensure settings belongs to the authenticated user
+			if ($settings->user_id !== auth()->id()) {
+				return response()->json(['error' => 'Unauthorized'], 403);
+			}
+
+			return response()->json([
+				'input_images_1' => $settings->input_images_1,
+				'input_images_2' => $settings->input_images_2,
+				'width' => $settings->width,
+				'height' => $settings->height,
+				'model' => $settings->model,
+				'upload_to_s3' => $settings->upload_to_s3,
+				'aspect_ratio' => $settings->aspect_ratio,
+				'count' => $settings->count,
+				'render_each_prompt_times' => $settings->render_each_prompt_times,
+			]);
+		}
+
+		public function uploadImage(Request $request)
+		{
+			try {
+				$request->validate([
+					'image' => 'required|image|max:10240', // 10MB max
+				]);
+
+				if ($request->hasFile('image')) {
+					$image = $request->file('image');
+					$filename = time() . '_' . $image->getClientOriginalName();
+
+					// Store the file
+					$path = $image->storeAs('public/uploads', $filename);
+
+					return response()->json([
+						'success' => true,
+						'path' => asset('storage/uploads/' . $filename),
+						'filename' => $filename,
+					]);
+				}
+
+				return response()->json([
+					'success' => false,
+					'error' => 'No image found',
+				]);
+			} catch (\Exception $e) {
+				return response()->json([
+					'success' => false,
+					'error' => $e->getMessage(),
+				]);
+			}
+		}
+
+		public function getLatestSetting()
+		{
+			$setting = PromptSetting::where('user_id', auth()->id())
+				->where('generation_type', 'mix')
+				->latest()
+				->first();
+
+			if ($setting) {
+				return response()->json([
+					'success' => true,
+					'setting' => [
+						'id' => $setting->id,
+						'created_at' => $setting->created_at->format('Y-m-d H:i'),
+						'width' => $setting->width,
+						'height' => $setting->height,
+						'render_each_prompt_times' => $setting->render_each_prompt_times,
+					]
+				]);
+			}
+
+			return response()->json([
+				'success' => false,
+				'message' => 'No settings found'
+			]);
+		}
+	}

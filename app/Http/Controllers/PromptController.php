@@ -112,6 +112,7 @@
 				// Store the settings
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
+					'generation_type' => 'prompt',
 					'template_path' => $settings['template_path'] ?? '',
 					'prompt_template' => $settings['prompt_template'] ?? '',
 					'original_prompt' => $settings['original_prompt'],
@@ -136,6 +137,7 @@
 						// Store the prompt
 						Prompt::create([
 							'user_id' => auth()->id(),
+							'generation_type' => 'prompt',
 							'prompt_setting_id' => $prompt_setting_id,
 							'original_prompt' => $settings['original_prompt'],
 							'generated_prompt' => $finalPrompt,

@@ -11,6 +11,7 @@ from botocore.exceptions import NoCredentialsError
 from dotenv import load_dotenv
 from pathlib import Path
 from shutil import copyfile
+import tempfile
 
 current_dir = Path(__file__).resolve().parent
 env_path = current_dir.parent / '.env'
@@ -40,6 +41,23 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
+def download_image(url, output_path):
+    """Download an image from a URL to a local path"""
+    try:
+        response = requests.get(url, stream=True)
+        response.raise_for_status()
+
+        with open(output_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        print(f"Successfully downloaded image from {url} to {output_path}")
+        return output_path
+    except Exception as e:
+        print(f"Error downloading image from {url}: {e}")
+        return None
+
+
 def upload_to_s3(local_file, s3_file):
     """Upload a file to S3"""
     try:
@@ -52,6 +70,7 @@ def upload_to_s3(local_file, s3_file):
     except Exception as e:
         print(f"Error uploading to S3: {e}")
         return None
+
 
 def update_image_filename(id, file_path, is_s3_url=True):
     """Update record via API with S3 URL"""
@@ -67,26 +86,37 @@ def update_image_filename(id, file_path, is_s3_url=True):
     except Exception as err:
         print(f"Error updating prompt via API: {err}")
 
+
 def queue_prompt(prompt):
     p = {"prompt": prompt}
     data = json.dumps(p).encode('utf-8')
     req = request.Request("http://127.0.0.1:8188/prompt", data=data)
     request.urlopen(req)
 
-def get_workflow_file(workflow_type):
+
+def get_workflow_file(generation_type,model):
     """Get the appropriate workflow file based on type"""
-    workflow_files = {
-        'schnell': 'flux_schnell_for_image_gen.json',
-        'dev': 'flux_dev_for_image_gen.json',
-        'outpaint': 'flux_outpaint_for_image_gen.json'
-    }
-    file_name = workflow_files.get(workflow_type)
+    workflow_file = ""
+    if generation_type == "prompt":
+        if model == "schnell":
+            workflow_file = "flux_schnell_for_image_gen.json"
+        elif model == "dev":
+            workflow_file = "flux_dev_for_image_gen.json"
+    elif generation_type == "outpaint":
+        workflow_file = "flux_outpaint_for_image_gen.json"
+    elif generation_type == "mix":
+        workflow_file = "flux_two_image_mix_for_image_gen.json"
+    else:
+        raise ValueError(f"Unknown generation type: {generation_type}")
+
+    file_name = workflow_files.get(workflow_file)
     if not file_name:
-        raise ValueError(f"Unknown workflow type: {workflow_type}")
+        raise ValueError(f"Unknown workflow type: {generation_type}")
 
     file_path = os.path.join(current_dir, file_name)
     with open(file_path, 'r') as file:
         return json.load(file)
+
 
 def update_render_status(id, status):
     """Update render status via API"""
@@ -114,11 +144,12 @@ def generate_images_from_api():
         prompts = response.json()['prompts']
 
         for idx, prompt in enumerate(prompts):
-            print(f"Processing prompt {idx + 1} id: {prompt['id']} {prompt['model']}")
+            print(f"Processing prompt {idx + 1} id: {prompt['id']} {prompt['generation_type']} {prompt['model']}")
 
             try:
-                workflow_type = prompt['model']
-                output_filename = f"{workflow_type}{prompt['id']}.png"
+                generation_type = prompt['generation_type']
+                model = prompt['model']
+                output_filename = f"{generation_type}_{model}_{prompt['id']}_{prompt['user_id']}.png"
                 output_file = str(Path(OUTPUT_DIR) / output_filename)
                 s3_file_path = f"images/{output_filename}"
 
@@ -133,29 +164,30 @@ def generate_images_from_api():
                             update_image_filename(prompt['id'], output_file, False)
                     continue
 
-                workflow = get_workflow_file(workflow_type)
+                workflow = get_workflow_file(generation_type)
 
-                if workflow_type == "schnell":
-                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                    workflow["31"]["inputs"]["file_name_template"] = f"schnell{prompt['id']}.png"
-                    workflow["5"]["inputs"]["width"] = prompt['width']
-                    workflow["5"]["inputs"]["height"] = prompt['height']
-                elif workflow_type == "dev":
-                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                    workflow["41"]["inputs"]["file_name_template"] = f"dev{prompt['id']}.png"
-                    workflow["27"]["inputs"]["width"] = prompt['width']
-                    workflow["27"]["inputs"]["height"] = prompt['height']
-                    workflow["30"]["inputs"]["width"] = prompt['width']
-                    workflow["30"]["inputs"]["height"] = prompt['height']
-                elif workflow_type == "outpaint":
+                if generation_type == "prompt":
+                    if model == "schnell":
+                        workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
+                        workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
+                        workflow["31"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt['id']}_{prompt['user_id']}.png"
+                        workflow["5"]["inputs"]["width"] = prompt['width']
+                        workflow["5"]["inputs"]["height"] = prompt['height']
+                    elif model == "dev":
+                        workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
+                        workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
+                        workflow["41"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt['id']}_{prompt['user_id']}.png"
+                        workflow["27"]["inputs"]["width"] = prompt['width']
+                        workflow["27"]["inputs"]["height"] = prompt['height']
+                        workflow["30"]["inputs"]["width"] = prompt['width']
+                        workflow["30"]["inputs"]["height"] = prompt['height']
+                elif generation_type == "outpaint":
                     # load source image from absolute path
                     workflow["17"]["inputs"]["image"] = prompt['source_image']
 
                     workflow["23"]["inputs"]["text"] = prompt['generated_prompt']
                     workflow["3"]["inputs"]["seed"] = random.randint(1, 2**32)
-                    workflow["41"]["inputs"]["file_name_template"] = f"outpaint{prompt['id']}.png"
+                    workflow["41"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt['id']}_{prompt['user_id']}.png"
 
                     # postprocessing resize width and height (proportional)
                     workflow["46"]["inputs"]["width"] = prompt['width']
@@ -167,7 +199,38 @@ def generate_images_from_api():
                     workflow["44"]["inputs"]["top"] = prompt['top_padding']
                     workflow["44"]["inputs"]["bottom"] = prompt['bottom_padding']
                     workflow["44"]["inputs"]["feathering"] = prompt['feathering']
+                elif generation_type == "mix":
+                     temp_dir = tempfile.mkdtemp()
 
+                    # Download images
+                    image1_path = os.path.join(temp_dir, "image1.png")
+                    image2_path = os.path.join(temp_dir, "image2.png")
+
+                    # Download image 1
+                    if not download_image(prompt['input_image_1'], image1_path):
+                        raise Exception(f"Failed to download image 1 from {prompt['input_image_1']}")
+
+                    # Download image 2
+                    if not download_image(prompt['input_image_2'], image2_path):
+                        raise Exception(f"Failed to download image 2 from {prompt['input_image_2']}")
+
+                    # load source image from absolute path
+                    workflow["40"]["inputs"]["image"] = image1_path
+                    workflow["56"]["inputs"]["image"] = image2_path
+
+                    workflow["54"]["inputs"]["downsampling_factor"] = prompt.get('input_image_1_strength', 1)
+                    workflow["55"]["inputs"]["downsampling_factor"] = prompt.get('input_image_2_strength', 1)
+
+                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
+                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
+                    workflow["57"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt['id']}_{prompt['user_id']}.png"
+
+                    # postprocessing resize width and height (proportional)
+                    workflow["27"]["inputs"]["width"] = prompt['width']
+                    workflow["27"]["inputs"]["height"] = prompt['height']
+
+                    workflow["30"]["inputs"]["width"] = prompt['width']
+                    workflow["30"]["inputs"]["height"] = prompt['height']
 
 
                 if os.path.exists(output_file):
@@ -184,7 +247,11 @@ def generate_images_from_api():
                     update_render_status(prompt['id'], 1)
                     print(f"Queued prompt for: {prompt['generated_prompt']}...")
 
-                    wait_time = 15 if workflow_type == "schnell" else 45
+                    wait_time = 15
+                    if workflow_type == "dev":
+                        wait_time = 45
+                    elif is_mix or workflow_type == "mix":
+                        wait_time = 45
                     time.sleep(wait_time)
 
                     if os.path.exists(output_file):

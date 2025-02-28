@@ -2,6 +2,7 @@
 
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
+	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
@@ -44,6 +45,13 @@
 		Route::post('/images/{prompt}/update-notes', [UpscaleAndNotesController::class, 'updateNotes']);
 		Route::post('/images/{prompt}/upscale', [UpscaleAndNotesController::class, 'upscaleImage'])->name('image.upscale');
 		Route::get('/images/{prompt}/upscale-status/{prediction_id}', [UpscaleAndNotesController::class, 'checkUpscaleStatus'])->name('image.upscale.status');
+
+
+		Route::get('/image-mix', [ImageMixController::class, 'index'])->name('image-mix.index');
+		Route::post('/image-mix/store', [ImageMixController::class, 'store'])->name('image-mix.store');
+		Route::get('/image-mix/settings/latest', [ImageMixController::class, 'getLatestSetting'])->name('image-mix.settings.latest');
+		Route::get('/image-mix/settings/{id}', [ImageMixController::class, 'loadSettings'])->name('image-mix.settings.load');
+		Route::post('/image-mix/upload', [ImageMixController::class, 'uploadImage'])->name('image-mix.upload');
 
 	});
 

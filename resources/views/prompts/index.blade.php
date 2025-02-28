@@ -69,7 +69,7 @@
 						<select class="form-select" name="aspect_ratio" id="aspectRatio">
 							<optgroup label="1MP">
 								<option value="1:1-1024" selected>1:1 (1024 x 1024)</option>
-	
+								
 								<option value="3:2-1024">3:2 (1216 x 832) Landscape</option>
 								<option value="4:3-1024">4:3 (1152 x 896) Landscape</option>
 								<option value="16:9-1024">16:9 (1344 x 768) Landscape</option>
@@ -82,7 +82,7 @@
 							</optgroup>
 							<optgroup label="2MP">
 								<option value="1:1-1408">1:1 (1408 x 1408)</option>
-
+								
 								<option value="3:2-1408">3:2 (1728 x 1152) Landscape</option>
 								<option value="4:3-1408">4:3 (1664 x 1216) Landscape</option>
 								<option value="16:9-1408">16:9 (1920 x 1088) Landscape</option>
@@ -149,7 +149,8 @@
 					<div class="col-md-6">
 						<div class="form-check">
 							<input type="hidden" name="generate_original_prompt" value="0">
-							<input class="form-check-input" type="checkbox" name="generate_original_prompt" id="generateOriginal" value="1">
+							<input class="form-check-input" type="checkbox" name="generate_original_prompt" id="generateOriginal"
+							       value="1">
 							<label class="form-check-label" for="generateOriginal">
 								Generate original prompt also
 							</label>
@@ -199,9 +200,10 @@
 	
 	<div class="container mb-4">
 		<a href="{{ route('gallery.index') }}" class="btn btn-secondary">Go to Gallery</a>
+		<a href="{{ route('image-mix.index') }}" class="btn btn-secondary">Image Mix Tool</a>
 		<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
 	</div>
-	
+
 </div>
 
 <!-- Image Modal -->
@@ -220,7 +222,8 @@
 </div>
 
 <!-- Prompt Queued Modal -->
-<div class="modal fade" id="promptQueuedModal" tabindex="-1" aria-labelledby="promptQueuedModalLabel" aria-hidden="true">
+<div class="modal fade" id="promptQueuedModal" tabindex="-1" aria-labelledby="promptQueuedModalLabel"
+     aria-hidden="true">
 	<div class="modal-dialog">
 		<div class="modal-content bg-dark">
 			<div class="modal-header">

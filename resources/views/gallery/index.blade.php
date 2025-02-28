@@ -5,7 +5,7 @@
 		<span class="me-2">Queue:</span>
 		<span id="queueCount" class="badge bg-primary">0</span>
 	</div>
-
+	
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
@@ -70,8 +70,9 @@
 				
 				<div class="mt-4">
 					<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
+					<a href="{{ route('image-mix.index') }}" class="btn btn-secondary">Image Mix Tool</a>
 					<a href="{{ route('prompts.index') }}" class="btn btn-secondary">Back to Prompts</a>
-
+				
 				</div>
 			</div>
 		</div>
@@ -117,8 +118,8 @@
 				})
 				.catch(error => console.error('Error fetching queue count:', error));
 		}
-
-		document.addEventListener('DOMContentLoaded', function() {
+		
+		document.addEventListener('DOMContentLoaded', function () {
 			queueUpdateInterval = setInterval(updateQueueCount, 3000);
 			updateQueueCount();
 			
@@ -127,10 +128,10 @@
 					clearInterval(queueUpdateInterval);
 				}
 			});
-
+			
 			// Add event listeners for update notes buttons
 			document.querySelectorAll('.update-notes-btn').forEach(button => {
-				button.addEventListener('click', async function() {
+				button.addEventListener('click', async function () {
 					const promptId = this.dataset.promptId;
 					const notesInput = document.querySelector(`.notes-input[data-prompt-id="${promptId}"]`);
 					const notes = notesInput.value;
@@ -158,7 +159,7 @@
 			});
 			
 			document.querySelectorAll('.upscale-btn').forEach(button => {
-				button.addEventListener('click', async function() {
+				button.addEventListener('click', async function () {
 					const promptId = this.dataset.promptId;
 					const filename = this.dataset.filename;
 					const statusDiv = document.getElementById(`upscale-status-${promptId}`);
@@ -174,7 +175,7 @@
 								'Content-Type': 'application/json',
 								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
 							},
-							body: JSON.stringify({ filename })
+							body: JSON.stringify({filename})
 						});
 						
 						const data = await response.json();
@@ -211,7 +212,7 @@
 			
 			// Add this to the DOMContentLoaded event listener in gallery/index.blade.php
 			document.querySelectorAll('.delete-image-btn').forEach(button => {
-				button.addEventListener('click', async function() {
+				button.addEventListener('click', async function () {
 					if (!confirm('Are you sure you want to delete this image?')) return;
 					
 					const promptId = this.dataset.promptId;
