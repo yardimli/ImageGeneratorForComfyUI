@@ -109,11 +109,7 @@ def get_workflow_file(generation_type,model):
     else:
         raise ValueError(f"Unknown generation type: {generation_type}")
 
-    file_name = workflow_files.get(workflow_file)
-    if not file_name:
-        raise ValueError(f"Unknown workflow type: {generation_type}")
-
-    file_path = os.path.join(current_dir, file_name)
+    file_path = os.path.join(current_dir, workflow_file)
     with open(file_path, 'r') as file:
         return json.load(file)
 
@@ -164,7 +160,7 @@ def generate_images_from_api():
                             update_image_filename(prompt['id'], output_file, False)
                     continue
 
-                workflow = get_workflow_file(generation_type)
+                workflow = get_workflow_file(generation_type,model)
 
                 if generation_type == "prompt":
                     if model == "schnell":
@@ -232,6 +228,10 @@ def generate_images_from_api():
                     workflow["30"]["inputs"]["width"] = prompt['width']
                     workflow["30"]["inputs"]["height"] = prompt['height']
 
+                    print("Debugging mix prompt:")
+                    print (f"Using images with strengths: {prompt.get('input_image_1', 1)} and {prompt.get('input_image_2', 1)} :: {prompt.get('input_image_1_strength', 1)} and {prompt.get('input_image_2_strength', 1)}")
+                    print (f"Prompt and width and height: {prompt['generated_prompt']} :: {prompt['width']} and {prompt['height']}")
+
 
                 if os.path.exists(output_file):
                     print(f"Image exists for prompt {prompt['id']}, uploading to S3...")
@@ -247,11 +247,15 @@ def generate_images_from_api():
                     update_render_status(prompt['id'], 1)
                     print(f"Queued prompt for: {prompt['generated_prompt']}...")
 
-                    wait_time = 15
-                    if workflow_type == "dev":
+                    wait_time = 60
+                    if generation_type == "prompt":
+                        if model == "schnell":
+                            wait_time = 15
+                        elif model == "dev":
+                            wait_time = 45
+                    elif generation_type == "mix":
                         wait_time = 45
-                    elif is_mix or workflow_type == "mix":
-                        wait_time = 45
+
                     time.sleep(wait_time)
 
                     if os.path.exists(output_file):

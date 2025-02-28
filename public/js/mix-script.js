@@ -10,7 +10,7 @@ function setDimensions(width, height) {
 	heightInput.value = height;
 }
 
-function addLeftImage(imagePath = '', strength = 1, prompt = '', id = null) {
+function addLeftImage(imagePath = '', strength = 3, prompt = '', id = null) {
 	if (!id) {
 		id = 'left-' + leftImageCounter++;
 	}
@@ -29,7 +29,7 @@ function addLeftImage(imagePath = '', strength = 1, prompt = '', id = null) {
                         <button type="button" class="btn btn-sm btn-primary upload-image" data-target="left" data-id="${id}">Upload Image</button>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Strength (1-5)</label>
+                        <label class="form-label">Strength (1 Strongest)</label>
                         <input type="range" class="form-range" min="1" max="5" step="1" value="${strength}" id="${id}-strength">
                         <div class="text-center"><span id="${id}-strength-value">${strength}</span></div>
                     </div>
@@ -78,7 +78,7 @@ function addLeftImage(imagePath = '', strength = 1, prompt = '', id = null) {
 	updateLeftImagesJson();
 }
 
-function addRightImage(imagePath = '', strength = 1, id = null) {
+function addRightImage(imagePath = '', strength = 3, id = null) {
 	if (!id) {
 		id = 'right-' + rightImageCounter++;
 	}
@@ -97,7 +97,7 @@ function addRightImage(imagePath = '', strength = 1, id = null) {
                         <button type="button" class="btn btn-sm btn-primary upload-image" data-target="right" data-id="${id}">Upload Image</button>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Strength (1-5)</label>
+                        <label class="form-label">Strength (1 Strongest)</label>
                         <input type="range" class="form-range" min="1" max="5" step="1" value="${strength}" id="${id}-strength">
                         <div class="text-center"><span id="${id}-strength-value">${strength}</span></div>
                     </div>
