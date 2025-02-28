@@ -142,6 +142,21 @@
 		</div>
 	</div>
 	
+	<!-- Image Modal -->
+	<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content bg-dark">
+				<div class="modal-header">
+					<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body text-center">
+					<img id="modalImage" src="" style="max-width: 100%; height: auto;" alt="Full size image">
+				</div>
+			</div>
+		</div>
+	</div>
+	
 	<!-- Image Upload Modal -->
 	<div class="modal fade" id="uploadImageModal" tabindex="-1" aria-labelledby="uploadImageModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
