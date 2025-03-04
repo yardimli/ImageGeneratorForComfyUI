@@ -85,6 +85,9 @@
 									<button type="button" class="btn btn-primary mt-3" id="addLeftImageBtn">
 										Add Image
 									</button>
+									<button type="button" class="btn btn-secondary mt-3" id="leftUploadHistoryBtn">
+										Upload History
+									</button>
 								</div>
 							</div>
 						</div>
@@ -101,6 +104,9 @@
 									</div>
 									<button type="button" class="btn btn-primary mt-3" id="addRightImageBtn">
 										Add Image
+									</button>
+									<button type="button" class="btn btn-secondary mt-3" id="rightUploadHistoryBtn">
+										Upload History
 									</button>
 								</div>
 							</div>
@@ -178,6 +184,46 @@
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-primary" id="uploadImageBtn">Upload</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<!-- Upload History Modal -->
+	<div class="modal fade" id="uploadHistoryModal" tabindex="-1" aria-labelledby="uploadHistoryModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content bg-dark">
+				<div class="modal-header">
+					<h5 class="modal-title" id="uploadHistoryModalLabel">Upload History</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row mb-3">
+						<div class="col-12 text-end">
+							<span id="selectedCount" class="me-2">0 selected</span>
+							<button type="button" class="btn btn-primary" id="addSelectedImagesBtn">Add Selected Images</button>
+						</div>
+					</div>
+					<div class="row" id="historyImagesContainer">
+						<!-- Images will be loaded here -->
+						<div class="text-center py-5">
+							<div class="spinner-border" role="status">
+								<span class="visually-hidden">Loading...</span>
+							</div>
+						</div>
+					</div>
+					<div class="row mt-3">
+						<div class="col-12">
+							<nav aria-label="Page navigation">
+								<ul class="pagination justify-content-center" id="historyPagination">
+									<!-- Pagination will be added here -->
+								</ul>
+							</nav>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>

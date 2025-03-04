@@ -154,3 +154,16 @@ body {
     flex-grow: 1;
     margin-right: 10px;
 }
+
+.image-history-card {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.image-history-card:hover {
+    transform: scale(1.02);
+}
+
+.image-history-card.border-primary {
+    box-shadow: 0 0 10px rgba(0, 123, 255, 0.5);
+}

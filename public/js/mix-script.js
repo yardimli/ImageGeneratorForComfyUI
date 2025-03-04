@@ -3,6 +3,13 @@ let rightImages = [];
 let leftImageCounter = 0;
 let rightImageCounter = 0;
 
+let historyImages = [];
+let currentPage = 1;
+let totalPages = 1;
+let selectedImages = [];
+let targetSide = '';
+
+
 function setDimensions(width, height) {
 	const widthInput = document.getElementById('width');
 	const heightInput = document.getElementById('height');
@@ -218,6 +225,200 @@ async function loadSettings(id) {
 	}
 }
 
+
+//use history functions
+
+function openUploadHistory(side) {
+	targetSide = side;
+	selectedImages = [];
+	document.getElementById('selectedCount').textContent = '0 selected';
+	loadUploadHistory(1);
+	const modal = new bootstrap.Modal(document.getElementById('uploadHistoryModal'));
+	modal.show();
+}
+
+async function loadUploadHistory(page) {
+	currentPage = page;
+	const historyContainer = document.getElementById('historyImagesContainer');
+	historyContainer.innerHTML = `
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    `;
+	
+	try {
+		const response = await fetch(`/image-mix/uploads?page=${page}`);
+		const data = await response.json();
+		
+		historyImages = data.images;
+		totalPages = data.pagination.total_pages;
+		
+		renderHistoryImages();
+		renderPagination();
+	} catch (error) {
+		console.error('Error loading upload history:', error);
+		historyContainer.innerHTML = `
+            <div class="col-12 text-center">
+                <div class="alert alert-danger">Failed to load images. Please try again.</div>
+            </div>
+        `;
+	}
+}
+
+function renderHistoryImages() {
+	const historyContainer = document.getElementById('historyImagesContainer');
+	
+	if (historyImages.length === 0) {
+		historyContainer.innerHTML = `
+            <div class="col-12 text-center">
+                <div class="alert alert-info">No uploaded images found.</div>
+            </div>
+        `;
+		return;
+	}
+	
+	let html = '';
+	historyImages.forEach((image, index) => {
+		const isSelected = selectedImages.some(img => img.path === image.path);
+		html += `
+            <div class="col-md-3 mb-4">
+                <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
+                    <div class="card-body p-2">
+                        <div class="text-center mb-2">
+                            <img src="${image.path}" class="img-fluid" style="height: 150px; object-fit: contain;">
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${index}" id="check-${index}" ${isSelected ? 'checked' : ''}>
+                            <label class="form-check-label" for="check-${index}" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                ${image.name}
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+	});
+	
+	historyContainer.innerHTML = html;
+	
+	// Add event listeners to checkboxes and cards
+	historyImages.forEach((image, index) => {
+		const checkbox = document.getElementById(`check-${index}`);
+		if (checkbox) {
+			checkbox.addEventListener('change', function() {
+				toggleImageSelection(index);
+			});
+			
+			// Make the whole card clickable
+			const card = checkbox.closest('.image-history-card');
+			if (card) {
+				card.addEventListener('click', function(e) {
+					// Don't toggle if clicking on the checkbox itself (it's already handled)
+					if (e.target !== checkbox) {
+						checkbox.checked = !checkbox.checked;
+						toggleImageSelection(index);
+					}
+				});
+			}
+		}
+	});
+}
+
+function toggleImageSelection(index) {
+	const image = historyImages[index];
+	const isAlreadySelected = selectedImages.some(img => img.path === image.path);
+	
+	if (isAlreadySelected) {
+		// Remove from selection
+		selectedImages = selectedImages.filter(img => img.path !== image.path);
+		document.querySelector(`.image-history-card:nth-child(${index + 1})`).classList.remove('border', 'border-primary');
+	} else {
+		// Add to selection
+		selectedImages.push(image);
+		document.querySelector(`#check-${index}`).closest('.image-history-card').classList.add('border', 'border-primary');
+	}
+	
+	document.getElementById('selectedCount').textContent = `${selectedImages.length} selected`;
+}
+
+function renderPagination() {
+	const paginationContainer = document.getElementById('historyPagination');
+	let html = '';
+	
+	// Previous button
+	html += `
+        <li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">
+                <span aria-hidden="true">&laquo;</span>
+            </a>
+        </li>
+    `;
+	
+	// Page numbers
+	for (let i = 1; i <= totalPages; i++) {
+		if (
+			i === 1 || // First page
+			i === totalPages || // Last page
+			(i >= currentPage - 2 && i <= currentPage + 2) // Pages around current
+		) {
+			html += `
+                <li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                </li>
+            `;
+		} else if (
+			(i === currentPage - 3 && currentPage > 3) ||
+			(i === currentPage + 3 && currentPage < totalPages - 2)
+		) {
+			html += `<li class="page-item disabled"><a class="page-link" href="#">...</a></li>`;
+		}
+	}
+	
+	// Next button
+	html += `
+        <li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+            <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">
+                <span aria-hidden="true">&raquo;</span>
+            </a>
+        </li>
+    `;
+	
+	paginationContainer.innerHTML = html;
+	
+	// Add event listeners to pagination links
+	document.querySelectorAll('#historyPagination .page-link').forEach(link => {
+		link.addEventListener('click', function(e) {
+			e.preventDefault();
+			const page = parseInt(this.getAttribute('data-page'));
+			if (!isNaN(page) && page > 0 && page <= totalPages) {
+				loadUploadHistory(page);
+			}
+		});
+	});
+}
+
+function addSelectedImages() {
+	if (selectedImages.length === 0) {
+		alert('Please select at least one image.');
+		return;
+	}
+	
+	if (targetSide === 'left') {
+		selectedImages.forEach(image => {
+			addLeftImage(image.path, 3, image.prompt || '');
+		});
+	} else if (targetSide === 'right') {
+		selectedImages.forEach(image => {
+			addRightImage(image.path, 3);
+		});
+	}
+	
+	// Close the modal
+	bootstrap.Modal.getInstance(document.getElementById('uploadHistoryModal')).hide();
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	// Add initial empty image to each side
 	addLeftImage();
@@ -408,5 +609,20 @@ document.addEventListener('DOMContentLoaded', function() {
 		if (settingId) {
 			loadSettings(settingId);
 		}
+	});
+	
+	
+	// Add event listeners for upload history buttons
+	document.getElementById('leftUploadHistoryBtn').addEventListener('click', function() {
+		openUploadHistory('left');
+	});
+	
+	document.getElementById('rightUploadHistoryBtn').addEventListener('click', function() {
+		openUploadHistory('right');
+	});
+	
+	// Add event listener for adding selected images
+	document.getElementById('addSelectedImagesBtn').addEventListener('click', function() {
+		addSelectedImages();
 	});
 });

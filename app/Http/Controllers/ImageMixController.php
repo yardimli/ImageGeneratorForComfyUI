@@ -6,6 +6,7 @@
 	use App\Models\PromptSetting;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Storage;
+	use Illuminate\Support\Str;
 
 	class ImageMixController extends Controller
 	{
@@ -177,4 +178,80 @@
 				'message' => 'No settings found'
 			]);
 		}
+
+		public function getUploadedImages(Request $request)
+		{
+			$page = $request->query('page', 1);
+			$perPage = 20;
+
+			// Get all prompt settings for this user that have input images
+			$settings = PromptSetting::where('user_id', auth()->id())
+				->where('generation_type', 'mix')
+				->where(function($query) {
+					$query->whereNotNull('input_images_1')
+						->orWhereNotNull('input_images_2');
+				})
+				->select('input_images_1', 'input_images_2')
+				->get();
+
+			$images = [];
+			foreach ($settings as $setting) {
+				if ($setting->input_images_1) {
+					$inputImages1 = json_decode($setting->input_images_1, true);
+					foreach ($inputImages1 as $img) {
+						if (isset($img['path'])) {
+							$images[] = [
+								'path' => $img['path'],
+								'name' => basename($img['path']),
+								'prompt' => $img['prompt'] ?? ''
+							];
+						}
+					}
+				}
+				if ($setting->input_images_2) {
+					$inputImages2 = json_decode($setting->input_images_2, true);
+					foreach ($inputImages2 as $img) {
+						if (isset($img['path'])) {
+							$images[] = [
+								'path' => $img['path'],
+								'name' => basename($img['path']),
+								'prompt' => ''
+							];
+						}
+					}
+				}
+			}
+
+			// Get unique images
+			$uniqueImages = [];
+			$paths = [];
+			foreach ($images as $image) {
+				if (!in_array($image['path'], $paths)) {
+					$paths[] = $image['path'];
+					$uniqueImages[] = $image;
+				}
+			}
+			$images = $uniqueImages;
+
+			// Sort by name (timestamp is usually in the filename)
+			usort($images, function($a, $b) {
+				return strcmp($b['name'], $a['name']); // newest first
+			});
+
+			// Pagination
+			$totalImages = count($images);
+			$totalPages = ceil($totalImages / $perPage);
+			$startIndex = ($page - 1) * $perPage;
+			$currentPageImages = array_slice($images, $startIndex, $perPage);
+
+			return response()->json([
+				'images' => $currentPageImages,
+				'pagination' => [
+					'current_page' => (int)$page,
+					'total_pages' => $totalPages,
+					'total_images' => $totalImages
+				]
+			]);
+		}
+
 	}
