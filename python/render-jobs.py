@@ -252,9 +252,9 @@ def generate_images_from_api():
                         if model == "schnell":
                             wait_time = 15
                         elif model == "dev":
-                            wait_time = 45
+                            wait_time = 25
                     elif generation_type == "mix":
-                        wait_time = 45
+                        wait_time = 25
 
                     time.sleep(wait_time)
 
