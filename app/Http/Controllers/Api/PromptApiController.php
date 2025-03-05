@@ -12,23 +12,42 @@
 		public function getPendingPrompts()
 		{
 			// Retrieve 4 prompts for each render_status
-			$promptsStatus0 = Prompt::where('render_status', 0)
-				->orderBy('id', 'desc')
-				->limit(4)
-				->get();
 
-			$promptsStatus1 = Prompt::where('render_status', 1)
-				->orderBy('id', 'desc')
-				->limit(4)
-				->get();
+			$userIds0 = Prompt::where('render_status', 0)->distinct('user_id')->pluck('user_id');
+			$userIds1 = Prompt::where('render_status', 1)->distinct('user_id')->pluck('user_id');
+			$userIds3 = Prompt::where('render_status', 3)->distinct('user_id')->pluck('user_id');
 
-			$promptsStatus3 = Prompt::where('render_status', 3)
-				->orderBy('id', 'desc')
-				->limit(4)
-				->get();
+			$prompts = collect();
 
-			// Merge the results
-			$prompts = $promptsStatus0->merge($promptsStatus1)->merge($promptsStatus3);
+			// For render_status 0
+			foreach ($userIds0 as $userId) {
+				$userPrompts = Prompt::where('render_status', 0)
+					->where('user_id', $userId)
+					->orderBy('id', 'desc')
+					->limit(2)
+					->get();
+				$prompts = $prompts->merge($userPrompts);
+			}
+
+			// For render_status 1
+			foreach ($userIds1 as $userId) {
+				$userPrompts = Prompt::where('render_status', 1)
+					->where('user_id', $userId)
+					->orderBy('id', 'desc')
+					->limit(2)
+					->get();
+				$prompts = $prompts->merge($userPrompts);
+			}
+
+			// For render_status 3
+			foreach ($userIds3 as $userId) {
+				$userPrompts = Prompt::where('render_status', 3)
+					->where('user_id', $userId)
+					->orderBy('id', 'desc')
+					->limit(2)
+					->get();
+				$prompts = $prompts->merge($userPrompts);
+			}
 
 			return response()->json([
 				'success' => true,
