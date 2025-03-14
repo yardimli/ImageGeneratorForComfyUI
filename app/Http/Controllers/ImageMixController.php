@@ -139,53 +139,38 @@
 			// Get all prompt settings for this user that have input images
 			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
-				->where(function($query) {
-					$query->whereNotNull('input_images_1')
-						->orWhereNotNull('input_images_2');
+				->where(function ($query) {
+					$query->whereNotNull('input_image_1')
+						->andWhereNotNull('input_image_2');
 				})
-				->select('input_images_1', 'input_images_2')
+				->select('input_image_1', 'input_image_2')
 				->get();
 
 			$images = [];
 			$usageCounts = []; // Track usage count for each image path
 
 			foreach ($prompts as $prompt) {
-				if ($prompt->input_images_1) {
-					$inputImages1 = json_decode($prompt->input_images_1, true);
-					foreach ($inputImages1 as $img) {
-						if (isset($img['path'])) {
-							$images[] = [
-								'path' => $img['path'],
-								'name' => basename($img['path']),
-								'prompt' => $img['prompt'] ?? ''
-							];
+				$images[] = [
+					'path' => $prompt->input_image_1,
+					'name' => basename($prompt->input_image_1),
+					'prompt' => $img['prompt'] ?? ''
+				];
 
-							// Increment usage count
-							if (!isset($usageCounts[$img['path']])) {
-								$usageCounts[$img['path']] = 0;
-							}
-							$usageCounts[$img['path']]++;
-						}
-					}
+				if (!isset($usageCounts[$prompt->input_image_1])) {
+					$usageCounts[$prompt->input_image_1] = 0;
 				}
-				if ($prompt->input_images_2) {
-					$inputImages2 = json_decode($prompt->input_images_2, true);
-					foreach ($inputImages2 as $img) {
-						if (isset($img['path'])) {
-							$images[] = [
-								'path' => $img['path'],
-								'name' => basename($img['path']),
-								'prompt' => ''
-							];
+				$usageCounts[$prompt->input_image_1]++;
 
-							// Increment usage count
-							if (!isset($usageCounts[$img['path']])) {
-								$usageCounts[$img['path']] = 0;
-							}
-							$usageCounts[$img['path']]++;
-						}
-					}
+				$images[] = [
+					'path' => $prompt->input_images_2,
+					'name' => basename($prompt->input_images_2),
+					'prompt' => ''
+				];
+
+				if (!isset($usageCounts[$prompt->input_images_2])) {
+					$usageCounts[$prompt->input_images_2] = 0;
 				}
+				$usageCounts[$prompt->input_images_2]++;
 			}
 
 			// Get unique images and add usage count
@@ -202,7 +187,7 @@
 			$images = $uniqueImages;
 
 			// Sort by name (timestamp is usually in the filename)
-			usort($images, function($a, $b) {
+			usort($images, function ($a, $b) {
 				return strcmp($b['name'], $a['name']); // newest first
 			});
 
