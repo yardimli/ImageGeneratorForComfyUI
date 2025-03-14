@@ -255,7 +255,7 @@ function renderHistoryImages() {
 	
 	// Add event listeners to checkboxes and cards
 	historyImages.forEach((image, index) => {
-		const badge = document.querySelector(`usage-${index}`);
+		const badge = document.getElementById(`usage-${index}`);
 		if (badge) {
 			badge.addEventListener('click', function(e) {
 				e.stopPropagation(); // Prevent triggering the card click event
