@@ -9,7 +9,7 @@
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
-				<h3 class="mb-0">Image Gallery</h3>
+				<h3 class="mb-2">Image Gallery</h3>
 				<div>
 					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
 					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
