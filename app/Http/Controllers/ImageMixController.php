@@ -139,10 +139,8 @@
 			// Get all prompt settings for this user that have input images
 			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
-				->where(function ($query) {
-					$query->whereNotNull('input_image_1')
-						->WhereNotNull('input_image_2');
-				})
+				->whereNotNull('input_image_1')
+				->WhereNotNull('input_image_2');
 				->select('input_image_1', 'input_image_2')
 				->get();
 
