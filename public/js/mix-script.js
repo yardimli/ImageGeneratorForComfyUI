@@ -234,7 +234,7 @@ function renderHistoryImages() {
                 <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
                     <div class="card-body p-2">
                         <div class="text-center mb-2 position-relative">
-                            <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px;">
+                            <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px;" id="usage-${index}">
                                 ${image.usage_count || 0}
                             </span>
                             <img src="${image.path}" class="img-fluid" style="height: 150px; object-fit: contain;">
@@ -255,7 +255,7 @@ function renderHistoryImages() {
 	
 	// Add event listeners to checkboxes and cards
 	historyImages.forEach((image, index) => {
-		const badge = document.querySelector(`.image-history-card:nth-child(${index + 1}) .badge`);
+		const badge = document.querySelector(`usage-${index}`);
 		if (badge) {
 			badge.addEventListener('click', function(e) {
 				e.stopPropagation(); // Prevent triggering the card click event
@@ -290,14 +290,22 @@ function toggleImageSelection(index) {
 	const image = historyImages[index];
 	const isAlreadySelected = selectedImages.some(img => img.path === image.path);
 	
+	// Get the card element correctly using the checkbox's closest method
+	const checkbox = document.getElementById(`check-${index}`);
+	const card = checkbox ? checkbox.closest('.image-history-card') : null;
+	
 	if (isAlreadySelected) {
 		// Remove from selection
 		selectedImages = selectedImages.filter(img => img.path !== image.path);
-		document.querySelector(`.image-history-card:nth-child(${index + 1})`).classList.remove('border', 'border-primary');
+		if (card) {
+			card.classList.remove('border', 'border-primary');
+		}
 	} else {
 		// Add to selection
 		selectedImages.push(image);
-		document.querySelector(`#check-${index}`).closest('.image-history-card').classList.add('border', 'border-primary');
+		if (card) {
+			card.classList.add('border', 'border-primary');
+		}
 	}
 	
 	document.getElementById('selectedCount').textContent = `${selectedImages.length} selected`;
