@@ -144,31 +144,56 @@
 				->select('input_image_1', 'input_image_2')
 				->get();
 
-			$images = [];
 			$usageCounts = []; // Track usage count for each image path
 
 			foreach ($prompts as $prompt) {
-				$images[] = [
-					'path' => $prompt->input_image_1,
-					'name' => basename($prompt->input_image_1),
-					'prompt' => $img['prompt'] ?? ''
-				];
-
 				if (!isset($usageCounts[$prompt->input_image_1])) {
 					$usageCounts[$prompt->input_image_1] = 0;
 				}
 				$usageCounts[$prompt->input_image_1]++;
 
-				$images[] = [
-					'path' => $prompt->input_images_2,
-					'name' => basename($prompt->input_images_2),
-					'prompt' => ''
-				];
-
 				if (!isset($usageCounts[$prompt->input_images_2])) {
 					$usageCounts[$prompt->input_images_2] = 0;
 				}
 				$usageCounts[$prompt->input_images_2]++;
+			}
+
+			// Get all prompt settings for this user that have input images
+			$settings = PromptSetting::where('user_id', auth()->id())
+				->where('generation_type', 'mix')
+				->where(function($query) {
+					$query->whereNotNull('input_images_1')
+						->orWhereNotNull('input_images_2');
+				})
+				->select('input_images_1', 'input_images_2')
+				->get();
+
+			$images = [];
+			foreach ($settings as $setting) {
+				if ($setting->input_images_1) {
+					$inputImages1 = json_decode($setting->input_images_1, true);
+					foreach ($inputImages1 as $img) {
+						if (isset($img['path'])) {
+							$images[] = [
+								'path' => $img['path'],
+								'name' => basename($img['path']),
+								'prompt' => $img['prompt'] ?? ''
+							];
+						}
+					}
+				}
+				if ($setting->input_images_2) {
+					$inputImages2 = json_decode($setting->input_images_2, true);
+					foreach ($inputImages2 as $img) {
+						if (isset($img['path'])) {
+							$images[] = [
+								'path' => $img['path'],
+								'name' => basename($img['path']),
+								'prompt' => ''
+							];
+						}
+					}
+				}
 			}
 
 			// Get unique images and add usage count
