@@ -147,6 +147,8 @@
 				->get();
 
 			$images = [];
+			$usageCounts = []; // Track usage count for each image path
+
 			foreach ($settings as $setting) {
 				if ($setting->input_images_1) {
 					$inputImages1 = json_decode($setting->input_images_1, true);
@@ -157,6 +159,12 @@
 								'name' => basename($img['path']),
 								'prompt' => $img['prompt'] ?? ''
 							];
+
+							// Increment usage count
+							if (!isset($usageCounts[$img['path']])) {
+								$usageCounts[$img['path']] = 0;
+							}
+							$usageCounts[$img['path']]++;
 						}
 					}
 				}
@@ -169,17 +177,25 @@
 								'name' => basename($img['path']),
 								'prompt' => ''
 							];
+
+							// Increment usage count
+							if (!isset($usageCounts[$img['path']])) {
+								$usageCounts[$img['path']] = 0;
+							}
+							$usageCounts[$img['path']]++;
 						}
 					}
 				}
 			}
 
-			// Get unique images
+			// Get unique images and add usage count
 			$uniqueImages = [];
 			$paths = [];
 			foreach ($images as $image) {
 				if (!in_array($image['path'], $paths)) {
 					$paths[] = $image['path'];
+					// Add usage count to the image data
+					$image['usage_count'] = $usageCounts[$image['path']];
 					$uniqueImages[] = $image;
 				}
 			}

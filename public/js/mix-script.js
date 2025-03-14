@@ -233,7 +233,10 @@ function renderHistoryImages() {
             <div class="col-md-3 mb-4">
                 <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
                     <div class="card-body p-2">
-                        <div class="text-center mb-2">
+                        <div class="text-center mb-2 position-relative">
+                            <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px;">
+                                Used: ${image.usage_count || 0}
+                            </span>
                             <img src="${image.path}" class="img-fluid" style="height: 150px; object-fit: contain;">
                         </div>
                         <div class="form-check">
