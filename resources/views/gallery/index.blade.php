@@ -29,7 +29,7 @@
 								     alt="Generated Image">
 								<div class="card-body">
 									<div class="mb-3">
-										<small class="text-muted">Prompt: ({{ $image->model }})</small>
+										<small class="text-muted">({{ $image->generation_type }}: ({{ $image->model }})</small>
 										<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
 											{{ $image->generated_prompt }}
 										</div>
@@ -49,6 +49,15 @@
 									<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
 										Delete Image
 									</button>
+									@if($image->generation_type === 'mix')
+										<button class="btn btn-info btn-sm view-source-btn mb-2"
+										        data-input-image1="{{ $image->input_image_1 }}"
+										        data-input-image2="{{ $image->input_image_2 }}"
+										        data-strength1="{{ $image->input_image_1_strength }}"
+										        data-strength2="{{ $image->input_image_2_strength }}">
+											Source
+										</button>
+									@endif
 									@if($image->upscale_status === 0)
 										<button class="btn btn-success btn-sm upscale-btn mb-2"
 										        data-prompt-id="{{ $image->id }}"
@@ -118,6 +127,41 @@
 			</div>
 		</div>
 	</div>
+	
+	<!-- Source Images Modal -->
+	<div class="modal fade" id="sourceImagesModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content bg-dark">
+				<div class="modal-header">
+					<h5 class="modal-title">Source Images</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<!-- Left source image -->
+						<div class="col-md-6 text-center">
+							<h6>Image 1</h6>
+							<img id="sourceImage1" src="" style="max-width: 100%; height: auto;" alt="Source Image 1">
+							<div class="mt-2">
+								<span>Strength: <span id="sourceStrength1"></span></span>
+							</div>
+						</div>
+						<!-- Right source image -->
+						<div class="col-md-6 text-center">
+							<h6>Image 2</h6>
+							<img id="sourceImage2" src="" style="max-width: 100%; height: auto;" alt="Source Image 2">
+							<div class="mt-2">
+								<span>Strength: <span id="sourceStrength2"></span></span>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 @endsection
 
@@ -133,6 +177,25 @@
 			const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
 			const checkboxes = document.querySelectorAll('.image-checkbox');
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
+			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
+			
+			document.querySelectorAll('.view-source-btn').forEach(button => {
+				button.addEventListener('click', function() {
+					const image1 = this.dataset.inputImage1;
+					const image2 = this.dataset.inputImage2;
+					const strength1 = this.dataset.strength1;
+					const strength2 = this.dataset.strength2;
+					
+					// Set the source images and strengths
+					document.getElementById('sourceImage1').src = image1;
+					document.getElementById('sourceImage2').src = image2;
+					document.getElementById('sourceStrength1').textContent = strength1;
+					document.getElementById('sourceStrength2').textContent = strength2;
+					
+					// Show the modal
+					sourceImagesModal.show();
+				});
+			});
 			
 			// Toggle select all
 			selectAllBtn.addEventListener('click', function() {
