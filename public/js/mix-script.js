@@ -228,14 +228,13 @@ function renderHistoryImages() {
 	
 	let html = '';
 	historyImages.forEach((image, index) => {
-		const isSelected = selectedImages.some(img => img.path === image.path);
 		html += `
             <div class="col-md-3 mb-4">
                 <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
                     <div class="card-body p-2">
                         <div class="text-center mb-2 position-relative">
                             <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px;">
-                                Used: ${image.usage_count || 0}
+                                ${image.usage_count || 0}
                             </span>
                             <img src="${image.path}" class="img-fluid" style="height: 150px; object-fit: contain;">
                         </div>
@@ -249,12 +248,23 @@ function renderHistoryImages() {
                 </div>
             </div>
         `;
+		const isSelected = selectedImages.some(img => img.path === image.path);
 	});
 	
 	historyContainer.innerHTML = html;
 	
 	// Add event listeners to checkboxes and cards
 	historyImages.forEach((image, index) => {
+		const badge = document.querySelector(`.image-history-card:nth-child(${index + 1}) .badge`);
+		if (badge) {
+			badge.addEventListener('click', function(e) {
+				e.stopPropagation(); // Prevent triggering the card click event
+				window.open(`/gallery/filter?source_image=${encodeURIComponent(image.path)}`, '_blank');
+			});
+			badge.style.cursor = 'pointer';
+			badge.title = 'Click to view all images created with this source';
+		}
+		
 		const checkbox = document.getElementById(`check-${index}`);
 		if (checkbox) {
 			checkbox.addEventListener('change', function() {

@@ -14,6 +14,12 @@
 					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
 					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
 				</div>
+				@if(isset($filterActive) && $filterActive)
+					<div class="alert alert-info mb-0 p-2">
+						{{ $filterDescription }}
+						<a href="{{ route('gallery.index') }}" class="ms-2 btn btn-sm btn-outline-primary">Clear Filter</a>
+					</div>
+				@endif
 			</div>
 			<div class="card-body">
 				<div class="row">

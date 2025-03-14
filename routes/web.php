@@ -27,6 +27,7 @@
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
+		Route::get('/gallery/filter', [GalleryController::class, 'filter'])->name('gallery.filter');
 		Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
 
 		Route::get('/generate', [PromptController::class, 'index'])->name('prompts.index');

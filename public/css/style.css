@@ -190,3 +190,13 @@ body {
 .btn-group-toggle .btn {
     cursor: pointer;
 }
+
+.image-history-card .badge {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.image-history-card .badge:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
+}
