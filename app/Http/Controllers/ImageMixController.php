@@ -152,10 +152,10 @@
 				}
 				$usageCounts[$prompt->input_image_1]++;
 
-				if (!isset($usageCounts[$prompt->input_images_2])) {
-					$usageCounts[$prompt->input_images_2] = 0;
+				if (!isset($usageCounts[$prompt->input_image_2])) {
+					$usageCounts[$prompt->input_image_2] = 0;
 				}
-				$usageCounts[$prompt->input_images_2]++;
+				$usageCounts[$prompt->input_image_2]++;
 			}
 
 			// Get all prompt settings for this user that have input images
