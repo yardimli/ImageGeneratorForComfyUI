@@ -137,7 +137,7 @@
 			$perPage = 20;
 
 			// Get all prompt settings for this user that have input images
-			$prompts = Prompts::where('user_id', auth()->id())
+			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
 				->where(function($query) {
 					$query->whereNotNull('input_images_1')
