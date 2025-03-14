@@ -203,7 +203,11 @@
 				if (!in_array($image['path'], $paths)) {
 					$paths[] = $image['path'];
 					// Add usage count to the image data
-					$image['usage_count'] = $usageCounts[$image['path']];
+					if (key_exists($image['path'], $usageCounts)) {
+						$image['usage_count'] = $usageCounts[$image['path']];
+					} else {
+						$image['usage_count'] = 0;
+					}
 					$uniqueImages[] = $image;
 				}
 			}
