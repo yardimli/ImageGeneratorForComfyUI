@@ -140,7 +140,7 @@
 			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
 				->whereNotNull('input_image_1')
-				->WhereNotNull('input_image_2');
+				->WhereNotNull('input_image_2')
 				->select('input_image_1', 'input_image_2')
 				->get();
 
