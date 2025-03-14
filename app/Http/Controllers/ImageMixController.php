@@ -137,7 +137,7 @@
 			$perPage = 20;
 
 			// Get all prompt settings for this user that have input images
-			$settings = PromptSetting::where('user_id', auth()->id())
+			$prompts = Prompts::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
 				->where(function($query) {
 					$query->whereNotNull('input_images_1')
@@ -149,9 +149,9 @@
 			$images = [];
 			$usageCounts = []; // Track usage count for each image path
 
-			foreach ($settings as $setting) {
-				if ($setting->input_images_1) {
-					$inputImages1 = json_decode($setting->input_images_1, true);
+			foreach ($prompts as $prompt) {
+				if ($prompt->input_images_1) {
+					$inputImages1 = json_decode($prompt->input_images_1, true);
 					foreach ($inputImages1 as $img) {
 						if (isset($img['path'])) {
 							$images[] = [
@@ -168,8 +168,8 @@
 						}
 					}
 				}
-				if ($setting->input_images_2) {
-					$inputImages2 = json_decode($setting->input_images_2, true);
+				if ($prompt->input_images_2) {
+					$inputImages2 = json_decode($prompt->input_images_2, true);
 					foreach ($inputImages2 as $img) {
 						if (isset($img['path'])) {
 							$images[] = [
