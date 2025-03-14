@@ -89,11 +89,11 @@
 								</optgroup>
 							</select>
 						</div>
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<label class="form-label">Width</label>
 							<input type="number" class="form-control" name="width" id="width" value="1024">
 						</div>
-						<div class="col-md-3">
+						<div class="col-md-2">
 							<label class="form-label">Height</label>
 							<input type="number" class="form-control" name="height" id="height" value="1024">
 						</div>
