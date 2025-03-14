@@ -44,10 +44,10 @@
 									</div>
 									<button class="btn btn-primary btn-sm update-notes-btn mb-2"
 									        data-prompt-id="{{ $image->id }}">
-										Update Notes
+										Update
 									</button>
 									<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
-										Delete Image
+										Delete
 									</button>
 									@if($image->generation_type === 'mix')
 										<button class="btn btn-info btn-sm view-source-btn mb-2"
@@ -62,7 +62,7 @@
 										<button class="btn btn-success btn-sm upscale-btn mb-2"
 										        data-prompt-id="{{ $image->id }}"
 										        data-filename="{{ $image->filename }}">
-											Upscale Image
+											Upscale
 										</button>
 									@elseif($image->upscale_status === 1)
 										<div class="text-warning">Upscale in progress...</div>
