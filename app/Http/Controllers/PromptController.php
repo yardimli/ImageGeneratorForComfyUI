@@ -309,6 +309,46 @@
 		}
 
 
+
+		public function bulkDelete(Request $request)
+		{
+			$request->validate([
+				'prompt_ids' => 'required|array',
+				'prompt_ids.*' => 'numeric|exists:prompts,id'
+			]);
+
+			$promptIds = $request->prompt_ids;
+			$userId = auth()->id();
+
+			// Get prompts that belong to the current user before deleting them
+			$prompts = Prompt::where('user_id', $userId)
+				->whereIn('id', $promptIds)
+				->get();
+
+			$deletedCount = 0;
+
+			foreach ($prompts as $prompt) {
+				// Delete image file if exists and is not an S3 URL
+				if ($prompt->filename && !str_contains($prompt->filename, 'https://')) {
+					Storage::delete('public/images/' . $prompt->filename);
+				}
+
+				// Delete upscaled image if exists
+				if ($prompt->upscale_url) {
+					Storage::delete('public/upscaled/' . $prompt->upscale_url);
+				}
+
+				$prompt->delete();
+				$deletedCount++;
+			}
+
+			return response()->json([
+				'success' => true,
+				'message' => "Successfully deleted {$deletedCount} images",
+				'deleted_count' => $deletedCount
+			]);
+		}
+
 		public function deletePrompt(Prompt $prompt)
 		{
 			// Check authorization

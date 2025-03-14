@@ -33,6 +33,7 @@
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');
 		Route::post('/store-generated-prompts', [PromptController::class, 'storeGeneratedPrompts'])->name('prompts.store-generated');
 
+		Route::post('/prompts/bulk-delete', [PromptController::class, 'bulkDelete'])->name('prompts.bulk-delete');
 		Route::get('/prompts/settings/latest', [PromptController::class, 'getLatestSetting'])->name('prompts.settings.latest');
 		Route::get('/prompts/settings/{id}', [PromptController::class, 'loadSettings'])->name('prompts.settings.load');
 

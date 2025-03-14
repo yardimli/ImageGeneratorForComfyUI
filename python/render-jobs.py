@@ -206,16 +206,17 @@ def generate_images_from_api():
                         continue
 
 
-                workflow = get_workflow_file(generation_type,model)
-
+                workflow = {}
                 if generation_type == "prompt":
                     if model == "schnell":
+                        workflow = get_workflow_file(generation_type,model)
                         workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
                         workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
                         workflow["31"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
                         workflow["5"]["inputs"]["width"] = prompt['width']
                         workflow["5"]["inputs"]["height"] = prompt['height']
                     elif model == "dev":
+                        workflow = get_workflow_file(generation_type,model)
                         workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
                         workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
                         workflow["41"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
@@ -232,7 +233,7 @@ def generate_images_from_api():
                           "aspect_ratio": get_aspect_ratio(prompt['width'],prompt['height']),
                           "response_format": "url",
                           "n": 1,
-                          "prompt_optimizer": false
+                          "prompt_optimizer": False
                         })
                         headers = {
                           'Authorization': f'Bearer {os.getenv("MINIMAX_KEY")}',
@@ -288,6 +289,7 @@ def generate_images_from_api():
 
                 elif generation_type == "outpaint":
                     # load source image from absolute path
+                    workflow = get_workflow_file(generation_type,model)
                     workflow["17"]["inputs"]["image"] = prompt['source_image']
 
                     workflow["23"]["inputs"]["text"] = prompt['generated_prompt']

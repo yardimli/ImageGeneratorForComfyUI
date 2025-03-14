@@ -10,19 +10,26 @@
 		<div class="card">
 			<div class="card-header">
 				<h3 class="mb-0">Image Gallery</h3>
+				<div>
+					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
+					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
+				</div>
 			</div>
 			<div class="card-body">
 				<div class="row">
 					@foreach($images as $image)
 						<div class="col-md-4 mb-4">
 							<div class="card">
+								<div class="position-absolute top-0 start-0 m-2">
+									<input type="checkbox" class="form-check-input image-checkbox" data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
+								</div>
 								<img src="{{ $image->thumbnail }}"
 								     class="card-img-top cursor-pointer"
 								     onclick="openImageModal('{{ $image->filename }}')"
 								     alt="Generated Image">
 								<div class="card-body">
 									<div class="mb-3">
-										<small class="text-muted">Prompt:</small>
+										<small class="text-muted">Prompt: ({{ $image->model }})</small>
 										<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
 											{{ $image->generated_prompt }}
 										</div>
@@ -92,6 +99,25 @@
 			</div>
 		</div>
 	</div>
+	
+	<!-- Confirmation Modal -->
+	<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content bg-dark">
+				<div class="modal-header">
+					<h5 class="modal-title">Confirm Delete</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Are you sure you want to delete <span id="deleteCount">0</span> selected images? This cannot be undone.
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-danger" id="confirmBulkDeleteBtn">Delete</button>
+				</div>
+			</div>
+		</div>
+	</div>
 
 @endsection
 
@@ -102,6 +128,92 @@
 	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
+			const deleteConfirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+			const selectAllBtn = document.getElementById('selectAllBtn');
+			const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+			const checkboxes = document.querySelectorAll('.image-checkbox');
+			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
+			
+			// Toggle select all
+			selectAllBtn.addEventListener('click', function() {
+				const allSelected = Array.from(checkboxes).every(cb => cb.checked);
+				
+				checkboxes.forEach(checkbox => {
+					checkbox.checked = !allSelected;
+					toggleCardSelection(checkbox);
+				});
+				
+				updateBulkDeleteButton();
+			});
+			
+			// Handle checkbox changes
+			checkboxes.forEach(checkbox => {
+				checkbox.addEventListener('change', function() {
+					toggleCardSelection(this);
+					updateBulkDeleteButton();
+				});
+			});
+			
+			// Toggle card selection visual
+			function toggleCardSelection(checkbox) {
+				const card = checkbox.closest('.card');
+				if (checkbox.checked) {
+					card.classList.add('selected');
+				} else {
+					card.classList.remove('selected');
+				}
+			}
+			
+			// Update bulk delete button state
+			function updateBulkDeleteButton() {
+				const selectedCount = document.querySelectorAll('.image-checkbox:checked').length;
+				bulkDeleteBtn.disabled = selectedCount === 0;
+				document.getElementById('deleteCount').textContent = selectedCount;
+			}
+			
+			// Show confirmation modal for bulk delete
+			bulkDeleteBtn.addEventListener('click', function() {
+				deleteConfirmModal.show();
+			});
+			
+			// Handle bulk delete confirmation
+			confirmBulkDeleteBtn.addEventListener('click', async function() {
+				const selectedPromptIds = Array.from(document.querySelectorAll('.image-checkbox:checked'))
+					.map(checkbox => checkbox.dataset.promptId);
+				
+				if (selectedPromptIds.length === 0) return;
+				
+				try {
+					const response = await fetch('/prompts/bulk-delete', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+						},
+						body: JSON.stringify({prompt_ids: selectedPromptIds})
+					});
+					
+					const data = await response.json();
+					
+					if (data.success) {
+						// Remove deleted images from the UI
+						selectedPromptIds.forEach(id => {
+							const checkbox = document.querySelector(`.image-checkbox[data-prompt-id="${id}"]`);
+							if (checkbox) {
+								checkbox.closest('.col-md-4').remove();
+							}
+						});
+						
+						deleteConfirmModal.hide();
+						alert(`Successfully deleted ${selectedPromptIds.length} images`);
+					} else {
+						alert('Error: ' + (data.message || 'Failed to delete images'));
+					}
+				} catch (error) {
+					console.error('Error during bulk delete:', error);
+					alert('Error deleting images');
+				}
+			});
 			
 			// Add event listeners for update notes buttons
 			document.querySelectorAll('.update-notes-btn').forEach(button => {
