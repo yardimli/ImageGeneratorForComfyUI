@@ -228,6 +228,7 @@ function renderHistoryImages() {
 	
 	let html = '';
 	historyImages.forEach((image, index) => {
+		const isSelected = selectedImages.some(img => img.path === image.path);
 		html += `
             <div class="col-md-3 mb-4">
                 <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
@@ -248,7 +249,6 @@ function renderHistoryImages() {
                 </div>
             </div>
         `;
-		const isSelected = selectedImages.some(img => img.path === image.path);
 	});
 	
 	historyContainer.innerHTML = html;
