@@ -141,7 +141,7 @@
 				->where('generation_type', 'mix')
 				->where(function ($query) {
 					$query->whereNotNull('input_image_1')
-						->andWhereNotNull('input_image_2');
+						->WhereNotNull('input_image_2');
 				})
 				->select('input_image_1', 'input_image_2')
 				->get();
