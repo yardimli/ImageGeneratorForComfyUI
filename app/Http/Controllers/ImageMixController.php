@@ -98,28 +98,6 @@
 			}
 		}
 
-		public function loadSettings($id)
-		{
-			$settings = PromptSetting::findOrFail($id);
-
-			// Ensure settings belongs to the authenticated user
-			if ($settings->user_id !== auth()->id()) {
-				return response()->json(['error' => 'Unauthorized'], 403);
-			}
-
-			return response()->json([
-				'input_images_1' => $settings->input_images_1,
-				'input_images_2' => $settings->input_images_2,
-				'width' => $settings->width,
-				'height' => $settings->height,
-				'model' => $settings->model,
-				'upload_to_s3' => $settings->upload_to_s3,
-				'aspect_ratio' => $settings->aspect_ratio,
-				'count' => $settings->count,
-				'render_each_prompt_times' => $settings->render_each_prompt_times,
-			]);
-		}
-
 		public function uploadImage(Request $request)
 		{
 			try {
@@ -151,32 +129,6 @@
 					'error' => $e->getMessage(),
 				]);
 			}
-		}
-
-		public function getLatestSetting()
-		{
-			$setting = PromptSetting::where('user_id', auth()->id())
-				->where('generation_type', 'mix')
-				->latest()
-				->first();
-
-			if ($setting) {
-				return response()->json([
-					'success' => true,
-					'setting' => [
-						'id' => $setting->id,
-						'created_at' => $setting->created_at->format('Y-m-d H:i'),
-						'width' => $setting->width,
-						'height' => $setting->height,
-						'render_each_prompt_times' => $setting->render_each_prompt_times,
-					]
-				]);
-			}
-
-			return response()->json([
-				'success' => false,
-				'message' => 'No settings found'
-			]);
 		}
 
 		public function getUploadedImages(Request $request)

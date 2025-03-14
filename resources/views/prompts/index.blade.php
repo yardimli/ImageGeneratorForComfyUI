@@ -104,6 +104,13 @@
 								<input type="checkbox" class="form-check-input" name="upload_to_s3" id="uploadToS3" value="1" checked>
 							</div>
 						</div>
+						<div class="col-md-2">
+							<label class="form-check-label" for="createMinimax">MiniMax</label>
+							<div class="form-check mt-2">
+								<input type="hidden" name="create_minimax" value="0">
+								<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1" checked>
+							</div>
+						</div>
 					</div>
 					
 					<div class="mb-3">

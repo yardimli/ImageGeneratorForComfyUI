@@ -125,22 +125,6 @@
 			</div>
 		</div>
 		
-		<div class="card mb-4">
-			<div class="card-header">
-				<h3 class="mb-0">Saved Settings</h3>
-			</div>
-			<div class="card-body">
-				<select class="form-select" id="savedSettings">
-					<option value="">Select saved settings</option>
-					@foreach($settings as $setting)
-						<option value="{{ $setting->id }}">
-							{{ $setting->created_at->format('Y-m-d H:i') }} - {{ $setting->width }}x{{ $setting->height }} - {{ $setting->render_each_prompt_times }} images
-						</option>
-					@endforeach
-				</select>
-			</div>
-		</div>
-		
 		<div class="container mb-4">
 			<a href="{{ route('gallery.index') }}" class="btn btn-secondary">Go to Gallery</a>
 			<a href="{{ route('prompts.index') }}" class="btn btn-secondary">Go to Prompts</a>

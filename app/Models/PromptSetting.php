@@ -18,6 +18,7 @@
 			'height',
 			'model',
 			'upload_to_s3',
+			'create_minimax',
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -39,6 +40,7 @@
 			'generate_original_prompt' => 'boolean',
 			'append_to_prompt' => 'boolean',
 			'upload_to_s3' => 'boolean',
+			'create_minimax' => 'boolean',
 		];
 
 

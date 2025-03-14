@@ -173,59 +173,6 @@ function updateRightImagesJson() {
 	rightImages = updatedImages;
 }
 
-async function loadSettings(id) {
-	try {
-		const response = await fetch(`/image-mix/settings/${id}`);
-		const data = await response.json();
-		
-		// Clear current images
-		document.getElementById('leftImagesContainer').innerHTML = '';
-		document.getElementById('rightImagesContainer').innerHTML = '';
-		leftImages = [];
-		rightImages = [];
-		
-		// Set basic form values
-		document.getElementById('width').value = data.width;
-		document.getElementById('height').value = data.height;
-		
-		// Find aspect ratio option that matches
-		const aspectRatioSelect = document.getElementById('aspectRatio');
-		for (let i = 0; i < aspectRatioSelect.options.length; i++) {
-			const option = aspectRatioSelect.options[i];
-			const [ratio, baseSize] = option.value.split('-');
-			const [w, h] = ratio.split(':');
-			
-			if (option.value.includes(baseSize) &&
-				((w/h) * data.height).toFixed(0) == data.width ||
-				((h/w) * data.width).toFixed(0) == data.height) {
-				aspectRatioSelect.value = option.value;
-				break;
-			}
-		}
-		
-		document.querySelector('select[name="model"]').value = data.model;
-		document.getElementById('uploadToS3').checked = data.upload_to_s3;
-		document.querySelector('input[name="render_each_prompt_times"]').value = data.render_each_prompt_times;
-		
-		// Load left images
-		const leftImagesData = JSON.parse(data.input_images_1);
-		leftImagesData.forEach(img => {
-			addLeftImage(img.path, img.strength, img.prompt, img.id);
-		});
-		
-		// Load right images
-		const rightImagesData = JSON.parse(data.input_images_2);
-		rightImagesData.forEach(img => {
-			addRightImage(img.path, img.strength, img.id);
-		});
-		
-	} catch (error) {
-		console.error('Error loading settings:', error);
-		alert('Failed to load settings. Please try again.');
-	}
-}
-
-
 //use history functions
 
 function openUploadHistory(side) {
@@ -291,7 +238,7 @@ function renderHistoryImages() {
                         </div>
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" value="${index}" id="check-${index}" ${isSelected ? 'checked' : ''}>
-                            <label class="form-check-label" for="check-${index}" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                            <label class="form-check-label" for="check-${index}" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
                                 ${image.name}
                             </label>
                         </div>
@@ -575,25 +522,6 @@ document.addEventListener('DOMContentLoaded', function() {
 				// Show success modal
 				const modal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
 				modal.show();
-				
-				// Refresh saved settings dropdown
-				const response = await fetch('/image-mix/settings/latest');
-				const settingsData = await response.json();
-				
-				if (settingsData.success) {
-					const select = document.getElementById('savedSettings');
-					const option = document.createElement('option');
-					option.value = settingsData.setting.id;
-					option.text = `${settingsData.setting.created_at} - ${settingsData.setting.width}x${settingsData.setting.height} - ${settingsData.setting.render_each_prompt_times} images`;
-					option.selected = true;
-					
-					// Add to top of dropdown
-					if (select.options.length > 0) {
-						select.insertBefore(option, select.options[0]);
-					} else {
-						select.appendChild(option);
-					}
-				}
 			} else {
 				alert('Error: ' + data.error);
 			}
@@ -602,15 +530,6 @@ document.addEventListener('DOMContentLoaded', function() {
 			alert('An error occurred while processing your request');
 		}
 	});
-	
-	// Load saved settings
-	document.getElementById('savedSettings').addEventListener('change', function() {
-		const settingId = this.value;
-		if (settingId) {
-			loadSettings(settingId);
-		}
-	});
-	
 	
 	// Add event listeners for upload history buttons
 	document.getElementById('leftUploadHistoryBtn').addEventListener('click', function() {

@@ -49,8 +49,6 @@
 
 		Route::get('/image-mix', [ImageMixController::class, 'index'])->name('image-mix.index');
 		Route::post('/image-mix/store', [ImageMixController::class, 'store'])->name('image-mix.store');
-		Route::get('/image-mix/settings/latest', [ImageMixController::class, 'getLatestSetting'])->name('image-mix.settings.latest');
-		Route::get('/image-mix/settings/{id}', [ImageMixController::class, 'loadSettings'])->name('image-mix.settings.load');
 		Route::post('/image-mix/upload', [ImageMixController::class, 'uploadImage'])->name('image-mix.upload');
 		Route::get('/image-mix/uploads', [ImageMixController::class, 'getUploadedImages'])->name('image-mix.uploads');
 
