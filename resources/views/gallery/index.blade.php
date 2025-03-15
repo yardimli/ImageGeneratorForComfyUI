@@ -260,8 +260,8 @@
 @section('styles')
 	<style>
       .card-img-top {
-          height: 200px; /* Fixed height for gallery thumbnails */
-          object-fit: cover;
+          /*height: 200px; !* Fixed height for gallery thumbnails *!*/
+          /*object-fit: cover;*/
       }
 
       .card-header h4 {
