@@ -3,6 +3,7 @@
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageMixController;
+	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
@@ -53,6 +54,9 @@
 		Route::post('/image-mix/store', [ImageMixController::class, 'store'])->name('image-mix.store');
 		Route::post('/image-mix/upload', [ImageMixController::class, 'uploadImage'])->name('image-mix.upload');
 		Route::get('/image-mix/uploads', [ImageMixController::class, 'getUploadedImages'])->name('image-mix.uploads');
+
+		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
+		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');
 
 	});
 

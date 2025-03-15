@@ -85,6 +85,9 @@
 									<button type="button" class="btn btn-primary mt-3" id="addLeftImageBtn">
 										Add Image
 									</button>
+									<button type="button" class="btn btn-info mt-3" id="leftPexelsBtn">
+										Pexels
+									</button>
 									<button type="button" class="btn btn-secondary mt-3" id="leftUploadHistoryBtn">
 										Upload History
 									</button>
@@ -104,6 +107,9 @@
 									</div>
 									<button type="button" class="btn btn-primary mt-3" id="addRightImageBtn">
 										Add Image
+									</button>
+									<button type="button" class="btn btn-info mt-3" id="rightPexelsBtn">
+										Pexels
 									</button>
 									<button type="button" class="btn btn-secondary mt-3" id="rightUploadHistoryBtn">
 										Upload History
@@ -230,9 +236,70 @@
 			</div>
 		</div>
 	</div>
+	
+	<!-- Pexels Search Modal -->
+	<div class="modal fade" id="pexelsModal" tabindex="-1" aria-labelledby="pexelsModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl">
+			<div class="modal-content bg-dark">
+				<div class="modal-header">
+					<h5 class="modal-title" id="pexelsModalLabel">Search Pexels Images</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row mb-3">
+						<div class="col-md-8">
+							<div class="input-group">
+								<input type="text" class="form-control" id="pexelsSearchInput" placeholder="Search for images...">
+								<button class="btn btn-primary" type="button" id="pexelsSearchBtn">Search</button>
+							</div>
+						</div>
+						<div class="col-md-4 text-end">
+							<span id="pexelsSelectedCount" class="me-2">0 selected</span>
+						</div>
+					</div>
+					
+					<div class="row">
+						<!-- Left side: Search results -->
+						<div class="col-md-8">
+							<div id="pexelsImagesContainer" class="row">
+								<div class="col-12 text-center py-5">
+									<p class="text-muted">Search for images to get started</p>
+								</div>
+							</div>
+							<div class="mt-3">
+								<nav aria-label="Pexels pagination">
+									<ul class="pagination justify-content-center" id="pexelsPagination"></ul>
+								</nav>
+							</div>
+						</div>
+						
+						<!-- Right side: Selected images -->
+						<div class="col-md-4">
+							<div class="card">
+								<div class="card-header">
+									<h6 class="mb-0">Selected Images</h6>
+								</div>
+								<div class="card-body p-2" style="max-height: 500px; overflow-y: auto;">
+									<div id="pexelsSelectedImagesContainer">
+										<p class="text-muted text-center py-3">No images selected</p>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="modal-footer">
+					<small class="text-muted me-auto">Photos provided by <a href="https://www.pexels.com" target="_blank" class="text-light">Pexels</a></small>
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="pexelsAddSelectedBtn">Add Selected Images</button>
+				</div>
+			</div>
+		</div>
+	</div>
 @endsection
 
 @section('scripts')
 	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script src="{{ asset('js/mix-script.js') }}"></script>
+	<script src="{{ asset('js/pexels-script.js') }}"></script>
 @endsection

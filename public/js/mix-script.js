@@ -387,6 +387,34 @@ function addSelectedImages() {
 	bootstrap.Modal.getInstance(document.getElementById('uploadHistoryModal')).hide();
 }
 
+// Add this function to filter out empty image boxes
+function filterEmptyImageBoxes() {
+	// Filter left images
+	leftImages = leftImages.filter(img => img.path && img.path.trim() !== '');
+	updateLeftImagesJson();
+	
+	// Filter right images
+	rightImages = rightImages.filter(img => img.path && img.path.trim() !== '');
+	updateRightImagesJson();
+	
+	// Remove empty image boxes from the DOM
+	document.querySelectorAll('#leftImagesContainer .image-card').forEach(card => {
+		const id = card.id.replace('-card', '');
+		const imageFound = leftImages.some(img => img.id === id);
+		if (!imageFound) {
+			card.remove();
+		}
+	});
+	
+	document.querySelectorAll('#rightImagesContainer .image-card').forEach(card => {
+		const id = card.id.replace('-card', '');
+		const imageFound = rightImages.some(img => img.id === id);
+		if (!imageFound) {
+			card.remove();
+		}
+	});
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	// Add initial empty image to each side
 	addLeftImage();
@@ -503,6 +531,8 @@ document.addEventListener('DOMContentLoaded', function() {
 	// Form submission
 	document.getElementById('imageMixForm').addEventListener('submit', async function(e) {
 		e.preventDefault();
+		
+		filterEmptyImageBoxes();
 		
 		// Validate inputs
 		if (leftImages.length === 0) {

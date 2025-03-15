@@ -321,6 +321,8 @@ def generate_images_from_api():
                     if not download_image(prompt['input_image_2'], image2_path):
                         raise Exception(f"Failed to download image 2 from {prompt['input_image_2']}")
 
+                    workflow = get_workflow_file(generation_type,model)
+
                     # load source image from absolute path
                     workflow["40"]["inputs"]["image"] = image1_path
                     workflow["56"]["inputs"]["image"] = image2_path
