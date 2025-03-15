@@ -13,19 +13,14 @@
 					<h3 class="mb-0">Image Gallery</h3>
 					<div>
 						<div class="btn-group me-2">
-							<a href="{{ route('gallery.index', ['sort' => 'updated_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true]) }}"
-							   class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Last Updated</a>
-							<a href="{{ route('gallery.index', ['sort' => 'created_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true]) }}"
-							   class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Creation Date</a>
+							<a href="{{ route('gallery.index', ['sort' => 'updated_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Last Updated</a>
+							<a href="{{ route('gallery.index', ['sort' => 'created_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Creation Date</a>
 						</div>
 						
 						<div class="btn-group me-2">
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true]) }}"
-							   class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">Mix Only</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">Mix Only</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
 						</div>
 					</div>
 				</div>
@@ -45,8 +40,7 @@
 				@if(isset($date) && $date)
 					<div class="alert alert-info mb-0 p-2 mt-2">
 						Viewing images from: {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
-						<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all', 'group' => true]) }}"
-						   class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
+						<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all', 'group' => true]) }}" class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
 					</div>
 				@endif
 			</div>

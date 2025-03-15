@@ -12,7 +12,7 @@ class GalleryController extends Controller
 	{
 		$sort = $request->query('sort', 'updated_at'); // Default to updated_at
 		$type = $request->query('type', 'all'); // Default to all types
-		$groupByDay = $request->query('group', true);
+		$groupByDay = $request->query('group') !== 'false'; // Convert to boolean properly
 		$date = $request->query('date');
 
 		$query = Prompt::where('user_id', auth()->id())
