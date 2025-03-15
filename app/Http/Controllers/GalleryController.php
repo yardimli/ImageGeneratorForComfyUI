@@ -1,35 +1,109 @@
-<?php
-
-namespace App\Http\Controllers;
+<?php namespace App\Http\Controllers;
 
 use App\Models\Prompt;
 use Illuminate\Http\Request;
 use Rolandstarke\Thumbnail\Facades\Thumbnail;
+use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 class GalleryController extends Controller
 {
-    public function index()
-    {
-        $images = Prompt::where('user_id', auth()->id())
-            ->whereNotNull('filename')
-            ->orderBy('created_at', 'desc')
-            ->paginate(18);
+	public function index(Request $request)
+	{
+		$sort = $request->query('sort', 'updated_at'); // Default to updated_at
+		$type = $request->query('type', 'all'); // Default to all types
+		$groupByDay = $request->query('group', true);
+		$date = $request->query('date');
 
-        $images->getCollection()->transform(function ($prompt) {
-	        if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
-                $prompt->thumbnail = Thumbnail::src($prompt->filename)
-                    ->preset('thumbnail_450_jpg')
-                    ->url();
-            }
-            return $prompt;
-        });
+		$query = Prompt::where('user_id', auth()->id())
+			->whereNotNull('filename');
 
-        return view('gallery.index', compact('images'));
-    }
+		// Apply type filter
+		if ($type === 'mix') {
+			$query->where('generation_type', 'mix');
+		} elseif ($type === 'other') {
+			$query->where('generation_type', '!=', 'mix');
+		}
+
+		// Apply date filter if viewing a specific day
+		if ($date) {
+			$selectedDate = Carbon::parse($date);
+			$query->whereDate('created_at', $selectedDate);
+			$groupByDay = false; // Disable grouping when viewing a specific day
+		}
+
+		// Apply sorting
+		$query->orderBy($sort, 'desc');
+
+		if ($groupByDay && !$date) {
+			// Get distinct days first
+			$days = $query->clone()
+				->select(DB::raw('DATE(created_at) as date'))
+				->groupBy('date')
+				->orderBy('date', 'desc')
+				->paginate(5, ['*'], 'day_page');
+
+			$groupedImages = [];
+
+			foreach ($days as $day) {
+				$totalCount = $query->clone()
+					->whereDate('created_at', $day->date)
+					->count();
+
+				$dayImages = $query->clone()
+					->whereDate('created_at', $day->date)
+					->limit(8) // Show only 8 images per day initially
+					->get();
+
+				$dayImages->transform(function ($prompt) {
+					if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
+						$prompt->thumbnail = Thumbnail::src($prompt->filename)
+							->preset('thumbnail_450_jpg')
+							->url();
+					}
+					return $prompt;
+				});
+
+				$dayImages->totalCount = $totalCount;
+
+				$groupedImages[$day->date] = $dayImages;
+			}
+
+			return view('gallery.index', [
+				'groupedImages' => $groupedImages,
+				'days' => $days,
+				'sort' => $sort,
+				'type' => $type,
+				'groupByDay' => $groupByDay,
+				'date' => $date,
+			]);
+		} else {
+			// Regular pagination for specific day view
+			$images = $query->paginate(32);
+
+			$images->getCollection()->transform(function ($prompt) {
+				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
+					$prompt->thumbnail = Thumbnail::src($prompt->filename)
+						->preset('thumbnail_450_jpg')
+						->url();
+				}
+				return $prompt;
+			});
+
+			return view('gallery.index', [
+				'images' => $images,
+				'sort' => $sort,
+				'type' => $type,
+				'groupByDay' => $groupByDay,
+				'date' => $date,
+			]);
+		}
+	}
 
 	public function filter(Request $request)
 	{
 		$sourceImage = $request->query('source_image');
+		$sort = $request->query('sort', 'updated_at');
 
 		$query = Prompt::where('user_id', auth()->id())
 			->whereNotNull('filename');
@@ -41,8 +115,8 @@ class GalleryController extends Controller
 			});
 		}
 
-		$images = $query->orderBy('created_at', 'desc')
-			->paginate(18);
+		$images = $query->orderBy($sort, 'desc')
+			->paginate(32);
 
 		$images->getCollection()->transform(function ($prompt) {
 			if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
@@ -55,11 +129,10 @@ class GalleryController extends Controller
 
 		$filterActive = !empty($sourceImage);
 		$filterDescription = "";
-
 		if ($filterActive && $sourceImage) {
 			$filterDescription = "Images generated using source: " . basename($sourceImage);
 		}
 
-		return view('gallery.index', compact('images', 'filterActive', 'filterDescription'));
+		return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort'));
 	}
 }

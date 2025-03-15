@@ -9,92 +9,179 @@
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
-				<h3 class="mb-2">Image Gallery</h3>
-				<div>
+				<div class="d-flex justify-content-between align-items-center">
+					<h3 class="mb-0">Image Gallery</h3>
+					<div>
+						<div class="btn-group me-2">
+							<a href="{{ route('gallery.index', ['sort' => 'updated_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true]) }}"
+							   class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Last Updated</a>
+							<a href="{{ route('gallery.index', ['sort' => 'created_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true]) }}"
+							   class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Creation Date</a>
+						</div>
+						
+						<div class="btn-group me-2">
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true]) }}"
+							   class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">Mix Only</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
+						</div>
+					</div>
+				</div>
+				
+				<div class="mt-2">
 					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
 					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
 				</div>
+				
 				@if(isset($filterActive) && $filterActive)
-					<div class="alert alert-info mb-0 p-2">
+					<div class="alert alert-info mb-0 p-2 mt-2">
 						{{ $filterDescription }}
 						<a href="{{ route('gallery.index') }}" class="ms-2 btn btn-sm btn-outline-primary">Clear Filter</a>
 					</div>
 				@endif
+				
+				@if(isset($date) && $date)
+					<div class="alert alert-info mb-0 p-2 mt-2">
+						Viewing images from: {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
+						<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all', 'group' => true]) }}"
+						   class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
+					</div>
+				@endif
 			</div>
+			
 			<div class="card-body">
-				<div class="row">
-					@foreach($images as $image)
-						<div class="col-md-4 mb-4">
-							<div class="card">
-								<div class="position-absolute top-0 start-0 m-2">
-									<input type="checkbox" class="form-check-input image-checkbox" data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
-								</div>
-								<img src="{{ $image->thumbnail }}"
-								     class="card-img-top cursor-pointer"
-								     onclick="openImageModal('{{ $image->filename }}')"
-								     alt="Generated Image">
-								<div class="card-body">
-									<div class="mb-3">
-										<small class="text-muted">({{ $image->generation_type }}: ({{ $image->model }})</small>
-										<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
-											{{ $image->generated_prompt }}
+				@if(isset($groupedImages) && $groupByDay)
+					@foreach($groupedImages as $date => $dayImages)
+						<div class="mb-4">
+							<h4 class="border-bottom pb-2">
+								<a href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
+								   class="text-decoration-none">
+									{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
+								</a>
+								<span class="badge bg-secondary">{{ $dayImages->totalCount ?? $dayImages->count() }} images</span>
+								@if($dayImages->count() > 8)
+									<a href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
+									   class="btn btn-sm btn-outline-primary ms-2">View All</a>
+								@endif
+							</h4>
+							
+							<div class="row">
+								@foreach($dayImages as $image)
+									<div class="col-md-3 mb-4">
+										<div class="card">
+											<div class="position-absolute top-0 start-0 m-2">
+												<input type="checkbox" class="form-check-input image-checkbox" data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
+											</div>
+											<img src="{{ $image->thumbnail }}" class="card-img-top cursor-pointer" onclick="openImageModal('{{ $image->filename }}')" alt="Generated Image">
+											<div class="card-body">
+												<div class="mb-3">
+													<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
+													<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
+														{{ $image->generated_prompt }}
+													</div>
+												</div>
+												<div class="mb-2">
+													<small class="text-muted">{{ $image->created_at->format('Y-m-d H:i') }}</small>
+												</div>
+												<div class="mb-2">
+													<textarea class="form-control notes-input" placeholder="Add notes..." data-prompt-id="{{ $image->id }}">{{ $image->notes }}</textarea>
+												</div>
+												<button class="btn btn-primary btn-sm update-notes-btn mb-2" data-prompt-id="{{ $image->id }}">
+													Update
+												</button>
+												<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
+													Delete
+												</button>
+												@if($image->generation_type === 'mix')
+													<button class="btn btn-info btn-sm view-source-btn mb-2" data-input-image1="{{ $image->input_image_1 }}" data-input-image2="{{ $image->input_image_2 }}" data-strength1="{{ $image->input_image_1_strength }}" data-strength2="{{ $image->input_image_2_strength }}">
+														Source
+													</button>
+												@endif
+												@if($image->upscale_status === 0)
+													<button class="btn btn-success btn-sm upscale-btn mb-2" data-prompt-id="{{ $image->id }}" data-filename="{{ $image->filename }}">
+														Upscale
+													</button>
+												@elseif($image->upscale_status === 1)
+													<div class="text-warning">Upscale in progress...</div>
+												@elseif($image->upscale_status === 2)
+													<a href="/storage/upscaled/{{ $image->upscale_url }}" class="btn btn-info btn-sm mb-2" target="_blank">
+														View Upscaled
+													</a>
+												@endif
+												<div id="upscale-status-{{ $image->id }}" class="mt-2"></div>
+											</div>
 										</div>
 									</div>
-									<div class="mb-2">
-										<small class="text-muted">{{ $image->created_at->format('Y-m-d H:i') }}</small>
-									</div>
-									<div class="mb-2">
-                                    <textarea class="form-control notes-input"
-                                              placeholder="Add notes..."
-                                              data-prompt-id="{{ $image->id }}">{{ $image->notes }}</textarea>
-									</div>
-									<button class="btn btn-primary btn-sm update-notes-btn mb-2"
-									        data-prompt-id="{{ $image->id }}">
-										Update
-									</button>
-									<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
-										Delete
-									</button>
-									@if($image->generation_type === 'mix')
-										<button class="btn btn-info btn-sm view-source-btn mb-2"
-										        data-input-image1="{{ $image->input_image_1 }}"
-										        data-input-image2="{{ $image->input_image_2 }}"
-										        data-strength1="{{ $image->input_image_1_strength }}"
-										        data-strength2="{{ $image->input_image_2_strength }}">
-											Source
-										</button>
-									@endif
-									@if($image->upscale_status === 0)
-										<button class="btn btn-success btn-sm upscale-btn mb-2"
-										        data-prompt-id="{{ $image->id }}"
-										        data-filename="{{ $image->filename }}">
-											Upscale
-										</button>
-									@elseif($image->upscale_status === 1)
-										<div class="text-warning">Upscale in progress...</div>
-									@elseif($image->upscale_status === 2)
-										<a href="/storage/upscaled/{{ $image->upscale_url }}"
-										   class="btn btn-info btn-sm mb-2"
-										   target="_blank">
-											View Upscaled
-										</a>
-									@endif
-									<div id="upscale-status-{{ $image->id }}" class="mt-2"></div>
-								</div>
+								@endforeach
 							</div>
 						</div>
 					@endforeach
-				</div>
-				
-				<div class="mt-4">
-					{{ $images->links('pagination::bootstrap-5') }}
-				</div>
+					
+					<div class="mt-4">
+						{{ $days->links('pagination::bootstrap-5') }}
+					</div>
+				@else
+					<div class="row">
+						@foreach($images as $image)
+							<div class="col-md-3 mb-4">
+								<div class="card">
+									<div class="position-absolute top-0 start-0 m-2">
+										<input type="checkbox" class="form-check-input image-checkbox" data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
+									</div>
+									<img src="{{ $image->thumbnail }}" class="card-img-top cursor-pointer" onclick="openImageModal('{{ $image->filename }}')" alt="Generated Image">
+									<div class="card-body">
+										<div class="mb-3">
+											<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
+											<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
+												{{ $image->generated_prompt }}
+											</div>
+										</div>
+										<div class="mb-2">
+											<small class="text-muted">{{ $image->created_at->format('Y-m-d H:i') }}</small>
+										</div>
+										<div class="mb-2">
+											<textarea class="form-control notes-input" placeholder="Add notes..." data-prompt-id="{{ $image->id }}">{{ $image->notes }}</textarea>
+										</div>
+										<button class="btn btn-primary btn-sm update-notes-btn mb-2" data-prompt-id="{{ $image->id }}">
+											Update
+										</button>
+										<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
+											Delete
+										</button>
+										@if($image->generation_type === 'mix')
+											<button class="btn btn-info btn-sm view-source-btn mb-2" data-input-image1="{{ $image->input_image_1 }}" data-input-image2="{{ $image->input_image_2 }}" data-strength1="{{ $image->input_image_1_strength }}" data-strength2="{{ $image->input_image_2_strength }}">
+												Source
+											</button>
+										@endif
+										@if($image->upscale_status === 0)
+											<button class="btn btn-success btn-sm upscale-btn mb-2" data-prompt-id="{{ $image->id }}" data-filename="{{ $image->filename }}">
+												Upscale
+											</button>
+										@elseif($image->upscale_status === 1)
+											<div class="text-warning">Upscale in progress...</div>
+										@elseif($image->upscale_status === 2)
+											<a href="/storage/upscaled/{{ $image->upscale_url }}" class="btn btn-info btn-sm mb-2" target="_blank">
+												View Upscaled
+											</a>
+										@endif
+										<div id="upscale-status-{{ $image->id }}" class="mt-2"></div>
+									</div>
+								</div>
+							</div>
+						@endforeach
+					</div>
+					
+					<div class="mt-4">
+						{{ $images->appends(['sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all', 'date' => $date ?? null])->links('pagination::bootstrap-5') }}
+					</div>
+				@endif
 				
 				<div class="mt-4">
 					<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
 					<a href="{{ route('image-mix.index') }}" class="btn btn-secondary">Image Mix Tool</a>
 					<a href="{{ route('prompts.index') }}" class="btn btn-secondary">Back to Prompts</a>
-				
 				</div>
 			</div>
 		</div>
@@ -168,10 +255,23 @@
 			</div>
 		</div>
 	</div>
-
 @endsection
 
 @section('styles')
+	<style>
+      .card-img-top {
+          height: 200px; /* Fixed height for gallery thumbnails */
+          object-fit: cover;
+      }
+
+      .card-header h4 {
+          cursor: pointer;
+      }
+
+      .card-header h4:hover {
+          color: #0d6efd;
+      }
+	</style>
 @endsection
 
 @section('scripts')
@@ -206,12 +306,10 @@
 			// Toggle select all
 			selectAllBtn.addEventListener('click', function() {
 				const allSelected = Array.from(checkboxes).every(cb => cb.checked);
-				
 				checkboxes.forEach(checkbox => {
 					checkbox.checked = !allSelected;
 					toggleCardSelection(checkbox);
 				});
-				
 				updateBulkDeleteButton();
 			});
 			
@@ -269,10 +367,9 @@
 						selectedPromptIds.forEach(id => {
 							const checkbox = document.querySelector(`.image-checkbox[data-prompt-id="${id}"]`);
 							if (checkbox) {
-								checkbox.closest('.col-md-4').remove();
+								checkbox.closest('.col-md-3').remove();
 							}
 						});
-						
 						deleteConfirmModal.hide();
 						alert(`Successfully deleted ${selectedPromptIds.length} images`);
 					} else {
@@ -302,6 +399,7 @@
 						});
 						
 						const data = await response.json();
+						
 						if (data.message) {
 							// Show success message
 							alert('Notes updated successfully');
@@ -346,9 +444,9 @@
 									setTimeout(checkStatus, 5000); // Check again in 5 seconds
 								} else if (statusData.upscale_result) {
 									statusDiv.innerHTML = `
-                                <a href="${statusData.upscale_result}" class="btn btn-info btn-sm" target="_blank">
-                                    View Upscaled Image
-                                </a>`;
+                                    <a href="${statusData.upscale_result}" class="btn btn-info btn-sm" target="_blank">
+                                        View Upscaled Image
+                                    </a>`;
 									location.reload(); // Refresh the page to show updated status
 								} else {
 									statusDiv.innerHTML = 'Upscale failed: ' + (statusData.error || 'Unknown error');
@@ -364,8 +462,6 @@
 				});
 			});
 			
-			
-			// Add this to the DOMContentLoaded event listener in gallery/index.blade.php
 			document.querySelectorAll('.delete-image-btn').forEach(button => {
 				button.addEventListener('click', async function () {
 					if (!confirm('Are you sure you want to delete this image?')) return;
@@ -384,7 +480,7 @@
 						
 						if (data.success) {
 							// Remove the image card from the UI
-							this.closest('.col-md-4').remove();
+							this.closest('.col-md-3').remove();
 							alert('Image deleted successfully');
 						} else {
 							alert('Error: ' + (data.message || 'Failed to delete image'));
@@ -395,7 +491,6 @@
 					}
 				});
 			});
-			
 		});
 	</script>
 @endsection
