@@ -166,7 +166,7 @@
 		public function getUploadedImages(Request $request)
 		{
 			$page = $request->query('page', 1);
-			$perPage = 20;
+			$perPage = 12;
 
 			// Get all prompt settings for this user that have input images
 			$prompts = Prompt::where('user_id', auth()->id())
