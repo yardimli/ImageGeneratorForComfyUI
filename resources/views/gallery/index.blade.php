@@ -151,7 +151,7 @@
 										<button class="btn btn-danger btn-sm delete-image-btn mb-2" data-prompt-id="{{ $image->id }}">
 											Delete
 										</button>
-										@if($image->generation_type === 'mix')
+										@if($image->generation_type === 'mix' || $image->generation_type === 'mix-one')
 											<button class="btn btn-info btn-sm view-source-btn mb-2" data-input-image1="{{ $image->input_image_1 }}" data-input-image2="{{ $image->input_image_2 }}" data-strength1="{{ $image->input_image_1_strength }}" data-strength2="{{ $image->input_image_2_strength }}">
 												Source
 											</button>

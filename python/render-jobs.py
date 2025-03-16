@@ -412,6 +412,8 @@ def generate_images_from_api():
                             wait_time = 10
                     elif generation_type == "mix":
                         wait_time = 25
+                    elif generation_type == "mix-one":
+                        wait_time = 25
 
                     time.sleep(wait_time)
 
