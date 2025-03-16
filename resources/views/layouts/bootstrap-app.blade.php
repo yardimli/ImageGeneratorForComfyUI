@@ -33,6 +33,18 @@
 			<div class="collapse navbar-collapse" id="navbarSupportedContent">
 				<!-- Left Side Of Navbar -->
 				<ul class="navbar-nav me-auto">
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('home') }}">Home</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('gallery.index') }}">Gallery</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('prompts.index') }}">Prompts</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
+					</li>
 				</ul>
 				
 				<!-- Right Side Of Navbar -->
@@ -79,7 +91,9 @@
 	</main>
 </div>
 
+<script src="{{ asset('js/popper.min.js') }}"></script>
 <script src="{{ asset('js/bootstrap.min.js') }}"></script>
+
 @yield('scripts')
 </body>
 </html>

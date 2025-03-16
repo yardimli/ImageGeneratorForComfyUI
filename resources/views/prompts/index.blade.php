@@ -199,13 +199,6 @@
 				</select>
 			</div>
 		</div>
-		
-		<div class="container mb-4">
-			<a href="{{ route('gallery.index') }}" class="btn btn-secondary">Go to Gallery</a>
-			<a href="{{ route('image-mix.index') }}" class="btn btn-secondary">Image Mix Tool</a>
-			<a href="{{ route('home') }}" class="btn btn-secondary">Back to Home</a>
-		</div>
-	
 	</div>
 	
 	<!-- Image Modal -->
