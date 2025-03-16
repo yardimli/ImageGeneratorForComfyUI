@@ -106,8 +106,8 @@
 										'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
 										'input_image_1' => $image1['path'],
 										'input_image_1_strength' => $image1['strength'],
-										'input_image_2' => null,
-										'input_image_2_strength' => null,
+										'input_image_2' => '',
+										'input_image_2_strength' => 5,
 									]);
 								}
 							}
