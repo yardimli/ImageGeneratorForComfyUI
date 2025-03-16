@@ -111,15 +111,21 @@
 									<div id="rightImagesContainer">
 										<!-- Images will be added here -->
 									</div>
-									<button type="button" class="btn btn-primary mt-3" id="addRightImageBtn">
-										Add Image
-									</button>
-									<button type="button" class="btn btn-info mt-3" id="rightPexelsBtn">
-										Pexels
-									</button>
-									<button type="button" class="btn btn-secondary mt-3" id="rightUploadHistoryBtn">
-										Upload History
-									</button>
+									
+									<div id="rightPromptsContainer" class="d-none">
+										<!-- Prompts will be added here -->
+									</div>
+									
+									<div id="dualModeButtons">
+										<button type="button" class="btn btn-primary mt-3" id="addRightImageBtn">Add Image</button>
+										<button type="button" class="btn btn-info mt-3" id="rightPexelsBtn">Pexels</button>
+										<button type="button" class="btn btn-secondary mt-3" id="rightUploadHistoryBtn">Upload History</button>
+									</div>
+									
+									<!-- Single mode buttons -->
+									<div id="singleModeButtons" class="d-none">
+										<button type="button" class="btn btn-primary mt-3" id="addPromptBtn">Add Prompt</button>
+									</div>
 								</div>
 							</div>
 						</div>

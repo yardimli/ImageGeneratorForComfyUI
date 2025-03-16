@@ -89,17 +89,19 @@
 						}
 					}
 				} else {
-					// For mix-one type, only use the left images
+					// Updated mix-one logic
+					$inputPrompts = json_decode($request->input_images_2, true);
+
 					foreach ($inputImages1 as $image1) {
-						foreach ($inputImages1 as $image2) {
-							if ($image2['prompt'] !== '') {
+						foreach ($inputPrompts as $prompt) {
+							if (isset($prompt['text']) && $prompt['text'] !== '') {
 								for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
 									Prompt::create([
 										'user_id' => auth()->id(),
 										'generation_type' => 'mix-one',
 										'prompt_setting_id' => $promptSetting->id,
 										'original_prompt' => '',
-										'generated_prompt' => $image2['prompt'],
+										'generated_prompt' => $prompt['text'],
 										'width' => $request->width,
 										'height' => $request->height,
 										'model' => $request->model,

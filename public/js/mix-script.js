@@ -9,6 +9,9 @@ let totalPages = 1;
 let selectedImages = [];
 let targetSide = '';
 
+let prompts = [];
+let promptCounter = 0;
+
 
 function setDimensions(width, height) {
 	const widthInput = document.getElementById('width');
@@ -21,6 +24,8 @@ function addLeftImage(imagePath = '', strength = 3, prompt = '', id = null) {
 	if (!id) {
 		id = 'left-' + leftImageCounter++;
 	}
+	
+	const promptDisplay = document.querySelector('#singleMode').checked ? 'd-none' : '';
 	
 	const imageHtml = `
             <div class="card mb-3 image-card" id="${id}-card">
@@ -40,10 +45,10 @@ function addLeftImage(imagePath = '', strength = 3, prompt = '', id = null) {
                         <input type="range" class="form-range" min="1" max="5" step="1" value="${strength}" id="${id}-strength">
                         <div class="text-center"><span id="${id}-strength-value">${strength}</span></div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Prompt</label>
-                        <textarea class="form-control" id="${id}-prompt" rows="2">${prompt}</textarea>
-                    </div>
+                     <div class="mb-3 ${promptDisplay}">
+				                <label class="form-label">Prompt</label>
+				                <textarea class="form-control" id="${id}-prompt" rows="2">${prompt}</textarea>
+				            </div>
                 </div>
             </div>
         `;
@@ -387,7 +392,6 @@ function addSelectedImages() {
 	bootstrap.Modal.getInstance(document.getElementById('uploadHistoryModal')).hide();
 }
 
-// Add this function to filter out empty image boxes
 function filterEmptyImageBoxes() {
 	// Filter left images
 	leftImages = leftImages.filter(img => img.path && img.path.trim() !== '');
@@ -415,6 +419,60 @@ function filterEmptyImageBoxes() {
 	});
 }
 
+function addPrompt(promptText = '') {
+	const id = 'prompt-' + promptCounter++;
+	const promptHtml = `
+    <div class="card mb-3 prompt-card" id="${id}-card">
+        <div class="card-body">
+            <div class="d-flex mb-2">
+                <div class="flex-grow-1">
+                    <strong>Prompt ${prompts.length + 1}</strong>
+                </div>
+                <button type="button" class="btn btn-sm btn-danger remove-prompt" data-id="${id}">Remove</button>
+            </div>
+            <div class="mb-3">
+                <textarea class="form-control" id="${id}-text" rows="3">${promptText}</textarea>
+            </div>
+        </div>
+    </div>`;
+	
+	document.getElementById('rightPromptsContainer').insertAdjacentHTML('beforeend', promptHtml);
+	
+	// Add event listeners
+	document.querySelector(`#${id}-card .remove-prompt`).addEventListener('click', function() {
+		const id = this.getAttribute('data-id');
+		document.getElementById(`${id}-card`).remove();
+		prompts = prompts.filter(p => p.id !== id);
+		updatePromptsJson();
+	});
+	
+	document.getElementById(`${id}-text`).addEventListener('input', function() {
+		updatePromptsJson();
+	});
+	
+	// Add to tracking array
+	prompts.push({
+		id: id,
+		text: promptText
+	});
+	
+	updatePromptsJson();
+}
+
+function updatePromptsJson() {
+	const updatedPrompts = prompts.map(p => {
+		const id = p.id;
+		return {
+			id: id,
+			text: document.getElementById(`${id}-text`).value
+		};
+	});
+	
+	// Store prompts in input_images_2 field for single mode
+	document.getElementById('inputImages2Json').value = JSON.stringify(updatedPrompts);
+	prompts = updatedPrompts;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
 	// Add initial empty image to each side
 	addLeftImage();
@@ -422,27 +480,59 @@ document.addEventListener('DOMContentLoaded', function() {
 	
 	document.querySelector('#singleMode').addEventListener('change', function() {
 		if (this.checked) {
+			// Hide dual mode elements
 			document.getElementById('rightImagesContainer').classList.add('d-none');
-			document.getElementById('addRightImageBtn').classList.add('d-none');
-			document.getElementById('rightPexelsBtn').classList.add('d-none');
-			document.getElementById('rightUploadHistoryBtn').classList.add('d-none');
+			document.getElementById('dualModeButtons').classList.add('d-none');
+			
+			// Show single mode elements
+			document.getElementById('rightPromptsContainer').classList.remove('d-none');
+			document.getElementById('singleModeButtons').classList.remove('d-none');
+			
+			// Hide prompts under left images
+			document.querySelectorAll('#leftImagesContainer .image-card textarea').forEach(textarea => {
+				textarea.closest('.mb-3').classList.add('d-none');
+			});
+			
 			// Empty the right images when switching to single mode
 			rightImages = [];
 			updateRightImagesJson();
+			
+			// Add an initial prompt if there are none
+			if (prompts.length === 0) {
+				addPrompt();
+			}
 		}
 	});
-	
+
+// Modify the existing dualMode event listener
 	document.querySelector('#dualMode').addEventListener('change', function() {
 		if (this.checked) {
+			// Show dual mode elements
 			document.getElementById('rightImagesContainer').classList.remove('d-none');
-			document.getElementById('addRightImageBtn').classList.remove('d-none');
-			document.getElementById('rightPexelsBtn').classList.remove('d-none');
-			document.getElementById('rightUploadHistoryBtn').classList.remove('d-none');
+			document.getElementById('dualModeButtons').classList.remove('d-none');
+			
+			// Hide single mode elements
+			document.getElementById('rightPromptsContainer').classList.add('d-none');
+			document.getElementById('singleModeButtons').classList.add('d-none');
+			
+			// Show prompts under left images
+			document.querySelectorAll('#leftImagesContainer .image-card textarea').forEach(textarea => {
+				textarea.closest('.mb-3').classList.remove('d-none');
+			});
+			
 			// Add an empty image if there are none
 			if (rightImages.length === 0) {
 				addRightImage();
 			}
+			
+			// Empty the prompts when switching to dual mode
+			prompts = [];
+			updatePromptsJson();
 		}
+	});
+	
+	document.getElementById('addPromptBtn').addEventListener('click', function() {
+		addPrompt();
 	});
 	
 	// Event listener for aspect ratio change
