@@ -673,8 +673,11 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		// Update form data before submit
 		updateLeftImagesJson();
-		updateRightImagesJson();
-		
+		if (isSingleMode) {
+			updatePromptsJson();
+		} else {
+			updateRightImagesJson();
+		}
 		// Submit the form
 		const formData = new FormData(this);
 		formData.append('generation_type', mixMode);
