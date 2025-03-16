@@ -100,6 +100,12 @@
 							<div class="card mb-3">
 								<div class="card-header">
 									<h5>Images (Right Side)</h5>
+									<div class="btn-group btn-group-sm" role="group">
+										<input type="radio" class="btn-check" name="mixMode" id="dualMode" value="mix" checked>
+										<label class="btn btn-outline-primary" for="dualMode">Dual</label>
+										<input type="radio" class="btn-check" name="mixMode" id="singleMode" value="mix-one">
+										<label class="btn btn-outline-primary" for="singleMode">Single</label>
+									</div>
 								</div>
 								<div class="card-body">
 									<div id="rightImagesContainer">

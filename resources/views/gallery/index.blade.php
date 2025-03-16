@@ -18,9 +18,16 @@
 						</div>
 						
 						<div class="btn-group me-2">
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">Mix Only</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+							   class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">All Mix</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix-dual', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'mix-dual' ? 'btn-primary' : 'btn-outline-primary' }}">Dual Mix</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix-one', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'mix-one' ? 'btn-primary' : 'btn-outline-primary' }}">Single Mix</a>
+							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+							   class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
 						</div>
 					</div>
 				</div>

@@ -20,9 +20,13 @@ class GalleryController extends Controller
 
 		// Apply type filter
 		if ($type === 'mix') {
+			$query->whereIn('generation_type', ['mix', 'mix-one']);
+		} elseif ($type === 'mix-one') {
+			$query->where('generation_type', 'mix-one');
+		} elseif ($type === 'mix-dual') {
 			$query->where('generation_type', 'mix');
 		} elseif ($type === 'other') {
-			$query->where('generation_type', '!=', 'mix');
+			$query->whereNotIn('generation_type', ['mix', 'mix-one']);
 		}
 
 		// Apply date filter if viewing a specific day

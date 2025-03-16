@@ -129,6 +129,8 @@ def get_workflow_file(generation_type,model):
             workflow_file = "flux_dev_for_image_gen.json"
     elif generation_type == "outpaint":
         workflow_file = "flux_outpaint_for_image_gen.json"
+    elif generation_type == "mix-one":
+        workflow_file = "flux_one_image_mix_for_image_gen.json"
     elif generation_type == "mix":
         workflow_file = "flux_two_image_mix_for_image_gen.json"
     else:
@@ -343,6 +345,48 @@ def generate_images_from_api():
 
                     print("Debugging mix prompt:")
                     print (f"Using images with strengths: {prompt.get('input_image_1', 1)} and {prompt.get('input_image_2', 1)} :: {prompt.get('input_image_1_strength', 1)} and {prompt.get('input_image_2_strength', 1)}")
+                    print (f"Prompt and width and height: {prompt['generated_prompt']} :: {prompt['width']} and {prompt['height']}")
+                elif generation_type == "mix-one":
+                    temp_dir = tempfile.mkdtemp()
+
+                    # Download images
+                    image1_path = os.path.join(temp_dir, "image1.png")
+
+                    # Download image 1
+                    if not download_image(prompt['input_image_1'], image1_path):
+                        raise Exception(f"Failed to download image 1 from {prompt['input_image_1']}")
+
+                    workflow = get_workflow_file(generation_type,model)
+
+                    # load source image from absolute path
+                    workflow["40"]["inputs"]["image"] = image1_path
+
+                    strength_int = prompt.get('input_image_1_strength', 1)
+                    if strength_int == 1:
+                        strength_str = "highest"
+                    elif strength_int == 2:
+                        strength_str = "high"
+                    elif strength_int == 3:
+                        strength_str = "medium"
+                    elif strength_int == 4:
+                        strength_str = "low"
+                    elif strength_int == 5:
+                        strength_str = "lowest"
+                    workflow["54"]["inputs"]["image_strength"] = strength_str
+
+                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
+                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
+                    workflow["56"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
+
+                    # postprocessing resize width and height (proportional)
+                    workflow["27"]["inputs"]["width"] = prompt['width']
+                    workflow["27"]["inputs"]["height"] = prompt['height']
+
+                    workflow["30"]["inputs"]["width"] = prompt['width']
+                    workflow["30"]["inputs"]["height"] = prompt['height']
+
+                    print("Debugging mix-one prompt:")
+                    print (f"Using image with strength: {prompt.get('input_image_1', 1)} :: {prompt.get('input_image_1_strength', 1)}")
                     print (f"Prompt and width and height: {prompt['generated_prompt']} :: {prompt['width']} and {prompt['height']}")
 
 

@@ -15,6 +15,7 @@
 			// Get saved settings with generation_type 'mix'
 			$settings = PromptSetting::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
+				->orWhere('generation_type', 'mix-one')
 				->orderBy('created_at', 'desc')
 				->get();
 
@@ -33,12 +34,13 @@
 					'upload_to_s3' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'render_each_prompt_times' => 'required|integer|min:1',
+					'generation_type' => 'required|in:mix,mix-one',
 				]);
 
 				// Store the settings
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
-					'generation_type' => 'mix',
+					'generation_type' => $request->generation_type,
 					'template_path' => '',
 					'prompt_template' => '',
 					'original_prompt' => '',
@@ -60,31 +62,57 @@
 
 				// Create prompts based on the number of times to render
 				$inputImages1 = json_decode($request->input_images_1, true);
-				$inputImages2 = json_decode($request->input_images_2, true);
 
-				foreach ($inputImages1 as $image1) {
-					foreach ($inputImages2 as $image2) {
+				if ($request->generation_type === 'mix') {
+					$inputImages2 = json_decode($request->input_images_2, true);
 
-						// For each combination of images, create the prompt
-						for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'mix',
-								'prompt_setting_id' => $promptSetting->id,
-								'original_prompt' => '', // Empty for image mix
-								'generated_prompt' => $image1['prompt'],
-								'width' => $request->width,
-								'height' => $request->height,
-								'model' => $request->model,
-								'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
-								'input_image_1' => $image1['path'],
-								'input_image_1_strength' => $image1['strength'],
-								'input_image_2' => $image2['path'],
-								'input_image_2_strength' => $image2['strength'],
-							]);
+					foreach ($inputImages1 as $image1) {
+						foreach ($inputImages2 as $image2) {
+							// For each combination of images, create the prompt
+							for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+								Prompt::create([
+									'user_id' => auth()->id(),
+									'generation_type' => 'mix',
+									'prompt_setting_id' => $promptSetting->id,
+									'original_prompt' => '',
+									'generated_prompt' => $image1['prompt'],
+									'width' => $request->width,
+									'height' => $request->height,
+									'model' => $request->model,
+									'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
+									'input_image_1' => $image1['path'],
+									'input_image_1_strength' => $image1['strength'],
+									'input_image_2' => $image2['path'],
+									'input_image_2_strength' => $image2['strength'],
+								]);
+							}
+						}
+					}
+				} else {
+					// For mix-one type, only use the left images
+					foreach ($inputImages1 as $image1) {
+						foreach ($inputImages1 as $image2) {
+							for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+								Prompt::create([
+									'user_id' => auth()->id(),
+									'generation_type' => 'mix-one',
+									'prompt_setting_id' => $promptSetting->id,
+									'original_prompt' => '',
+									'generated_prompt' => $image2['prompt'],
+									'width' => $request->width,
+									'height' => $request->height,
+									'model' => $request->model,
+									'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
+									'input_image_1' => $image1['path'],
+									'input_image_1_strength' => $image1['strength'],
+									'input_image_2' => null,
+									'input_image_2_strength' => null,
+								]);
+							}
 						}
 					}
 				}
+
 
 				return response()->json([
 					'success' => true,

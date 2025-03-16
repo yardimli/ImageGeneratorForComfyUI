@@ -420,6 +420,31 @@ document.addEventListener('DOMContentLoaded', function() {
 	addLeftImage();
 	addRightImage();
 	
+	document.querySelector('#singleMode').addEventListener('change', function() {
+		if (this.checked) {
+			document.getElementById('rightImagesContainer').classList.add('d-none');
+			document.getElementById('addRightImageBtn').classList.add('d-none');
+			document.getElementById('rightPexelsBtn').classList.add('d-none');
+			document.getElementById('rightUploadHistoryBtn').classList.add('d-none');
+			// Empty the right images when switching to single mode
+			rightImages = [];
+			updateRightImagesJson();
+		}
+	});
+	
+	document.querySelector('#dualMode').addEventListener('change', function() {
+		if (this.checked) {
+			document.getElementById('rightImagesContainer').classList.remove('d-none');
+			document.getElementById('addRightImageBtn').classList.remove('d-none');
+			document.getElementById('rightPexelsBtn').classList.remove('d-none');
+			document.getElementById('rightUploadHistoryBtn').classList.remove('d-none');
+			// Add an empty image if there are none
+			if (rightImages.length === 0) {
+				addRightImage();
+			}
+		}
+	});
+	
 	// Event listener for aspect ratio change
 	document.getElementById('aspectRatio').addEventListener('change', function() {
 		const [ratio, baseSize] = this.value.split('-');
@@ -540,14 +565,16 @@ document.addEventListener('DOMContentLoaded', function() {
 			return;
 		}
 		
-		if (rightImages.length === 0) {
-			alert('Please add at least one image on the right side');
+		const mixMode = document.querySelector('input[name="mixMode"]:checked').value;
+		
+		if (mixMode === 'mix' && rightImages.length === 0) {
+			alert('Please add at least one image on the right side for dual mix mode');
 			return;
 		}
 		
 		// Check if all images have paths
 		const missingLeftImage = leftImages.some(img => !img.path);
-		const missingRightImage = rightImages.some(img => !img.path);
+		const missingRightImage = mixMode === 'mix' && rightImages.some(img => !img.path);
 		
 		if (missingLeftImage || missingRightImage) {
 			alert('All image slots must have an uploaded image');
@@ -560,6 +587,8 @@ document.addEventListener('DOMContentLoaded', function() {
 		
 		// Submit the form
 		const formData = new FormData(this);
+		formData.append('generation_type', mixMode);
+		
 		
 		try {
 			const response = await fetch('/image-mix/store', {
