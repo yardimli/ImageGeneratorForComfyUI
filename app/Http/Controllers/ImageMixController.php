@@ -92,22 +92,24 @@
 					// For mix-one type, only use the left images
 					foreach ($inputImages1 as $image1) {
 						foreach ($inputImages1 as $image2) {
-							for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
-								Prompt::create([
-									'user_id' => auth()->id(),
-									'generation_type' => 'mix-one',
-									'prompt_setting_id' => $promptSetting->id,
-									'original_prompt' => '',
-									'generated_prompt' => $image2['prompt'],
-									'width' => $request->width,
-									'height' => $request->height,
-									'model' => $request->model,
-									'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
-									'input_image_1' => $image1['path'],
-									'input_image_1_strength' => $image1['strength'],
-									'input_image_2' => null,
-									'input_image_2_strength' => null,
-								]);
+							if ($image2['prompt'] !== '') {
+								for ($i = 0; $i < $request->render_each_prompt_times; $i++) {
+									Prompt::create([
+										'user_id' => auth()->id(),
+										'generation_type' => 'mix-one',
+										'prompt_setting_id' => $promptSetting->id,
+										'original_prompt' => '',
+										'generated_prompt' => $image2['prompt'],
+										'width' => $request->width,
+										'height' => $request->height,
+										'model' => $request->model,
+										'upload_to_s3' => filter_var($request->upload_to_s3, FILTER_VALIDATE_BOOLEAN),
+										'input_image_1' => $image1['path'],
+										'input_image_1_strength' => $image1['strength'],
+										'input_image_2' => null,
+										'input_image_2_strength' => null,
+									]);
+								}
 							}
 						}
 					}
