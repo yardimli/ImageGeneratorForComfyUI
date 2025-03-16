@@ -656,6 +656,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		
 		const mixMode = document.querySelector('input[name="mixMode"]:checked').value;
+		const isSingleMode = document.querySelector('#singleMode').checked;
 		
 		if (mixMode === 'mix' && rightImages.length === 0) {
 			alert('Please add at least one image on the right side for dual mix mode');
