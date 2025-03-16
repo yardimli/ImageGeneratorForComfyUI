@@ -262,7 +262,7 @@ function updateQueueCount() {
 			// Optional: Change badge color based on count
 			queueCountElement.className = 'badge ' +
 				(data.count > 10 ? 'bg-danger' :
-					data.count > 5 ? 'bg-warning' :
+					data.count > 5 ? 'bg-info' :
 						'bg-primary');
 		})
 		.catch(error => console.error('Error fetching queue count:', error));
