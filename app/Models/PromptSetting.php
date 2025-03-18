@@ -19,6 +19,7 @@
 			'model',
 			'upload_to_s3',
 			'create_minimax',
+			'create_imagen',
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -41,6 +42,7 @@
 			'append_to_prompt' => 'boolean',
 			'upload_to_s3' => 'boolean',
 			'create_minimax' => 'boolean',
+			'create_imagen' => 'boolean',
 		];
 
 

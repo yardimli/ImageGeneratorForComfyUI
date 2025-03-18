@@ -22,3 +22,5 @@ composer.lock
 package-lock.json
 php_errors.log
 public/log.txt
+python/dreamcover-google-key.json
+python/*.png

@@ -43,6 +43,7 @@
 					'model' => 'required|in:schnell,dev,outpaint',
 					'upload_to_s3' => 'required|in:0,1,true,false',
 					'create_minimax' => 'required|in:0,1,true,false',
+					'create_imagen' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -125,6 +126,7 @@
 					'model' => $settings['model'],
 					'upload_to_s3' => filter_var($settings['upload_to_s3'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_minimax' => filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					'create_imagen' => filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
@@ -172,6 +174,19 @@
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
 						}
+						if (filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'imagen3',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
 					}
 				}
 
@@ -212,7 +227,8 @@
 				'height' => $settings->height,
 				'model' => $settings->model,
 				'upload_to_s3' => $settings->upload_to_s3,
-				'minimax' => $settings->minimax,
+				'create_minimax' => $settings->create_minimax,
+				'create_imagen' => $settings->create_imagen,
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,

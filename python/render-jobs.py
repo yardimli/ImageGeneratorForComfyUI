@@ -14,6 +14,10 @@ from shutil import copyfile
 import tempfile
 import math
 
+from vertexai.preview.vision_models import ImageGenerationModel
+from google.oauth2 import service_account
+
+
 current_dir = Path(__file__).resolve().parent
 env_path = current_dir.parent / '.env'
 load_dotenv(env_path)
@@ -41,6 +45,14 @@ s3_client = boto3.client(
     aws_secret_access_key=AWS_SECRET_ACCESS_KEY,
     region_name=AWS_REGION
 )
+
+credentials = service_account.Credentials.from_service_account_file(
+ os.getenv('GOOGLE_AUTH_KEY_PATH',"google.json"),
+ scopes=["https://www.googleapis.com/auth/cloud-platform"],)
+
+vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID',""), location="us-central1", credentials=credentials)
+model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
+
 
 def get_aspect_ratio(width, height):
     # Define standard aspect ratios
@@ -226,6 +238,21 @@ def generate_images_from_api():
                         workflow["27"]["inputs"]["height"] = prompt['height']
                         workflow["30"]["inputs"]["width"] = prompt['width']
                         workflow["30"]["inputs"]["height"] = prompt['height']
+                    elif model == "imagen":
+                        print(f"Sending to Imagen: {prompt['generated_prompt']}...")
+                        images = model.generate_images(
+                         prompt=prompt['generated_prompt'],
+                         number_of_images=1,
+                         language="en",
+                         add_watermark=False,
+                         # seed=100,
+                         aspect_ratio="get_aspect_ratio(prompt['width'],prompt['height']),
+                         safety_filter_level="block_only_high",
+                         person_generation="allow_adult",
+                        )
+
+                        images[0].save(location=output_file, include_generation_parameters=False)
+
                     elif model == "minimax":
                         print(f"Sending to Minimax: {prompt['generated_prompt']}...")
 

@@ -115,6 +115,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				document.querySelector('select[name="model"]').value = data.model;
 				document.querySelector('input[name="upload_to_s3"]').checked = data.upload_to_s3;
 				document.querySelector('input[name="create_minimax"]').checked = data.create_minimax;
+				document.querySelector('input[name="create_imagen"]').checked = data.create_imagen;
 				
 				
 				displayPrompts(data.prompts, settingId);
