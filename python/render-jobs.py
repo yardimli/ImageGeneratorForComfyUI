@@ -14,13 +14,18 @@ from shutil import copyfile
 import tempfile
 import math
 
-from vertexai.preview.vision_models import ImageGenerationModel
-from google.oauth2 import service_account
-
-
 current_dir = Path(__file__).resolve().parent
 env_path = current_dir.parent / '.env'
 load_dotenv(env_path)
+
+import vertexai
+from vertexai.preview.vision_models import ImageGenerationModel
+from google.oauth2 import service_account
+from google.api_core.exceptions import GoogleAPIError
+import traceback
+
+import fal_client
+
 
 # Existing environment variables
 API_BASE_URL = os.getenv('API_BASE_URL')
@@ -51,7 +56,7 @@ credentials = service_account.Credentials.from_service_account_file(
  scopes=["https://www.googleapis.com/auth/cloud-platform"],)
 
 vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID',""), location="us-central1", credentials=credentials)
-model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
+vertexai_model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
 
 
 def get_aspect_ratio(width, height):
@@ -171,6 +176,7 @@ prompt_status_counter = {}
 
 def generate_images_from_api():
     global prompt_status_counter
+    global vertexai_model
 
     try:
         print("Starting image generation from API...")
@@ -238,20 +244,53 @@ def generate_images_from_api():
                         workflow["27"]["inputs"]["height"] = prompt['height']
                         workflow["30"]["inputs"]["width"] = prompt['width']
                         workflow["30"]["inputs"]["height"] = prompt['height']
-                    elif model == "imagen":
+                    elif model == "imagen3":
                         print(f"Sending to Imagen: {prompt['generated_prompt']}...")
-                        images = model.generate_images(
-                         prompt=prompt['generated_prompt'],
-                         number_of_images=1,
-                         language="en",
-                         add_watermark=False,
-                         # seed=100,
-                         aspect_ratio="get_aspect_ratio(prompt['width'],prompt['height']),
-                         safety_filter_level="block_only_high",
-                         person_generation="allow_adult",
-                        )
+                        aspect_ratio_value = get_aspect_ratio(prompt['width'], prompt['height'])
+                        print(f"Using aspect ratio: {aspect_ratio_value}")
+                        try:
+                            images = vertexai_model.generate_images(
+                                prompt=prompt['generated_prompt'],
+                                number_of_images=1,
+                                language="en",
+                                add_watermark=False,
+                                # seed=100,
+                                aspect_ratio=aspect_ratio_value,
+                                safety_filter_level="block_only_high",
+                                person_generation="allow_adult",
+                            )
 
-                        images[0].save(location=output_file, include_generation_parameters=False)
+                            images[0].save(location=output_file, include_generation_parameters=False)
+                        except GoogleAPIError as e:
+                            print(f"Google API Error: {e}")
+                            print(f"Error details: {e.details() if hasattr(e, 'details') else 'No details available'}")
+                            print(f"Error code: {e.code if hasattr(e, 'code') else 'No code available'}")
+                        except Exception as e:
+                            print(f"Unexpected error: {e}")
+                            traceback.print_exc()
+                        time.sleep(20)
+                    elif model == "aura-flow":
+                        print(f"Sending to Fal/Aura-Flow: {prompt['generated_prompt']}...")
+
+                        fal_result = fal_client.subscribe(
+                            "fal-ai/aura-flow",
+                            arguments={
+                                "prompt": prompt['generated_prompt']
+                            },
+                            with_logs=False,
+                            # on_queue_update=on_queue_update,
+                        )
+                        print(fal_result)
+                        first_image_url = fal_result["images"][0]["url"]
+                        image_response = requests.get(first_image_url)
+                        if image_response.status_code == 200:
+                            # Save the image to file
+                            with open(output_file, 'wb') as f:
+                                f.write(image_response.content)
+                            print(f"Image saved to {output_file}")
+                        else:
+                            print(f"Failed to download image: {image_response.status_code}")
+                        time.sleep(6)
 
                     elif model == "minimax":
                         print(f"Sending to Minimax: {prompt['generated_prompt']}...")
@@ -426,23 +465,25 @@ def generate_images_from_api():
                     else:
                         update_image_filename(prompt_id, output_file, False)
                 else:
-                    print(f"Rendering image for prompt {prompt_id}")
-                    queue_prompt(workflow)
-                    update_render_status(prompt_id, 1)
-                    print(f"Queued prompt for: {prompt['generated_prompt']}...")
+                    if (model == "schnell" or model == "dev"):
+                        print(f"Rendering image for prompt {prompt_id}")
+                        queue_prompt(workflow)
+                        update_render_status(prompt_id, 1)
+                        print(f"Queued prompt for: {prompt['generated_prompt']}...")
 
-                    wait_time = 60
-                    if generation_type == "prompt":
-                        if model == "schnell":
-                            wait_time = 5
-                        elif model == "dev":
-                            wait_time = 10
-                    elif generation_type == "mix":
-                        wait_time = 25
-                    elif generation_type == "mix-one":
-                        wait_time = 25
+                        wait_time = 60
+                        if generation_type == "prompt":
+                            if model == "schnell":
+                                wait_time = 5
+                            elif model == "dev":
+                                wait_time = 10
+                        elif generation_type == "mix":
+                            wait_time = 25
+                        elif generation_type == "mix-one":
+                            wait_time = 25
 
-                    time.sleep(wait_time)
+                        time.sleep(wait_time)
+
 
                     if os.path.exists(output_file):
                         if prompt['upload_to_s3']:

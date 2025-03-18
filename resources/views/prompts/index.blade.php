@@ -89,11 +89,11 @@
 								</optgroup>
 							</select>
 						</div>
-						<div class="col-md-2">
+						<div class="col-md-1">
 							<label class="form-label">Width</label>
 							<input type="number" class="form-control" name="width" id="width" value="1024">
 						</div>
-						<div class="col-md-2">
+						<div class="col-md-1">
 							<label class="form-label">Height</label>
 							<input type="number" class="form-control" name="height" id="height" value="1024">
 						</div>
@@ -116,6 +116,13 @@
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_imagen" value="0">
 								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1" checked>
+							</div>
+						</div>
+						<div class="col-md-1">
+							<label class="form-check-label" for="createAuraFlow">AuraFlow</label>
+							<div class="form-check mt-2">
+								<input type="hidden" name="create_aura_flow" value="0">
+								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1" checked>
 							</div>
 						</div>
 					</div>

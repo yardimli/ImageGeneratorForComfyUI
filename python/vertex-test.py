@@ -1,11 +1,11 @@
 import json
-import vertexai
 import time
 import random
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
+import vertexai
 from vertexai.preview.vision_models import ImageGenerationModel
 from google.oauth2 import service_account
 
@@ -18,7 +18,7 @@ credentials = service_account.Credentials.from_service_account_file(
  scopes=["https://www.googleapis.com/auth/cloud-platform"],)
 
 output_file = "generated_image_" + str(int(time.time())) + ".png"
-prompt = "a cat in a spacesuit, digital art, 4k, trending on artstation, highly detailed, cinematic lighting, hyper realistic, award winning photography"
+prompt = "A vibrant jazz album cover where a shiny apple takes center stage amidst evocative abstractions of saxophones and trumpets...."
 
 
 vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID',""), location="us-central1", credentials=credentials)
