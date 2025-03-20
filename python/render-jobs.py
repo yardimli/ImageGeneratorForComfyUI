@@ -192,7 +192,7 @@ def generate_images_from_api():
             prompt_id = prompt['id']
             render_status = prompt['render_status']
 
-            print(f"Processing prompt {idx + 1} id: {prompt_id} - type: {prompt['generation_type']} - model: {prompt['model']} - status: {render_status}")
+            print(f"Processing prompt {idx + 1} id: {prompt_id} - type: {prompt['generation_type']} - model: {prompt['model']} - status: {render_status} - user id: {prompt['user_id']}")
 
             try:
                 generation_type = prompt['generation_type']
@@ -260,14 +260,17 @@ def generate_images_from_api():
                                 person_generation="allow_adult",
                             )
 
+                            print(images)
                             images[0].save(location=output_file, include_generation_parameters=False)
                         except GoogleAPIError as e:
                             print(f"Google API Error: {e}")
                             print(f"Error details: {e.details() if hasattr(e, 'details') else 'No details available'}")
                             print(f"Error code: {e.code if hasattr(e, 'code') else 'No code available'}")
                         except Exception as e:
+                            update_render_status(prompt_id, 4)
                             print(f"Unexpected error: {e}")
                             traceback.print_exc()
+                            continue
                         time.sleep(20)
                     elif model == "aura-flow":
                         print(f"Sending to Fal/Aura-Flow: {prompt['generated_prompt']}...")
