@@ -10,23 +10,38 @@ class GalleryController extends Controller
 {
 	public function index(Request $request)
 	{
-		$sort = $request->query('sort', 'updated_at'); // Default to updated_at
-		$type = $request->query('type', 'all'); // Default to all types
-		$groupByDay = $request->query('group') !== 'false'; // Convert to boolean properly
+		$sort = $request->query('sort', 'updated_at');
+		$selectedTypes = $request->query('types', ['dev']); // Default to 'dev' model
+
+		if (!is_array($selectedTypes)) {
+			$selectedTypes = [$selectedTypes];
+		}
+
+		$groupByDay = $request->query('group') !== 'false';
 		$date = $request->query('date');
 
 		$query = Prompt::where('user_id', auth()->id())
 			->whereNotNull('filename');
 
-		// Apply type filter
-		if ($type === 'mix') {
-			$query->whereIn('generation_type', ['mix', 'mix-one']);
-		} elseif ($type === 'mix-one') {
-			$query->where('generation_type', 'mix-one');
-		} elseif ($type === 'mix-dual') {
-			$query->where('generation_type', 'mix');
-		} elseif ($type === 'other') {
-			$query->whereNotIn('generation_type', ['mix', 'mix-one']);
+		// Separate generation types from models
+		$generationTypes = array_intersect($selectedTypes, ['mix', 'mix-one']);
+		$models = array_diff($selectedTypes, ['mix', 'mix-one']);
+
+		// Apply filtering logic
+		if (!empty($generationTypes) || !empty($models)) {
+			$query->where(function($q) use ($generationTypes, $models) {
+				if (!empty($generationTypes)) {
+					$q->whereIn('generation_type', $generationTypes);
+				}
+
+				if (!empty($models)) {
+					if (!empty($generationTypes)) {
+						$q->orWhereIn('model', $models);
+					} else {
+						$q->whereIn('model', $models);
+					}
+				}
+			});
 		}
 
 		// Apply date filter if viewing a specific day
@@ -40,15 +55,14 @@ class GalleryController extends Controller
 		$query->orderBy($sort, 'desc');
 
 		if ($groupByDay && !$date) {
-			// Get distinct days first
+			// Get distinct days first - now showing 14 days instead of 5
 			$days = $query->clone()
 				->select(DB::raw('DATE(created_at) as date'))
 				->groupBy('date')
 				->orderBy('date', 'desc')
-				->paginate(5, ['*'], 'day_page');
+				->paginate(14, ['*'], 'day_page');
 
 			$groupedImages = [];
-
 			foreach ($days as $day) {
 				$totalCount = $query->clone()
 					->whereDate('created_at', $day->date)
@@ -56,7 +70,7 @@ class GalleryController extends Controller
 
 				$dayImages = $query->clone()
 					->whereDate('created_at', $day->date)
-					->limit(8) // Show only 8 images per day initially
+					->limit(8)
 					->get();
 
 				$dayImages->transform(function ($prompt) {
@@ -69,7 +83,6 @@ class GalleryController extends Controller
 				});
 
 				$dayImages->totalCount = $totalCount;
-
 				$groupedImages[$day->date] = $dayImages;
 			}
 
@@ -77,7 +90,7 @@ class GalleryController extends Controller
 				'groupedImages' => $groupedImages,
 				'days' => $days,
 				'sort' => $sort,
-				'type' => $type,
+				'selectedTypes' => $selectedTypes,
 				'groupByDay' => $groupByDay,
 				'date' => $date,
 			]);
@@ -97,7 +110,7 @@ class GalleryController extends Controller
 			return view('gallery.index', [
 				'images' => $images,
 				'sort' => $sort,
-				'type' => $type,
+				'selectedTypes' => $selectedTypes,
 				'groupByDay' => $groupByDay,
 				'date' => $date,
 			]);
@@ -108,6 +121,11 @@ class GalleryController extends Controller
 	{
 		$sourceImage = $request->query('source_image');
 		$sort = $request->query('sort', 'updated_at');
+		$selectedTypes = $request->query('types', ['dev']);
+
+		if (!is_array($selectedTypes)) {
+			$selectedTypes = [$selectedTypes];
+		}
 
 		$query = Prompt::where('user_id', auth()->id())
 			->whereNotNull('filename');
@@ -116,6 +134,27 @@ class GalleryController extends Controller
 			$query->where(function($q) use ($sourceImage) {
 				$q->where('input_image_1', $sourceImage)
 					->orWhere('input_image_2', $sourceImage);
+			});
+		}
+
+		// Separate generation types from models
+		$generationTypes = array_intersect($selectedTypes, ['mix', 'mix-one']);
+		$models = array_diff($selectedTypes, ['mix', 'mix-one']);
+
+		// Apply filtering logic
+		if (!empty($generationTypes) || !empty($models)) {
+			$query->where(function($q) use ($generationTypes, $models) {
+				if (!empty($generationTypes)) {
+					$q->whereIn('generation_type', $generationTypes);
+				}
+
+				if (!empty($models)) {
+					if (!empty($generationTypes)) {
+						$q->orWhereIn('model', $models);
+					} else {
+						$q->whereIn('model', $models);
+					}
+				}
 			});
 		}
 
@@ -133,10 +172,11 @@ class GalleryController extends Controller
 
 		$filterActive = !empty($sourceImage);
 		$filterDescription = "";
+
 		if ($filterActive && $sourceImage) {
 			$filterDescription = "Images generated using source: " . basename($sourceImage);
 		}
 
-		return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort'));
+		return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort', 'selectedTypes'));
 	}
 }

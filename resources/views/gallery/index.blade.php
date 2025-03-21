@@ -1,5 +1,4 @@
 @extends('layouts.bootstrap-app')
-
 @section('content')
 	<div class="queue-status">
 		<span class="me-2">Queue:</span>
@@ -13,21 +12,73 @@
 					<h3 class="mb-0">Image Gallery</h3>
 					<div>
 						<div class="btn-group me-2">
-							<a href="{{ route('gallery.index', ['sort' => 'updated_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Last Updated</a>
-							<a href="{{ route('gallery.index', ['sort' => 'created_at', 'type' => $type ?? 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Creation Date</a>
+							<a href="{{ route('gallery.index', ['sort' => 'updated_at', 'types' => $selectedTypes ?? ['dev'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Last Updated</a>
+							<a href="{{ route('gallery.index', ['sort' => 'created_at', 'types' => $selectedTypes ?? ['dev'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}" class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort by Creation Date</a>
 						</div>
 						
-						<div class="btn-group me-2">
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'all', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
-							   class="btn btn-sm {{ ($type ?? 'all') == 'all' ? 'btn-primary' : 'btn-outline-primary' }}">All Types</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'mix' ? 'btn-primary' : 'btn-outline-primary' }}">All Mix</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix-dual', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'mix-dual' ? 'btn-primary' : 'btn-outline-primary' }}">Dual Mix</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'mix-one', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'mix-one' ? 'btn-primary' : 'btn-outline-primary' }}">Single Mix</a>
-							<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => 'other', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
-							   class="btn btn-sm {{ ($type ?? '') == 'other' ? 'btn-primary' : 'btn-outline-primary' }}">Other Types</a>
+						<!-- New dropdown filter -->
+						<div class="dropdown d-inline-block me-2">
+							<button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+								Filter Types & Models
+							</button>
+							<div class="dropdown-menu p-3" style="width: 250px;" aria-labelledby="filterDropdown">
+								<form id="filterForm" action="{{ route('gallery.index') }}" method="GET">
+									<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
+									<input type="hidden" name="group" value="{{ $groupByDay ?? true }}">
+									@if($date) <input type="hidden" name="date" value="{{ $date }}"> @endif
+									
+									<h6 class="dropdown-header">Generation Types</h6>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="mix" id="type-mix"
+											{{ in_array('mix', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="type-mix">Mix (Dual)</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="mix-one" id="type-mix-one"
+											{{ in_array('mix-one', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="type-mix-one">Mix (Single)</label>
+									</div>
+									
+									<div class="dropdown-divider"></div>
+									
+									<h6 class="dropdown-header">Models</h6>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="schnell" id="model-schnell"
+											{{ in_array('schnell', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-schnell">Schnell</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="dev" id="model-dev"
+											{{ in_array('dev', $selectedTypes ?? ['dev']) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-dev">Dev</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="minimax" id="model-minimax"
+											{{ in_array('minimax', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-minimax">Minimax</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="minimax-expand" id="model-minimax-expand"
+											{{ in_array('minimax-expand', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-minimax-expand">Minimax Expand</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="imagen3" id="model-imagen3"
+											{{ in_array('imagen3', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-imagen3">Imagen3</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="aura-flow" id="model-aura-flow"
+											{{ in_array('aura-flow', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-aura-flow">Aura Flow</label>
+									</div>
+									
+									<div class="mt-3">
+										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
+										<a href="{{ route('gallery.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+									</div>
+								</form>
+							</div>
 						</div>
 					</div>
 				</div>
@@ -47,7 +98,7 @@
 				@if(isset($date) && $date)
 					<div class="alert alert-info mb-0 p-2 mt-2">
 						Viewing images from: {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
-						<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all', 'group' => true]) }}" class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
+						<a href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev'], 'group' => true]) }}" class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
 					</div>
 				@endif
 			</div>
@@ -279,6 +330,23 @@
 			const checkboxes = document.querySelectorAll('.image-checkbox');
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
 			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
+			
+			document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
+				checkbox.addEventListener('change', function() {
+					// Ensure at least one option is selected
+					const anyChecked = document.querySelectorAll('.filter-checkbox:checked').length > 0;
+					if (!anyChecked) {
+						// If nothing is checked, default to "dev"
+						document.getElementById('model-dev').checked = true;
+					}
+					document.getElementById('filterForm').submit();
+				});
+			});
+			
+			// Prevent the dropdown from closing when clicking inside it
+			document.querySelector('.dropdown-menu').addEventListener('click', function(e) {
+				e.stopPropagation();
+			});
 			
 			document.querySelectorAll('.view-source-btn').forEach(button => {
 				button.addEventListener('click', function() {
