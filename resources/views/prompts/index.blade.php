@@ -115,14 +115,14 @@
 							<label class="form-check-label" for="createImagen">Imagen</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_imagen" value="0">
-								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1" checked>
+								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1">
 							</div>
 						</div>
 						<div class="col-md-1">
 							<label class="form-check-label" for="createAuraFlow">AuraFlow</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_aura_flow" value="0">
-								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1" checked>
+								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1">
 							</div>
 						</div>
 					</div>
