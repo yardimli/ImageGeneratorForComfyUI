@@ -339,7 +339,7 @@
 						// If nothing is checked, default to "dev"
 						document.getElementById('model-dev').checked = true;
 					}
-					document.getElementById('filterForm').submit();
+//					document.getElementById('filterForm').submit();
 				});
 			});
 			
