@@ -36,7 +36,7 @@
 						<a class="nav-link" href="{{ route('home') }}">Home</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="{{ {{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev']]) }} }}">Gallery</a>
+						<a class="nav-link" href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev']]) }}">Gallery</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.index') }}">Prompts</a>
