@@ -86,6 +86,7 @@
 				<div class="mt-2">
 					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
 					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
+					<button id="deleteUnselectedBtn" class="btn btn-sm btn-danger" disabled>Delete Unselected</button>
 				</div>
 				
 				@if(isset($filterActive) && $filterActive)
@@ -257,7 +258,7 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					Are you sure you want to delete <span id="deleteCount">0</span> selected images? This cannot be undone.
+					Are you sure you want to delete <span id="deleteCount">0</span> <span id="deleteTypeText">selected</span> images? This cannot be undone.
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -330,6 +331,7 @@
 			const checkboxes = document.querySelectorAll('.image-checkbox');
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
 			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
+			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			
 			document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
 				checkbox.addEventListener('change', function() {
@@ -376,6 +378,7 @@
 				updateBulkDeleteButton();
 			});
 			
+			
 			// Handle checkbox changes
 			checkboxes.forEach(checkbox => {
 				checkbox.addEventListener('change', function() {
@@ -397,19 +400,42 @@
 			// Update bulk delete button state
 			function updateBulkDeleteButton() {
 				const selectedCount = document.querySelectorAll('.image-checkbox:checked').length;
+				const totalCount = document.querySelectorAll('.image-checkbox').length;
+				const unselectedCount = totalCount - selectedCount;
+				
 				bulkDeleteBtn.disabled = selectedCount === 0;
+				deleteUnselectedBtn.disabled = unselectedCount === 0 || selectedCount === totalCount;
+				
 				document.getElementById('deleteCount').textContent = selectedCount;
 			}
 			
-			// Show confirmation modal for bulk delete
-			bulkDeleteBtn.addEventListener('click', function() {
+			deleteUnselectedBtn.addEventListener('click', function() {
+				const unselectedCount = document.querySelectorAll('.image-checkbox:not(:checked)').length;
+				document.getElementById('deleteCount').textContent = unselectedCount;
+				document.getElementById('deleteTypeText').textContent = 'unselected';
 				deleteConfirmModal.show();
 			});
 			
+			bulkDeleteBtn.addEventListener('click', function() {
+				const selectedCount = document.querySelectorAll('.image-checkbox:checked').length;
+				document.getElementById('deleteCount').textContent = selectedCount;
+				document.getElementById('deleteTypeText').textContent = 'selected';
+				deleteConfirmModal.show();
+			});
+			
+			
 			// Handle bulk delete confirmation
 			confirmBulkDeleteBtn.addEventListener('click', async function() {
-				const selectedPromptIds = Array.from(document.querySelectorAll('.image-checkbox:checked'))
-					.map(checkbox => checkbox.dataset.promptId);
+				const deleteType = document.getElementById('deleteTypeText').textContent;
+				let selectedPromptIds;
+				
+				if (deleteType === 'selected') {
+					selectedPromptIds = Array.from(document.querySelectorAll('.image-checkbox:checked'))
+						.map(checkbox => checkbox.dataset.promptId);
+				} else {
+					selectedPromptIds = Array.from(document.querySelectorAll('.image-checkbox:not(:checked)'))
+						.map(checkbox => checkbox.dataset.promptId);
+				}
 				
 				if (selectedPromptIds.length === 0) return;
 				
@@ -433,6 +459,7 @@
 								checkbox.closest('.col-md-3').remove();
 							}
 						});
+						
 						deleteConfirmModal.hide();
 						alert(`Successfully deleted ${selectedPromptIds.length} images`);
 					} else {

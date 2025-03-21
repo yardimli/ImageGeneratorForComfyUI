@@ -96,7 +96,7 @@ class GalleryController extends Controller
 			]);
 		} else {
 			// Regular pagination for specific day view
-			$images = $query->paginate(32);
+			$images = $query->paginate(60);
 
 			$images->getCollection()->transform(function ($prompt) {
 				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
@@ -159,7 +159,7 @@ class GalleryController extends Controller
 		}
 
 		$images = $query->orderBy($sort, 'desc')
-			->paginate(32);
+			->paginate(60);
 
 		$images->getCollection()->transform(function ($prompt) {
 			if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
