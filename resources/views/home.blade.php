@@ -16,7 +16,7 @@
 						<div class="mt-3">
 							<a href="{{ route('prompts.index') }}" class="btn btn-primary me-2">Prompts</a>
 							<a href="{{ route('image-mix.index') }}" class="btn btn-secondary me-2">Image Mix Tool</a>
-							<a href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev']]) }}" class="btn btn-primary">Gallery</a>
+							<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev']]) }}" class="btn btn-primary">Gallery</a>
 						</div>
 					</div>
 				</div>
