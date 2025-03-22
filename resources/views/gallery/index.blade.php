@@ -335,19 +335,7 @@
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
 			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
-			const filterDropdown = document.querySelector('.dropdown');
 			
-			
-			
-			document.addEventListener('click', function(e) {
-				if (!filterDropdown.contains(e.target)) {
-					// Close the dropdown when clicked outside
-					const dropdownMenu = filterDropdown.querySelector('.dropdown-menu');
-					if (dropdownMenu.classList.contains('show')) {
-						bootstrap.Dropdown.getInstance(filterDropdown.querySelector('.dropdown-toggle')).hide();
-					}
-				}
-			});
 			document.getElementById('selectAllFilters').addEventListener('click', function(e) {
 				e.preventDefault();
 				const checkboxes = document.querySelectorAll('.filter-checkbox');
