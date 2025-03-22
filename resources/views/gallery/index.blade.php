@@ -18,7 +18,7 @@
 						
 						<!-- New dropdown filter -->
 						<div class="dropdown d-inline-block me-2">
-							<button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+							<button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown" data-bs-auto-close="false" aria-expanded="false">
 								Filter Types & Models
 							</button>
 							<div class="dropdown-menu p-3" style="width: 250px;" aria-labelledby="filterDropdown">
@@ -336,6 +336,7 @@
 			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			const filterDropdown = document.querySelector('.dropdown');
+			
 			
 			
 			document.addEventListener('click', function(e) {
