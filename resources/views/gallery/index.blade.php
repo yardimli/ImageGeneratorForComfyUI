@@ -109,7 +109,7 @@
 					@foreach($groupedImages as $date => $dayImages)
 						<div class="mb-4">
 							<h4 class="border-bottom pb-2">
-								<a href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
+								<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
 								   class="text-decoration-none">
 									{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
 								</a>
