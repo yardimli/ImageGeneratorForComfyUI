@@ -11,10 +11,16 @@ class GalleryController extends Controller
 	public function index(Request $request)
 	{
 		$sort = $request->query('sort', 'updated_at');
-		$selectedTypes = $request->query('types', ['dev']); // Default to 'dev' model
+		$search = $request->query('search');
 
-		if (!is_array($selectedTypes)) {
-			$selectedTypes = [$selectedTypes];
+		// If search is active, select all types
+		if (!empty($search)) {
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow'];
+		} else {
+			$selectedTypes = $request->query('types', ['dev']);
+			if (!is_array($selectedTypes)) {
+				$selectedTypes = [$selectedTypes];
+			}
 		}
 
 		$groupByDay = $request->query('group') !== 'false';
@@ -22,6 +28,14 @@ class GalleryController extends Controller
 
 		$query = Prompt::where('user_id', auth()->id())
 			->whereNotNull('filename');
+
+		// Apply search if provided
+		if (!empty($search)) {
+			$query->where(function($q) use ($search) {
+				$q->where('generated_prompt', 'like', '%' . $search . '%')
+					->orWhere('notes', 'like', '%' . $search . '%');
+			});
+		}
 
 		// Separate generation types from models
 		$generationTypes = array_intersect($selectedTypes, ['mix', 'mix-one']);
@@ -93,6 +107,7 @@ class GalleryController extends Controller
 				'selectedTypes' => $selectedTypes,
 				'groupByDay' => $groupByDay,
 				'date' => $date,
+				'search' => $search,
 			]);
 		} else {
 			// Regular pagination for specific day view
@@ -113,6 +128,7 @@ class GalleryController extends Controller
 				'selectedTypes' => $selectedTypes,
 				'groupByDay' => $groupByDay,
 				'date' => $date,
+				'search' => $search,
 			]);
 		}
 	}
@@ -121,19 +137,26 @@ class GalleryController extends Controller
 	{
 		$sourceImage = $request->query('source_image');
 		$sort = $request->query('sort', 'updated_at');
-		$selectedTypes = $request->query('types', ['dev']);
+		$search = $request->query('search');
 
-		if (!is_array($selectedTypes)) {
-			$selectedTypes = [$selectedTypes];
+		// If search is active, select all types
+		if (!empty($search)) {
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow'];
+		} else {
+			$selectedTypes = $request->query('types', ['dev']);
+			if (!is_array($selectedTypes)) {
+				$selectedTypes = [$selectedTypes];
+			}
 		}
 
 		$query = Prompt::where('user_id', auth()->id())
 			->whereNotNull('filename');
 
-		if ($sourceImage) {
-			$query->where(function($q) use ($sourceImage) {
-				$q->where('input_image_1', $sourceImage)
-					->orWhere('input_image_2', $sourceImage);
+		// Apply search if provided
+		if (!empty($search)) {
+			$query->where(function($q) use ($search) {
+				$q->where('generated_prompt', 'like', '%' . $search . '%')
+					->orWhere('notes', 'like', '%' . $search . '%');
 			});
 		}
 
