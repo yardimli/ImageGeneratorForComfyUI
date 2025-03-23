@@ -22,6 +22,8 @@
 			'create_imagen',
 			'create_aura_flow',
 			'create_ideogram_v2a',
+			'create_luma_photon',
+			'create_recraft_20b',
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -47,6 +49,8 @@
 			'create_imagen' => 'boolean',
 			'create_aura' => 'boolean',
 			'create_ideogram_v2a' => 'boolean',
+			'create_luma_photon' => 'boolean',
+			'create_recraft_20b' => 'boolean',
 		];
 
 

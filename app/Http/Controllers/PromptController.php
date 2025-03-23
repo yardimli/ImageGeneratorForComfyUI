@@ -46,6 +46,8 @@
 					'create_imagen' => 'required|in:0,1,true,false',
 					'create_aura_flow' => 'required|in:0,1,true,false',
 					'create_ideogram_v2a'  => 'required|in:0,1,true,false',
+					'create_luma_photon' => 'required|in:0,1,true,false',
+					'create_recraft_20b' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -131,6 +133,8 @@
 					'create_imagen' => filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_aura_flow' => filter_var($settings['create_aura_flow'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_ideogram_v2a' => filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					'create_luma_photon' => filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					'create_recraft_20b' => filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
@@ -217,6 +221,33 @@
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
 						}
+						if (filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'luma-photon',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
+						if (filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'recraft-20b',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
+
 					}
 				}
 
@@ -261,6 +292,8 @@
 				'create_imagen' => $settings->create_imagen,
 				'create_aura_flow' => $settings->create_aura_flow,
 				'create_ideogram_v2a' => $settings->create_ideogram_v2a,
+				'create_luma_photon' => $settings->create_luma_photon,
+				'create_recraft_20b' => $settings->create_recraft_20b,
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,

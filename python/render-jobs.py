@@ -235,6 +235,7 @@ def generate_images_from_api():
                         workflow["31"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
                         workflow["5"]["inputs"]["width"] = prompt['width']
                         workflow["5"]["inputs"]["height"] = prompt['height']
+
                     elif model == "dev":
                         workflow = get_workflow_file(generation_type,model)
                         workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
@@ -244,6 +245,7 @@ def generate_images_from_api():
                         workflow["27"]["inputs"]["height"] = prompt['height']
                         workflow["30"]["inputs"]["width"] = prompt['width']
                         workflow["30"]["inputs"]["height"] = prompt['height']
+
                     elif model == "imagen3":
                         print(f"Sending to Imagen: {prompt['generated_prompt']}...")
                         aspect_ratio_value = get_aspect_ratio(prompt['width'], prompt['height'])
@@ -272,6 +274,7 @@ def generate_images_from_api():
                             traceback.print_exc()
                             continue
                         time.sleep(20)
+
                     elif model == "aura-flow":
                         print(f"Sending to Fal/Aura-Flow: {prompt['generated_prompt']}...")
 
@@ -294,11 +297,58 @@ def generate_images_from_api():
                         else:
                             print(f"Failed to download image: {image_response.status_code}")
                         time.sleep(6)
+
                     elif model == "ideogram-v2a":
                         print(f"Sending to Fal/ideogram-v2a: {prompt['generated_prompt']}...")
 
                         fal_result = fal_client.subscribe(
                             "fal-ai/ideogram/v2a",
+                            arguments={
+                                "prompt": prompt['generated_prompt']
+                            },
+                            with_logs=False,
+                            # on_queue_update=on_queue_update,
+                        )
+                        print(fal_result)
+                        first_image_url = fal_result["images"][0]["url"]
+                        image_response = requests.get(first_image_url)
+                        if image_response.status_code == 200:
+                            # Save the image to file
+                            with open(output_file, 'wb') as f:
+                                f.write(image_response.content)
+                            print(f"Image saved to {output_file}")
+                        else:
+                            print(f"Failed to download image: {image_response.status_code}")
+                        time.sleep(6)
+
+                    elif model == "luma-photon":
+                        print(f"Sending to Fal/luma-photon: {prompt['generated_prompt']}...")
+
+                        fal_result = fal_client.subscribe(
+                            "fal-ai/luma-photon",
+                            arguments={
+                                "prompt": prompt['generated_prompt']
+                            },
+                            with_logs=False,
+                            # on_queue_update=on_queue_update,
+                        )
+                        print(fal_result)
+                        first_image_url = fal_result["images"][0]["url"]
+                        image_response = requests.get(first_image_url)
+                        if image_response.status_code == 200:
+                            # Save the image to file
+                            with open(output_file, 'wb') as f:
+                                f.write(image_response.content)
+                            print(f"Image saved to {output_file}")
+                        else:
+                            print(f"Failed to download image: {image_response.status_code}")
+                        time.sleep(6)
+
+                    elif model == "recraft-20b":
+                        print(f"Sending to Fal/recraft-20b: {prompt['generated_prompt']}...")
+
+                        fal_result = fal_client.subscribe(
+                            "fal-ai/recraft-20b",
                             arguments={
                                 "prompt": prompt['generated_prompt']
                             },

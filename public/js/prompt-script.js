@@ -118,6 +118,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				document.querySelector('input[name="create_imagen"]').checked = data.create_imagen;
 				document.querySelector('input[name="create_aura_flow"]').checked = data.create_aura_flow;
 				document.querySelector('input[name="create_ideogram_v2a"]').checked = data.create_ideogram_v2a;
+				document.querySelector('input[name="create_luma_photon"]').checked = data.create_luma_photon;
+				document.querySelector('input[name="create_recraft_20b"]').checked = data.create_recraft_20b;
 				
 				
 				displayPrompts(data.prompts, settingId);

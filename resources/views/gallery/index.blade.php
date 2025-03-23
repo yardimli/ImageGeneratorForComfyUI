@@ -117,6 +117,18 @@
 											{{ in_array('ideogram-v2a', $selectedTypes ?? []) ? 'checked' : '' }}>
 										<label class="form-check-label" for="model-ideogram-v2a">Ideogram v2a</label>
 									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="luma-photon"
+										       id="model-luma-photon"
+											{{ in_array('luma-photon', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-luma-photon">Luma Photon</label>
+									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="recraft-20b"
+										       id="model-recraft-20b"
+											{{ in_array('recraft-20b', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-recraft-20b">Recraft 20b</label>
+									</div>
 									
 									<div class="mt-3">
 										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>

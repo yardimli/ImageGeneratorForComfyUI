@@ -58,7 +58,7 @@
 					</div>
 					
 					<div class="row mb-3">
-						<div class="col-md-4">
+						<div class="col-md-2">
 							<label class="form-label">Aspect Ratio</label>
 							<select class="form-select" name="aspect_ratio" id="aspectRatio">
 								<optgroup label="1MP">
@@ -97,8 +97,8 @@
 							<label class="form-label">Height</label>
 							<input type="number" class="form-control" name="height" id="height" value="1024">
 						</div>
-						<div class="col-md-2">
-							<label class="form-check-label" for="uploadToS3">Upload to S3</label>
+						<div class="col-md-1">
+							<label class="form-check-label" for="uploadToS3">S3</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="upload_to_s3" value="0">
 								<input type="checkbox" class="form-check-input" name="upload_to_s3" id="uploadToS3" value="1" checked>
@@ -130,6 +130,20 @@
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_ideogram_v2a" value="0">
 								<input type="checkbox" class="form-check-input" name="create_ideogram_v2a" id="createIdeogram-v2a" value="1">
+							</div>
+						</div>
+						<div class="col-md-1">
+							<label class="form-check-label" for="createLuma-photon">Luma Photon</label>
+							<div class="form-check mt-2">
+								<input type="hidden" name="create_luma_photon" value="0">
+								<input type="checkbox" class="form-check-input" name="create_luma_photon" id="createLuma-photon" value="1">
+							</div>
+						</div>
+						<div class="col-md-1">
+							<label class="form-check-label" for="createRecraft-20b">Recraft 20b</label>
+							<div class="form-check mt-2">
+								<input type="hidden" name="create_recraft_20b" value="0">
+								<input type="checkbox" class="form-check-input" name="create_recraft_20b" id="createRecraft-20b" value="1">
 							</div>
 						</div>
 					</div>

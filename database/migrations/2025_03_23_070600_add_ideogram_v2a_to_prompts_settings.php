@@ -13,6 +13,8 @@
 			Schema::table('prompt_settings', function (Blueprint $table) {
 				$table->after('upload_to_s3', function ($table) {
 					$table->integer('create_ideogram_v2a')->default(1);
+					$table->integer('create_luma_photon')->default(1);
+					$table->integer('create_recraft_20b')->default(1);
 				});
 			});
 		}
@@ -24,6 +26,8 @@
 		{
 			Schema::table('prompt_settings', function (Blueprint $table) {
 				$table->dropColumn(['create_ideogram_v2a']);
+				$table->dropColumn(['create_luma_photon']);
+				$table->dropColumn(['create_recraft_20b']);
 			});
 		}
 	};

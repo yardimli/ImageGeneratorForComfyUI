@@ -15,7 +15,7 @@ class GalleryController extends Controller
 
 		// If search is active, select all types
 		if (!empty($search)) {
-			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a'];
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
 		} else {
 			$selectedTypes = $request->query('types', ['dev']);
 			if (!is_array($selectedTypes)) {
@@ -141,7 +141,7 @@ class GalleryController extends Controller
 
 		// If search is active, select all types
 		if (!empty($search)) {
-			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a'];
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
 		} else {
 			$selectedTypes = $request->query('types', ['dev']);
 			if (!is_array($selectedTypes)) {
