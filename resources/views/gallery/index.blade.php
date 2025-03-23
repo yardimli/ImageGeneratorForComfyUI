@@ -168,16 +168,12 @@
 					@foreach($groupedImages as $date => $dayImages)
 						<div class="mb-4">
 							<h4 class="border-bottom pb-2">
-								<a
-									href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
-									class="text-decoration-none">
-									{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
+								<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes]) }}" class="text-decoration-none">
+								{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
 								</a>
 								<span class="badge bg-secondary">{{ $dayImages->totalCount ?? $dayImages->count() }} images</span>
 								@if($dayImages->count() > 8)
-									<a
-										href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'type' => $type ?? 'all']) }}"
-										class="btn btn-sm btn-outline-primary ms-2">View All</a>
+									<a href="{{ route('gallery.index', ['date' => $date, 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes]) }}" class="btn btn-sm btn-outline-primary ms-2">View All</a>
 								@endif
 							</h4>
 							
