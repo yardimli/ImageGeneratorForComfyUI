@@ -19,7 +19,8 @@ class GalleryController extends Controller
 		} else {
 			$selectedTypes = $request->query('types', ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b']);
 
-			if ($selectedTypes=== 'all' || $selectedTypes === '') {
+			//check if selectedTypes contains 'all' then select all types
+			if (in_array('all', $selectedTypes)) {
 				$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
 			}
 
