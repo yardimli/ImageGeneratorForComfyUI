@@ -58,7 +58,7 @@
 					</div>
 					
 					<div class="row mb-3">
-						<div class="col-md-2">
+						<div class="col-md-4">
 							<label class="form-label">Aspect Ratio</label>
 							<select class="form-select" name="aspect_ratio" id="aspectRatio">
 								<optgroup label="1MP">
@@ -89,57 +89,59 @@
 								</optgroup>
 							</select>
 						</div>
-						<div class="col-md-1">
+						<div class="col-md-2">
 							<label class="form-label">Width</label>
 							<input type="number" class="form-control" name="width" id="width" value="1024">
 						</div>
-						<div class="col-md-1">
+						<div class="col-md-2">
 							<label class="form-label">Height</label>
 							<input type="number" class="form-control" name="height" id="height" value="1024">
 						</div>
-						<div class="col-md-1">
-							<label class="form-check-label" for="uploadToS3">S3</label>
+						<div class="col-md-2">
+							<label class="form-check-label" for="uploadToS3">Upload to S3</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="upload_to_s3" value="0">
 								<input type="checkbox" class="form-check-input" name="upload_to_s3" id="uploadToS3" value="1" checked>
 							</div>
 						</div>
-						<div class="col-md-1">
+					</div>
+					<div class="row mb-3">
+						<div class="col-md-2">
 							<label class="form-check-label" for="createMinimax">MiniMax</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_minimax" value="0">
 								<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1" checked>
 							</div>
 						</div>
-						<div class="col-md-1">
-							<label class="form-check-label" for="createImagen">Imagen</label>
+						<div class="col-md-2">
+							<label class="form-check-label" for="createImagen">Imagen 3</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_imagen" value="0">
 								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1">
 							</div>
 						</div>
-						<div class="col-md-1">
-							<label class="form-check-label" for="createAuraFlow">AuraFlow</label>
+						<div class="col-md-2">
+							<label class="form-check-label" for="createAuraFlow">Aura Flow</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_aura_flow" value="0">
 								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1">
 							</div>
 						</div>
-						<div class="col-md-1">
+						<div class="col-md-2">
 							<label class="form-check-label" for="createIdeogram-v2a">Ideogram v2a</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_ideogram_v2a" value="0">
 								<input type="checkbox" class="form-check-input" name="create_ideogram_v2a" id="createIdeogram-v2a" value="1">
 							</div>
 						</div>
-						<div class="col-md-1">
+						<div class="col-md-2">
 							<label class="form-check-label" for="createLuma-photon">Luma Photon</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_luma_photon" value="0">
 								<input type="checkbox" class="form-check-input" name="create_luma_photon" id="createLuma-photon" value="1">
 							</div>
 						</div>
-						<div class="col-md-1">
+						<div class="col-md-2">
 							<label class="form-check-label" for="createRecraft-20b">Recraft 20b</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_recraft_20b" value="0">
