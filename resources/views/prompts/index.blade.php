@@ -107,42 +107,42 @@
 					</div>
 					<div class="row mb-3">
 						<div class="col-md-2">
-							<label class="form-check-label" for="createMinimax">MiniMax</label>
+							<label class="form-check-label" for="createMinimax">MiniMax 0.2TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_minimax" value="0">
 								<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1" checked>
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createImagen">Imagen 3</label>
+							<label class="form-check-label" for="createImagen">Imagen 3 1.1TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_imagen" value="0">
 								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1">
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createAuraFlow">Aura Flow</label>
+							<label class="form-check-label" for="createAuraFlow">Aura Flow 0.1TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_aura_flow" value="0">
 								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1">
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createIdeogram-v2a">Ideogram v2a</label>
+							<label class="form-check-label" for="createIdeogram-v2a">Ideogram v2a 1.5TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_ideogram_v2a" value="0">
 								<input type="checkbox" class="form-check-input" name="create_ideogram_v2a" id="createIdeogram-v2a" value="1">
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createLuma-photon">Luma Photon</label>
+							<label class="form-check-label" for="createLuma-photon">Luma Photon 0.7TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_luma_photon" value="0">
 								<input type="checkbox" class="form-check-input" name="create_luma_photon" id="createLuma-photon" value="1">
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createRecraft-20b">Recraft 20b</label>
+							<label class="form-check-label" for="createRecraft-20b">Recraft 20b 0.9TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_recraft_20b" value="0">
 								<input type="checkbox" class="form-check-input" name="create_recraft_20b" id="createRecraft-20b" value="1">
