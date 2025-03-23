@@ -114,7 +114,7 @@
 							</div>
 						</div>
 						<div class="col-md-2">
-							<label class="form-check-label" for="createImagen">Imagen 3 1.1TRY</label>
+							<label class="form-check-label" for="createImagen">Imagen 3 1.3TRY</label>
 							<div class="form-check mt-2">
 								<input type="hidden" name="create_imagen" value="0">
 								<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1">
