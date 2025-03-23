@@ -30,11 +30,11 @@
 					<div>
 						<div class="btn-group me-2">
 							<a
-								href="{{ route('gallery.index', ['sort' => 'updated_at', 'types' => $selectedTypes ?? ['dev'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+								href="{{ route('gallery.index', ['sort' => 'updated_at', 'types' => $selectedTypes ?? ['all'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
 								class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
 								by Last Updated</a>
 							<a
-								href="{{ route('gallery.index', ['sort' => 'created_at', 'types' => $selectedTypes ?? ['dev'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+								href="{{ route('gallery.index', ['sort' => 'created_at', 'types' => $selectedTypes ?? ['all'], 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
 								class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
 								by Creation Date</a>
 						</div>
@@ -157,7 +157,7 @@
 					<div class="alert alert-info mb-0 p-2 mt-2">
 						Viewing images from: {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
 						<a
-							href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['dev'], 'group' => true]) }}"
+							href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['all'], 'group' => true]) }}"
 							class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
 					</div>
 				@endif
@@ -243,7 +243,7 @@
 					<div class="mt-4">
 						{{ $days->appends([
 									'sort' => $sort ?? 'updated_at',
-									'types' => $selectedTypes ?? ['dev'],
+									'types' => $selectedTypes ?? ['all'],
 									'group' => $groupByDay ?? true,
 									'date' => $date ?? null,
 									'search' => $search ?? null
@@ -312,7 +312,7 @@
 					<div class="mt-4">
 						{{ $images->appends([
 									'sort' => $sort ?? 'updated_at',
-									'types' => $selectedTypes ?? ['dev'],
+									'types' => $selectedTypes ?? ['all'],
 									'group' => $groupByDay ?? true,
 									'date' => $date ?? null,
 									'search' => $search ?? null
