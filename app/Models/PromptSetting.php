@@ -21,6 +21,7 @@
 			'create_minimax',
 			'create_imagen',
 			'create_aura_flow',
+			'create_ideogram_v2a',
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -45,6 +46,7 @@
 			'create_minimax' => 'boolean',
 			'create_imagen' => 'boolean',
 			'create_aura' => 'boolean',
+			'create_ideogram_v2a' => 'boolean',
 		];
 
 

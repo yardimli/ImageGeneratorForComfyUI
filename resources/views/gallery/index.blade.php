@@ -111,6 +111,12 @@
 											{{ in_array('aura-flow', $selectedTypes ?? []) ? 'checked' : '' }}>
 										<label class="form-check-label" for="model-aura-flow">Aura Flow</label>
 									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="ideogram-v2a"
+										       id="model-ideogram-v2a"
+											{{ in_array('ideogram-v2a', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-ideogram-v2a">Ideogram v2a</label>
+									</div>
 									
 									<div class="mt-3">
 										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>

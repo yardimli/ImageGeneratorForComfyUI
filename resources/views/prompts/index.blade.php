@@ -125,6 +125,13 @@
 								<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1">
 							</div>
 						</div>
+						<div class="col-md-1">
+							<label class="form-check-label" for="createIdeogram-v2a">Ideogram v2a</label>
+							<div class="form-check mt-2">
+								<input type="hidden" name="create_ideogram_v2a" value="0">
+								<input type="checkbox" class="form-check-input" name="create_ideogram_v2a" id="createIdeogram-v2a" value="1">
+							</div>
+						</div>
 					</div>
 					
 					<div class="mb-3">

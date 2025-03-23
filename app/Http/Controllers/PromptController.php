@@ -45,6 +45,7 @@
 					'create_minimax' => 'required|in:0,1,true,false',
 					'create_imagen' => 'required|in:0,1,true,false',
 					'create_aura_flow' => 'required|in:0,1,true,false',
+					'create_ideogram_v2a'  => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -129,6 +130,7 @@
 					'create_minimax' => filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_imagen' => filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_aura_flow' => filter_var($settings['create_aura_flow'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					'create_ideogram_v2a' => filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
@@ -201,7 +203,21 @@
 								'model' => 'aura-flow',
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
-						}					}
+						}
+						if (filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'ideogram-v2a',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
+					}
 				}
 
 				return response()->json([
@@ -244,6 +260,7 @@
 				'create_minimax' => $settings->create_minimax,
 				'create_imagen' => $settings->create_imagen,
 				'create_aura_flow' => $settings->create_aura_flow,
+				'create_ideogram_v2a' => $settings->create_ideogram_v2a,
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,
