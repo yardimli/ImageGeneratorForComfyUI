@@ -58,5 +58,8 @@
 		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
 		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');
 
+		Route::get('/queue', [PromptController::class, 'queue'])->name('prompts.queue');
+		Route::delete('/queue/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('prompts.queue.delete');
+		Route::delete('/queue/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('prompts.queue.delete-all');
 	});
 

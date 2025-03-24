@@ -389,8 +389,6 @@
 			]);
 		}
 
-
-
 		public function bulkDelete(Request $request)
 		{
 			$request->validate([
@@ -481,6 +479,49 @@
 			$setting->delete();
 
 			return response()->json(['success' => true, 'message' => 'Settings and images deleted successfully']);
+		}
+
+		public function queue()
+		{
+			// Get queued prompts for the current user
+			$queuedPrompts = Prompt::where('user_id', auth()->id())
+				->whereIn('render_status', ['queued', 'pending', null]) // Not yet processed
+				->orderBy('created_at', 'desc')
+				->get();
+
+			return view('prompts.queue', compact('queuedPrompts'));
+		}
+
+		public function deleteQueuedPrompt(Prompt $prompt)
+		{
+			// Check authorization
+			if ($prompt->user_id !== auth()->id()) {
+				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			}
+
+			// Only delete if the prompt is still in the queue
+			if ($prompt->render_status === 'queued' || $prompt->render_status === 'pending' || $prompt->render_status === null) {
+				$prompt->delete();
+				return response()->json(['success' => true, 'message' => 'Prompt deleted successfully']);
+			}
+
+			return response()->json(['success' => false, 'message' => 'Cannot delete prompt that is not in queue']);
+		}
+
+		public function deleteAllQueuedPrompts()
+		{
+			$userId = auth()->id();
+
+			// Delete all queued prompts for the current user
+			$deleted = Prompt::where('user_id', $userId)
+				->whereIn('render_status', ['queued', 'pending', null])
+				->delete();
+
+			return response()->json([
+				'success' => true,
+				'message' => "Successfully deleted $deleted queued prompts",
+				'deleted_count' => $deleted
+			]);
 		}
 
 	}
