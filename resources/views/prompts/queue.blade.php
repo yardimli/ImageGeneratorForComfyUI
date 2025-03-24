@@ -97,6 +97,21 @@
 
 @section('scripts')
 	<script>
+		function updateQueueCount() {
+			fetch('/api/prompts/queue-count')
+				.then(response => response.json())
+				.then(data => {
+					// Update all queue count elements on the page
+					document.querySelectorAll('#queueCount, #navQueueCount').forEach(element => {
+						if (element) {
+							element.textContent = data.count;
+							element.className = 'badge ' + (data.count > 10 ? 'bg-danger' : data.count > 5 ? 'bg-info' : 'bg-primary');
+						}
+					});
+				})
+				.catch(error => console.error('Error fetching queue count:', error));
+		}
+		
 		document.addEventListener('DOMContentLoaded', function() {
 			// Reload queue count every 5 seconds
 			setInterval(updateQueueCount, 5000);
