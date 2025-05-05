@@ -258,7 +258,7 @@ function renderHistoryImages() {
 		// Use a unique ID for the usage badge based on image path hash or index + page for stability across pages/sorts
 		const uniqueBadgeId = `usage-${currentPage}-${index}`;
 		html += `
-            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4"> {{-- Adjusted grid for more items --}}
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4">
                 <div class="card image-history-card h-100 ${isSelected ? 'border border-primary' : ''}">
                     <div class="card-body p-2 d-flex flex-column">
                         <div class="text-center mb-2 position-relative flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 150px;">
@@ -273,6 +273,9 @@ function renderHistoryImages() {
                                 ${image.name}
                             </label>
                         </div>
+                         <small class="text-muted d-block text-center mt-1" style="font-size: 0.75rem;">
+                            ${image.uploaded_at_formatted || 'Date N/A'}
+                        </small>
                     </div>
                 </div>
             </div>
@@ -773,4 +776,28 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('addSelectedImagesBtn').addEventListener('click', function () {
 		addSelectedImages();
 	});
+	
+	const historySortDropdown = document.getElementById('historySort');
+	const historyPerPageDropdown = document.getElementById('historyPerPage');
+	
+	if (historySortDropdown) {
+		historySortDropdown.addEventListener('change', function() {
+			currentHistorySort = this.value;
+			loadUploadHistory(1); // Reload from page 1 with new sort
+		});
+	}
+	if (historyPerPageDropdown) {
+		historyPerPageDropdown.addEventListener('change', function() {
+			currentHistoryPerPage = parseInt(this.value, 10);
+			loadUploadHistory(1); // Reload from page 1 with new perPage
+		});
+	}
+	
+	// Initial setup check
+	if (document.querySelector('#singleMode').checked) {
+		document.querySelector('#singleMode').dispatchEvent(new Event('change'));
+	} else {
+		document.querySelector('#dualMode').dispatchEvent(new Event('change'));
+	}
+	
 });

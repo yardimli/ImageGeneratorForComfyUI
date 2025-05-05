@@ -166,115 +166,124 @@
 		public function getUploadedImages(Request $request)
 		{
 			$page = $request->query('page', 1);
-			// Get sort and perPage parameters with defaults
-			$sort = $request->query('sort', 'newest'); // Default to newest
-			$perPage = $request->query('perPage', 12); // Default to 12
+			$sort = $request->query('sort', 'newest');
+			$perPage = $request->query('perPage', 12);
 
-			// Validate perPage to be one of the allowed values
 			$allowedPerPages = [12, 24, 48, 96];
 			if (!in_array($perPage, $allowedPerPages)) {
-				$perPage = 12; // Reset to default if invalid
+				$perPage = 12;
 			}
-			$perPage = (int)$perPage; // Cast to integer
+			$perPage = (int)$perPage;
 
-			// --- Start: Existing logic to gather images and usage counts ---
-			// Get all prompt settings for this user that have input images (mix type)
+			// --- Start: Logic to gather images, usage counts, and DATES ---
+			// Get usage counts first (remains the same)
 			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
-				->whereNotNull('input_image_1')
-				->WhereNotNull('input_image_2')
+				->where(function ($q) {
+					$q->whereNotNull('input_image_1')->where('input_image_1', '!=', '')
+						->orWhereNotNull('input_image_2')->where('input_image_2', '!=', '');
+				})
 				->select('input_image_1', 'input_image_2')
 				->get();
 
-			$usageCounts = []; // Track usage count for each image path
+			$usageCounts = [];
 			foreach ($prompts as $prompt) {
 				if (!empty($prompt->input_image_1)) {
-					if (!isset($usageCounts[$prompt->input_image_1])) {
-						$usageCounts[$prompt->input_image_1] = 0;
-					}
-					$usageCounts[$prompt->input_image_1]++;
+					$usageCounts[$prompt->input_image_1] = ($usageCounts[$prompt->input_image_1] ?? 0) + 1;
 				}
 				if (!empty($prompt->input_image_2)) {
-					if (!isset($usageCounts[$prompt->input_image_2])) {
-						$usageCounts[$prompt->input_image_2] = 0;
-					}
-					$usageCounts[$prompt->input_image_2]++;
+					$usageCounts[$prompt->input_image_2] = ($usageCounts[$prompt->input_image_2] ?? 0) + 1;
 				}
 			}
 
-			// Get all prompt settings for this user that have input images (mix and mix-one)
-			// Note: We might need to adjust this if mix-one also stores images differently
+			// Get settings to extract images and their creation dates
 			$settings = PromptSetting::where('user_id', auth()->id())
-				->whereIn('generation_type', ['mix', 'mix-one']) // Include both types if needed
+				->whereIn('generation_type', ['mix', 'mix-one'])
 				->where(function ($query) {
 					$query->whereNotNull('input_images_1')
 						->orWhereNotNull('input_images_2');
 				})
-				->select('input_images_1', 'input_images_2', 'generation_type') // Select generation_type
+				->select('input_images_1', 'input_images_2', 'generation_type', 'created_at') // Select created_at
+				->orderBy('created_at', 'asc') // Process older settings first to easily find the earliest date
 				->get();
 
-			$images = [];
+			// Use an associative array to store unique image data and track the earliest date
+			$uniqueImagesData = [];
+
 			foreach ($settings as $setting) {
+				$settingCreatedAt = $setting->created_at; // Carbon instance
+
+				// Process input_images_1 (always contains image data)
 				if ($setting->input_images_1) {
 					$inputImages1 = json_decode($setting->input_images_1, true);
 					foreach ($inputImages1 as $img) {
 						if (isset($img['path']) && !empty($img['path'])) {
-							$images[] = [
-								'path' => $img['path'],
-								'name' => basename($img['path']),
-								'prompt' => $img['prompt'] ?? ''
-							];
+							$path = $img['path'];
+							// If path not seen before, or this setting is older, store/update its data
+							if (!isset($uniqueImagesData[$path])) {
+								$uniqueImagesData[$path] = [
+									'path' => $path,
+									'name' => basename($path),
+									'prompt' => $img['prompt'] ?? '',
+									'created_at' => $settingCreatedAt // Store Carbon instance initially
+								];
+							}
+							// No need for 'else' because we ordered by created_at asc
 						}
 					}
 				}
-				// Only process input_images_2 if it's for 'mix' type (contains images)
+
+				// Process input_images_2 ONLY if it's 'mix' type (contains images)
 				if ($setting->generation_type === 'mix' && $setting->input_images_2) {
 					$inputImages2 = json_decode($setting->input_images_2, true);
 					foreach ($inputImages2 as $img) {
-						// Ensure it's an image structure, not a prompt structure from mix-one
 						if (isset($img['path']) && !empty($img['path'])) {
-							$images[] = [
-								'path' => $img['path'],
-								'name' => basename($img['path']),
-								'prompt' => '' // Right side images don't have prompts in this structure
-							];
+							$path = $img['path'];
+							if (!isset($uniqueImagesData[$path])) {
+								$uniqueImagesData[$path] = [
+									'path' => $path,
+									'name' => basename($path),
+									'prompt' => '', // Right side images don't have prompts here
+									'created_at' => $settingCreatedAt
+								];
+							}
+							// No need for 'else'
 						}
 					}
 				}
 			}
 
-			// Get unique images and add usage count
-			$uniqueImages = [];
-			$paths = [];
-			foreach ($images as $image) {
-				if (!in_array($image['path'], $paths)) {
-					$paths[] = $image['path'];
-					// Add usage count to the image data
-					$image['usage_count'] = $usageCounts[$image['path']] ?? 0;
-					$uniqueImages[] = $image;
-				}
+			// Convert back to indexed array and add usage count + formatted date
+			$images = [];
+			foreach ($uniqueImagesData as $path => $data) {
+				$data['usage_count'] = $usageCounts[$path] ?? 0;
+				// Format the Carbon date instance
+				$data['uploaded_at_formatted'] = $data['created_at'] instanceof Carbon
+					? $data['created_at']->format('Y-m-d H:i') // Format as desired
+					: 'N/A'; // Fallback if date is missing/invalid
+				unset($data['created_at']); // Remove the Carbon instance
+				$images[] = $data;
 			}
-			$images = $uniqueImages;
-			// --- End: Existing logic ---
+			// --- End: Modified logic ---
+
 
 			// Apply sorting based on the 'sort' parameter
 			usort($images, function ($a, $b) use ($sort) {
 				switch ($sort) {
 					case 'oldest':
-						// Assuming filenames contain sortable timestamps (like time())
+						// Use the name (timestamp) for sorting oldest first
 						return strcmp($a['name'], $b['name']);
 					case 'count_desc':
-						// Sort by usage count descending, then by name descending as tie-breaker
 						$countComparison = $b['usage_count'] <=> $a['usage_count'];
-						return $countComparison !== 0 ? $countComparison : strcmp($b['name'], $a['name']);
+						return $countComparison !== 0 ? $countComparison : strcmp($b['name'], $a['name']); // Tie-break newest
 					case 'newest':
 					default:
-						// Assuming filenames contain sortable timestamps (like time())
-						return strcmp($b['name'], $a['name']); // Default newest first
+						// Use the name (timestamp) for sorting newest first
+						return strcmp($b['name'], $a['name']);
 				}
 			});
 
-			// Pagination - Use the dynamic $perPage
+			// Pagination
 			$totalImages = count($images);
 			$totalPages = ceil($totalImages / $perPage);
 			$startIndex = ($page - 1) * $perPage;
@@ -286,7 +295,7 @@
 					'current_page' => (int)$page,
 					'total_pages' => $totalPages,
 					'total_images' => $totalImages,
-					'per_page' => $perPage // Return per_page setting
+					'per_page' => $perPage
 				]
 			]);
 		}
