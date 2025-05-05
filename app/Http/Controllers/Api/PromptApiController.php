@@ -24,7 +24,7 @@
 				$userPrompts = Prompt::where('render_status', 0)
 					->where('user_id', $userId)
 					->orderBy('id', 'desc')
-					->limit(2)
+					->limit(3)
 					->get();
 				$prompts = $prompts->merge($userPrompts);
 			}
@@ -34,7 +34,7 @@
 				$userPrompts = Prompt::where('render_status', 1)
 					->where('user_id', $userId)
 					->orderBy('id', 'desc')
-					->limit(2)
+					->limit(3)
 					->get();
 				$prompts = $prompts->merge($userPrompts);
 			}
@@ -44,7 +44,7 @@
 				$userPrompts = Prompt::where('render_status', 3)
 					->where('user_id', $userId)
 					->orderBy('id', 'desc')
-					->limit(2)
+					->limit(3)
 					->get();
 				$prompts = $prompts->merge($userPrompts);
 			}

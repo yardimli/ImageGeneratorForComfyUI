@@ -209,8 +209,9 @@ def generate_images_from_api():
                     skip_continue = False
                     prompt_status_counter[prompt_id] = prompt_status_counter.get(prompt_id, 0) + 1
                     if prompt_status_counter[prompt_id] > 20:
-                        skip_continue = True
+                        # skip_continue = True
                         print(f"Skipping prompt {prompt_id} - seen with status 1 more than 10 times, try render again")
+                        update_render_status(prompt_id, 4)
                         del prompt_status_counter[prompt_id]
 
                     if os.path.exists(output_file):

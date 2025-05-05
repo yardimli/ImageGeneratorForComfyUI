@@ -61,5 +61,6 @@
 		Route::get('/queue', [PromptController::class, 'queue'])->name('prompts.queue');
 		Route::delete('/queue/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('prompts.queue.delete-all');
 		Route::delete('/queue/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('prompts.queue.delete');
+		Route::post('/queue/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('prompts.queue.requeue');
 	});
 

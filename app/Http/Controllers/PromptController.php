@@ -1,4 +1,5 @@
 <?php
+
 	namespace App\Http\Controllers;
 
 	use App\Models\Prompt;
@@ -45,7 +46,7 @@
 					'create_minimax' => 'required|in:0,1,true,false',
 					'create_imagen' => 'required|in:0,1,true,false',
 					'create_aura_flow' => 'required|in:0,1,true,false',
-					'create_ideogram_v2a'  => 'required|in:0,1,true,false',
+					'create_ideogram_v2a' => 'required|in:0,1,true,false',
 					'create_luma_photon' => 'required|in:0,1,true,false',
 					'create_recraft_20b' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
@@ -268,7 +269,7 @@
 			$settings = PromptSetting::findOrFail($id);
 			$prompts = Prompt::where('prompt_setting_id', $id)->get();
 
-			$prompts = Prompt::where('prompt_setting_id', $id)->get()->map(function($prompt) {
+			$prompts = Prompt::where('prompt_setting_id', $id)->get()->map(function ($prompt) {
 				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
 					$prompt->thumbnail = Thumbnail::src($prompt->filename)
 						->preset('thumbnail_450_jpg')
@@ -489,8 +490,14 @@
 				->orderBy('created_at', 'desc')
 				->get();
 
-			return view('prompts.queue', compact('queuedPrompts'));
+			$failedPrompts = Prompt::where('user_id', auth()->id())
+				->where('render_status', 4) // Status for failed
+				->orderBy('updated_at', 'desc') // Show most recently failed first
+				->get();
+
+			return view('prompts.queue', compact('queuedPrompts', 'failedPrompts'));
 		}
+
 
 		public function deleteQueuedPrompt(Prompt $prompt)
 		{
@@ -523,5 +530,29 @@
 				'deleted_count' => $deleted
 			]);
 		}
+
+		public function requeuePrompt(Prompt $prompt)
+		{
+			// Check authorization
+			if ($prompt->user_id !== auth()->id()) {
+				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			}
+
+			// Check if the prompt actually failed
+			if ($prompt->render_status != 4) {
+				return response()->json(['success' => false, 'message' => 'Prompt did not fail, cannot requeue'], 400);
+			}
+
+			// Reset status to queued (0)
+			$prompt->render_status = 0;
+			$prompt->save();
+
+			return response()->json([
+				'success' => true,
+				'message' => 'Prompt requeued successfully',
+				'prompt_id' => $prompt->id
+			]);
+		}
+
 
 	}
