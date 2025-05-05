@@ -12,6 +12,9 @@ let targetSide = '';
 let prompts = [];
 let promptCounter = 0;
 
+let currentHistorySort = 'newest';
+let currentHistoryPerPage = 12;
+
 
 function setDimensions(width, height) {
 	const widthInput = document.getElementById('width');
@@ -56,23 +59,23 @@ function addLeftImage(imagePath = '', strength = 3, prompt = '', id = null) {
 	document.getElementById('leftImagesContainer').insertAdjacentHTML('beforeend', imageHtml);
 	
 	// Add event listeners for the new elements
-	document.getElementById(`${id}-strength`).addEventListener('input', function() {
+	document.getElementById(`${id}-strength`).addEventListener('input', function () {
 		document.getElementById(`${id}-strength-value`).textContent = this.value;
 		updateLeftImagesJson();
 	});
 	
-	document.getElementById(`${id}-prompt`).addEventListener('input', function() {
+	document.getElementById(`${id}-prompt`).addEventListener('input', function () {
 		updateLeftImagesJson();
 	});
 	
-	document.querySelector(`#${id}-card .remove-image`).addEventListener('click', function() {
+	document.querySelector(`#${id}-card .remove-image`).addEventListener('click', function () {
 		const id = this.getAttribute('data-id');
 		document.getElementById(`${id}-card`).remove();
 		leftImages = leftImages.filter(img => img.id !== id);
 		updateLeftImagesJson();
 	});
 	
-	document.querySelector(`#${id}-card .upload-image`).addEventListener('click', function() {
+	document.querySelector(`#${id}-card .upload-image`).addEventListener('click', function () {
 		const id = this.getAttribute('data-id');
 		document.getElementById('uploadTarget').value = id;
 		const uploadModal = new bootstrap.Modal(document.getElementById('uploadImageModal'));
@@ -120,19 +123,19 @@ function addRightImage(imagePath = '', strength = 3, id = null) {
 	document.getElementById('rightImagesContainer').insertAdjacentHTML('beforeend', imageHtml);
 	
 	// Add event listeners for the new elements
-	document.getElementById(`${id}-strength`).addEventListener('input', function() {
+	document.getElementById(`${id}-strength`).addEventListener('input', function () {
 		document.getElementById(`${id}-strength-value`).textContent = this.value;
 		updateRightImagesJson();
 	});
 	
-	document.querySelector(`#${id}-card .remove-image`).addEventListener('click', function() {
+	document.querySelector(`#${id}-card .remove-image`).addEventListener('click', function () {
 		const id = this.getAttribute('data-id');
 		document.getElementById(`${id}-card`).remove();
 		rightImages = rightImages.filter(img => img.id !== id);
 		updateRightImagesJson();
 	});
 	
-	document.querySelector(`#${id}-card .upload-image`).addEventListener('click', function() {
+	document.querySelector(`#${id}-card .upload-image`).addEventListener('click', function () {
 		const id = this.getAttribute('data-id');
 		document.getElementById('uploadTarget').value = id;
 		const uploadModal = new bootstrap.Modal(document.getElementById('uploadImageModal'));
@@ -184,7 +187,14 @@ function openUploadHistory(side) {
 	targetSide = side;
 	selectedImages = [];
 	document.getElementById('selectedCount').textContent = '0 selected';
-	loadUploadHistory(1);
+	
+	// NEW: Set dropdowns to current values when opening
+	const sortDropdown = document.getElementById('historySort');
+	const perPageDropdown = document.getElementById('historyPerPage');
+	if (sortDropdown) sortDropdown.value = currentHistorySort;
+	if (perPageDropdown) perPageDropdown.value = currentHistoryPerPage;
+	
+	loadUploadHistory(1); // Load page 1 with current settings
 	const modal = new bootstrap.Modal(document.getElementById('uploadHistoryModal'));
 	modal.show();
 }
@@ -193,7 +203,7 @@ async function loadUploadHistory(page) {
 	currentPage = page;
 	const historyContainer = document.getElementById('historyImagesContainer');
 	historyContainer.innerHTML = `
-        <div class="text-center py-5">
+        <div class="col-12 text-center py-5">
             <div class="spinner-border" role="status">
                 <span class="visually-hidden">Loading...</span>
             </div>
@@ -201,31 +211,42 @@ async function loadUploadHistory(page) {
     `;
 	
 	try {
-		const response = await fetch(`/image-mix/uploads?page=${page}`);
+		// NEW: Include sort and perPage parameters in the fetch URL
+		const response = await fetch(`/image-mix/uploads?page=${page}&sort=${currentHistorySort}&perPage=${currentHistoryPerPage}`);
 		const data = await response.json();
+		
+		if (!response.ok) {
+			throw new Error(data.message || `HTTP error! status: ${response.status}`);
+		}
 		
 		historyImages = data.images;
 		totalPages = data.pagination.total_pages;
+		// Optional: Update currentHistoryPerPage if backend corrected it, though unlikely with validation
+		// currentHistoryPerPage = data.pagination.per_page;
 		
 		renderHistoryImages();
 		renderPagination();
+		
 	} catch (error) {
 		console.error('Error loading upload history:', error);
 		historyContainer.innerHTML = `
             <div class="col-12 text-center">
-                <div class="alert alert-danger">Failed to load images. Please try again.</div>
+                <div class="alert alert-danger">Failed to load images. ${error.message}. Please try again.</div>
             </div>
         `;
+		// Clear pagination if load fails
+		document.getElementById('historyPagination').innerHTML = '';
 	}
 }
 
 function renderHistoryImages() {
 	const historyContainer = document.getElementById('historyImagesContainer');
+	historyContainer.innerHTML = ''; // Clear previous content or spinner
 	
 	if (historyImages.length === 0) {
 		historyContainer.innerHTML = `
             <div class="col-12 text-center">
-                <div class="alert alert-info">No uploaded images found.</div>
+                <div class="alert alert-info">No uploaded images found matching the criteria.</div>
             </div>
         `;
 		return;
@@ -234,19 +255,21 @@ function renderHistoryImages() {
 	let html = '';
 	historyImages.forEach((image, index) => {
 		const isSelected = selectedImages.some(img => img.path === image.path);
+		// Use a unique ID for the usage badge based on image path hash or index + page for stability across pages/sorts
+		const uniqueBadgeId = `usage-${currentPage}-${index}`;
 		html += `
-            <div class="col-md-3 mb-4">
-                <div class="card image-history-card ${isSelected ? 'border border-primary' : ''}">
-                    <div class="card-body p-2">
-                        <div class="text-center mb-2 position-relative">
-                            <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px;" id="usage-${index}">
+            <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6 mb-4"> {{-- Adjusted grid for more items --}}
+                <div class="card image-history-card h-100 ${isSelected ? 'border border-primary' : ''}">
+                    <div class="card-body p-2 d-flex flex-column">
+                        <div class="text-center mb-2 position-relative flex-grow-1 d-flex align-items-center justify-content-center" style="min-height: 150px;">
+                            <span class="position-absolute badge bg-primary" style="top: 5px; left: 5px; cursor: pointer; z-index: 1;" id="${uniqueBadgeId}" title="Used ${image.usage_count} time(s). Click to view generated images.">
                                 ${image.usage_count || 0}
                             </span>
-                            <img src="${image.path}" class="img-fluid" style="height: 150px; object-fit: contain;">
+                            <img src="${image.path}" class="img-fluid" style="max-height: 150px; object-fit: contain;">
                         </div>
-                        <div class="form-check">
+                        <div class="form-check mt-auto">
                             <input class="form-check-input" type="checkbox" value="${index}" id="check-${index}" ${isSelected ? 'checked' : ''}>
-                            <label class="form-check-label" for="check-${index}" style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%;">
+                            <label class="form-check-label small" for="check-${index}" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: block;" title="${image.name}">
                                 ${image.name}
                             </label>
                         </div>
@@ -255,37 +278,33 @@ function renderHistoryImages() {
             </div>
         `;
 	});
-	
 	historyContainer.innerHTML = html;
 	
-	// Add event listeners to checkboxes and cards
+	// Add event listeners to checkboxes, cards, and usage badges
 	historyImages.forEach((image, index) => {
-		const badge = document.getElementById(`usage-${index}`);
+		const uniqueBadgeId = `usage-${currentPage}-${index}`;
+		const badge = document.getElementById(uniqueBadgeId);
 		if (badge) {
-			badge.addEventListener('click', function(e) {
+			badge.addEventListener('click', function (e) {
 				e.stopPropagation(); // Prevent triggering the card click event
 				window.open(`/gallery/filter?source_image=${encodeURIComponent(image.path)}`, '_blank');
 			});
-			badge.style.cursor = 'pointer';
-			badge.title = 'Click to view all images created with this source';
 		}
 		
 		const checkbox = document.getElementById(`check-${index}`);
 		if (checkbox) {
-			checkbox.addEventListener('change', function() {
+			checkbox.addEventListener('change', function () {
 				toggleImageSelection(index);
 			});
-			
-			// Make the whole card clickable
 			const card = checkbox.closest('.image-history-card');
 			if (card) {
-				card.addEventListener('click', function(e) {
-					// Don't toggle if clicking on the checkbox itself (it's already handled)
-					if (e.target !== checkbox) {
+				card.addEventListener('click', function (e) {
+					if (e.target !== checkbox && !e.target.closest('input') && !e.target.closest('.badge')) { // Prevent toggle if clicking checkbox or badge
 						checkbox.checked = !checkbox.checked;
 						toggleImageSelection(index);
 					}
 				});
+				card.style.cursor = 'pointer'; // Indicate card is clickable
 			}
 		}
 	});
@@ -362,7 +381,7 @@ function renderPagination() {
 	
 	// Add event listeners to pagination links
 	document.querySelectorAll('#historyPagination .page-link').forEach(link => {
-		link.addEventListener('click', function(e) {
+		link.addEventListener('click', function (e) {
 			e.preventDefault();
 			const page = parseInt(this.getAttribute('data-page'));
 			if (!isNaN(page) && page > 0 && page <= totalPages) {
@@ -439,14 +458,14 @@ function addPrompt(promptText = '') {
 	document.getElementById('rightPromptsContainer').insertAdjacentHTML('beforeend', promptHtml);
 	
 	// Add event listeners
-	document.querySelector(`#${id}-card .remove-prompt`).addEventListener('click', function() {
+	document.querySelector(`#${id}-card .remove-prompt`).addEventListener('click', function () {
 		const id = this.getAttribute('data-id');
 		document.getElementById(`${id}-card`).remove();
 		prompts = prompts.filter(p => p.id !== id);
 		updatePromptsJson();
 	});
 	
-	document.getElementById(`${id}-text`).addEventListener('input', function() {
+	document.getElementById(`${id}-text`).addEventListener('input', function () {
 		updatePromptsJson();
 	});
 	
@@ -473,12 +492,12 @@ function updatePromptsJson() {
 	prompts = updatedPrompts;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 	// Add initial empty image to each side
 	addLeftImage();
 	addRightImage();
 	
-	document.querySelector('#singleMode').addEventListener('change', function() {
+	document.querySelector('#singleMode').addEventListener('change', function () {
 		if (this.checked) {
 			// Hide dual mode elements
 			document.getElementById('rightImagesContainer').classList.add('d-none');
@@ -505,7 +524,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 
 // Modify the existing dualMode event listener
-	document.querySelector('#dualMode').addEventListener('change', function() {
+	document.querySelector('#dualMode').addEventListener('change', function () {
 		if (this.checked) {
 			// Show dual mode elements
 			document.getElementById('rightImagesContainer').classList.remove('d-none');
@@ -531,52 +550,88 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 	});
 	
-	document.getElementById('addPromptBtn').addEventListener('click', function() {
+	document.getElementById('addPromptBtn').addEventListener('click', function () {
 		addPrompt();
 	});
 	
 	// Event listener for aspect ratio change
-	document.getElementById('aspectRatio').addEventListener('change', function() {
+	document.getElementById('aspectRatio').addEventListener('change', function () {
 		const [ratio, baseSize] = this.value.split('-');
 		const [w, h] = ratio.split(':');
 		if (baseSize === '1024') {
 			switch (ratio) {
-				case '1:1': setDimensions(1024, 1024); break;
-				case '3:2': setDimensions(1216, 832); break;
-				case '4:3': setDimensions(1152, 896); break;
-				case '16:9': setDimensions(1344, 768); break;
-				case '21:9': setDimensions(1536, 640); break;
-				case '2:3': setDimensions(832, 1216); break;
-				case '3:4': setDimensions(896, 1152); break;
-				case '9:16': setDimensions(768, 1344); break;
-				case '9:21': setDimensions(640, 1536); break;
+				case '1:1':
+					setDimensions(1024, 1024);
+					break;
+				case '3:2':
+					setDimensions(1216, 832);
+					break;
+				case '4:3':
+					setDimensions(1152, 896);
+					break;
+				case '16:9':
+					setDimensions(1344, 768);
+					break;
+				case '21:9':
+					setDimensions(1536, 640);
+					break;
+				case '2:3':
+					setDimensions(832, 1216);
+					break;
+				case '3:4':
+					setDimensions(896, 1152);
+					break;
+				case '9:16':
+					setDimensions(768, 1344);
+					break;
+				case '9:21':
+					setDimensions(640, 1536);
+					break;
 			}
 		} else {
 			switch (ratio) {
-				case '1:1': setDimensions(1408, 1408); break;
-				case '3:2': setDimensions(1728, 1152); break;
-				case '4:3': setDimensions(1664, 1216); break;
-				case '16:9': setDimensions(1920, 1088); break;
-				case '21:9': setDimensions(2176, 960); break;
-				case '2:3': setDimensions(1152, 1728); break;
-				case '3:4': setDimensions(1216, 1664); break;
-				case '9:16': setDimensions(1088, 1920); break;
-				case '9:21': setDimensions(960, 2176); break;
+				case '1:1':
+					setDimensions(1408, 1408);
+					break;
+				case '3:2':
+					setDimensions(1728, 1152);
+					break;
+				case '4:3':
+					setDimensions(1664, 1216);
+					break;
+				case '16:9':
+					setDimensions(1920, 1088);
+					break;
+				case '21:9':
+					setDimensions(2176, 960);
+					break;
+				case '2:3':
+					setDimensions(1152, 1728);
+					break;
+				case '3:4':
+					setDimensions(1216, 1664);
+					break;
+				case '9:16':
+					setDimensions(1088, 1920);
+					break;
+				case '9:21':
+					setDimensions(960, 2176);
+					break;
 			}
 		}
 	});
 	
 	// Event listeners for adding new images
-	document.getElementById('addLeftImageBtn').addEventListener('click', function() {
+	document.getElementById('addLeftImageBtn').addEventListener('click', function () {
 		addLeftImage();
 	});
 	
-	document.getElementById('addRightImageBtn').addEventListener('click', function() {
+	document.getElementById('addRightImageBtn').addEventListener('click', function () {
 		addRightImage();
 	});
 	
 	// Handle image upload
-	document.getElementById('uploadImageBtn').addEventListener('click', async function() {
+	document.getElementById('uploadImageBtn').addEventListener('click', async function () {
 		const targetId = document.getElementById('uploadTarget').value;
 		const fileInput = document.getElementById('imageUpload');
 		
@@ -624,7 +679,7 @@ document.addEventListener('DOMContentLoaded', function() {
 				}
 				
 				// Reattach event listener to the new upload button
-				document.querySelector(`#${targetId}-card .upload-image`).addEventListener('click', function() {
+				document.querySelector(`#${targetId}-card .upload-image`).addEventListener('click', function () {
 					const id = this.getAttribute('data-id');
 					document.getElementById('uploadTarget').value = id;
 					const uploadModal = new bootstrap.Modal(document.getElementById('uploadImageModal'));
@@ -644,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	// Form submission
-	document.getElementById('imageMixForm').addEventListener('submit', async function(e) {
+	document.getElementById('imageMixForm').addEventListener('submit', async function (e) {
 		e.preventDefault();
 		
 		filterEmptyImageBoxes();
@@ -706,16 +761,16 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	// Add event listeners for upload history buttons
-	document.getElementById('leftUploadHistoryBtn').addEventListener('click', function() {
+	document.getElementById('leftUploadHistoryBtn').addEventListener('click', function () {
 		openUploadHistory('left');
 	});
 	
-	document.getElementById('rightUploadHistoryBtn').addEventListener('click', function() {
+	document.getElementById('rightUploadHistoryBtn').addEventListener('click', function () {
 		openUploadHistory('right');
 	});
 	
 	// Add event listener for adding selected images
-	document.getElementById('addSelectedImagesBtn').addEventListener('click', function() {
+	document.getElementById('addSelectedImagesBtn').addEventListener('click', function () {
 		addSelectedImages();
 	});
 });

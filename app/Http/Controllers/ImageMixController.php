@@ -166,9 +166,19 @@
 		public function getUploadedImages(Request $request)
 		{
 			$page = $request->query('page', 1);
-			$perPage = 12;
+			// Get sort and perPage parameters with defaults
+			$sort = $request->query('sort', 'newest'); // Default to newest
+			$perPage = $request->query('perPage', 12); // Default to 12
 
-			// Get all prompt settings for this user that have input images
+			// Validate perPage to be one of the allowed values
+			$allowedPerPages = [12, 24, 48, 96];
+			if (!in_array($perPage, $allowedPerPages)) {
+				$perPage = 12; // Reset to default if invalid
+			}
+			$perPage = (int)$perPage; // Cast to integer
+
+			// --- Start: Existing logic to gather images and usage counts ---
+			// Get all prompt settings for this user that have input images (mix type)
 			$prompts = Prompt::where('user_id', auth()->id())
 				->where('generation_type', 'mix')
 				->whereNotNull('input_image_1')
@@ -177,27 +187,30 @@
 				->get();
 
 			$usageCounts = []; // Track usage count for each image path
-
 			foreach ($prompts as $prompt) {
-				if (!isset($usageCounts[$prompt->input_image_1])) {
-					$usageCounts[$prompt->input_image_1] = 0;
+				if (!empty($prompt->input_image_1)) {
+					if (!isset($usageCounts[$prompt->input_image_1])) {
+						$usageCounts[$prompt->input_image_1] = 0;
+					}
+					$usageCounts[$prompt->input_image_1]++;
 				}
-				$usageCounts[$prompt->input_image_1]++;
-
-				if (!isset($usageCounts[$prompt->input_image_2])) {
-					$usageCounts[$prompt->input_image_2] = 0;
+				if (!empty($prompt->input_image_2)) {
+					if (!isset($usageCounts[$prompt->input_image_2])) {
+						$usageCounts[$prompt->input_image_2] = 0;
+					}
+					$usageCounts[$prompt->input_image_2]++;
 				}
-				$usageCounts[$prompt->input_image_2]++;
 			}
 
-			// Get all prompt settings for this user that have input images
+			// Get all prompt settings for this user that have input images (mix and mix-one)
+			// Note: We might need to adjust this if mix-one also stores images differently
 			$settings = PromptSetting::where('user_id', auth()->id())
-				->where('generation_type', 'mix')
-				->where(function($query) {
+				->whereIn('generation_type', ['mix', 'mix-one']) // Include both types if needed
+				->where(function ($query) {
 					$query->whereNotNull('input_images_1')
 						->orWhereNotNull('input_images_2');
 				})
-				->select('input_images_1', 'input_images_2')
+				->select('input_images_1', 'input_images_2', 'generation_type') // Select generation_type
 				->get();
 
 			$images = [];
@@ -205,7 +218,7 @@
 				if ($setting->input_images_1) {
 					$inputImages1 = json_decode($setting->input_images_1, true);
 					foreach ($inputImages1 as $img) {
-						if (isset($img['path'])) {
+						if (isset($img['path']) && !empty($img['path'])) {
 							$images[] = [
 								'path' => $img['path'],
 								'name' => basename($img['path']),
@@ -214,14 +227,16 @@
 						}
 					}
 				}
-				if ($setting->input_images_2) {
+				// Only process input_images_2 if it's for 'mix' type (contains images)
+				if ($setting->generation_type === 'mix' && $setting->input_images_2) {
 					$inputImages2 = json_decode($setting->input_images_2, true);
 					foreach ($inputImages2 as $img) {
-						if (isset($img['path'])) {
+						// Ensure it's an image structure, not a prompt structure from mix-one
+						if (isset($img['path']) && !empty($img['path'])) {
 							$images[] = [
 								'path' => $img['path'],
 								'name' => basename($img['path']),
-								'prompt' => ''
+								'prompt' => '' // Right side images don't have prompts in this structure
 							];
 						}
 					}
@@ -235,22 +250,31 @@
 				if (!in_array($image['path'], $paths)) {
 					$paths[] = $image['path'];
 					// Add usage count to the image data
-					if (key_exists($image['path'], $usageCounts)) {
-						$image['usage_count'] = $usageCounts[$image['path']];
-					} else {
-						$image['usage_count'] = 0;
-					}
+					$image['usage_count'] = $usageCounts[$image['path']] ?? 0;
 					$uniqueImages[] = $image;
 				}
 			}
 			$images = $uniqueImages;
+			// --- End: Existing logic ---
 
-			// Sort by name (timestamp is usually in the filename)
-			usort($images, function ($a, $b) {
-				return strcmp($b['name'], $a['name']); // newest first
+			// Apply sorting based on the 'sort' parameter
+			usort($images, function ($a, $b) use ($sort) {
+				switch ($sort) {
+					case 'oldest':
+						// Assuming filenames contain sortable timestamps (like time())
+						return strcmp($a['name'], $b['name']);
+					case 'count_desc':
+						// Sort by usage count descending, then by name descending as tie-breaker
+						$countComparison = $b['usage_count'] <=> $a['usage_count'];
+						return $countComparison !== 0 ? $countComparison : strcmp($b['name'], $a['name']);
+					case 'newest':
+					default:
+						// Assuming filenames contain sortable timestamps (like time())
+						return strcmp($b['name'], $a['name']); // Default newest first
+				}
 			});
 
-			// Pagination
+			// Pagination - Use the dynamic $perPage
 			$totalImages = count($images);
 			$totalPages = ceil($totalImages / $perPage);
 			$startIndex = ($page - 1) * $perPage;
@@ -261,7 +285,8 @@
 				'pagination' => [
 					'current_page' => (int)$page,
 					'total_pages' => $totalPages,
-					'total_images' => $totalImages
+					'total_images' => $totalImages,
+					'per_page' => $perPage // Return per_page setting
 				]
 			]);
 		}

@@ -492,6 +492,8 @@
 
 			$failedPrompts = Prompt::where('user_id', auth()->id())
 				->where('render_status', 4) // Status for failed
+				->orWhere('render_status', 3) // In progress
+				->orWhere('render_status', 1) // In progress
 				->orderBy('updated_at', 'desc') // Show most recently failed first
 				->get();
 

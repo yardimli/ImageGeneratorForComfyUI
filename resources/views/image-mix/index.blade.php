@@ -194,12 +194,31 @@
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
-					<div class="row mb-3">
-						<div class="col-12 text-end">
+					<div class="row mb-3 align-items-center">
+						<div class="col-md-3">
+							<label for="historySort" class="form-label form-label-sm">Sort by</label>
+							<select id="historySort" class="form-select form-select-sm">
+								<option value="newest" selected>Newest First</option>
+								<option value="oldest">Oldest First</option>
+								<option value="count_desc">Usage Count (High to Low)</option>
+							</select>
+						</div>
+						<div class="col-md-2">
+							<label for="historyPerPage" class="form-label form-label-sm">Per Page</label>
+							<select id="historyPerPage" class="form-select form-select-sm">
+								<option value="12" selected>12</option>
+								<option value="24">24</option>
+								<option value="48">48</option>
+								<option value="96">96</option>
+							</select>
+						</div>
+						<div class="col-md-7 text-end"> {{-- Adjusted column size --}}
 							<span id="selectedCount" class="me-2">0 selected</span>
-							<button type="button" class="btn btn-primary" id="addSelectedImagesBtn">Add Selected Images</button>
+							<button type="button" class="btn btn-primary btn-sm" id="addSelectedImagesBtn">Add Selected Images</button>
 						</div>
 					</div>
+
+					{{-- Image Container --}}
 					<div class="row" id="historyImagesContainer">
 						<!-- Images will be loaded here -->
 						<div class="text-center py-5">
@@ -208,6 +227,8 @@
 							</div>
 						</div>
 					</div>
+
+					{{-- Pagination --}}
 					<div class="row mt-3">
 						<div class="col-12">
 							<nav aria-label="Page navigation">
