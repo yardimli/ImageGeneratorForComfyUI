@@ -66,11 +66,11 @@
 						<table class="table table-striped">
 							<thead>
 							<tr>
-								<th>Failed At</th>
+								<th style="min-width: 200px">Failed At</th>
 								<th>Model</th>
 								<th>Prompt</th>
 								<th>Size</th>
-								<th>Actions</th>
+								<th style="min-width: 220px">Actions</th>
 							</tr>
 							</thead>
 							<tbody id="failed-prompts-tbody">
