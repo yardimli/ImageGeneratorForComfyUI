@@ -5,7 +5,7 @@
 		<div class="card">
 			<div class="card-header">
 				<div class="d-flex justify-content-between align-items-center">
-					<h3 class="mb-0">Liked Album Covers</h3>
+					<h3 class="mb-0">Liked Covers</h3>
 					<div>
 						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#uploadCoverModal">
 							Upload Cover
@@ -17,7 +17,7 @@
 			</div>
 			<div class="card-body">
 				@if($likedImages->isEmpty())
-					<p>You have not marked any album covers as 'liked' yet.</p>
+					<p>You have not marked any covers as 'liked' yet.</p>
 				@else
 					<form id="generate-prompts-form">
 						<div class="d-flex align-items-center mb-3">

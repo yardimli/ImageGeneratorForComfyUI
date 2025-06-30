@@ -7,9 +7,9 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<h3 class="mb-0">
 						@if(isset($folder))
-							Album Covers: {{ basename($folder) }}
+							Covers: {{ basename($folder) }}
 						@else
-							Album Covers
+							Covers
 						@endif
 					</h3>
 					<div>
