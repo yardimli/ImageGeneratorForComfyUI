@@ -394,8 +394,14 @@
 
 		public function upscaleCover(Request $request, GoodAlbumCover $cover)
 		{
-			$cloudfrontUrl = rtrim(env('COVERS_AWS_CLOUDFRONT_URL'), '/');
-			$imageUrl = $cloudfrontUrl . '/' . $cover->album_path;
+			// VALIDATION: Ensure there is a Kontext image to upscale.
+			if (!$cover->kontext_path) {
+				return response()->json(['success' => false, 'message' => 'A Kontext image must be generated before upscaling.'], 422);
+			}
+
+			// Use the generated Kontext image as the source for upscaling.
+			// We need a full, public URL for the Replicate API.
+			$imageUrl = asset(Storage::url($cover->kontext_path));
 
 			try {
 				$response = Http::withHeaders([
@@ -406,7 +412,7 @@
 					"input" => [
 						"hdr" => 0.1,
 						"image" => $imageUrl,
-						"prompt" => "4k, enhance",
+						"prompt" => "4k, enhance, high detail",
 						"creativity" => 0.3,
 						"guess_mode" => true,
 						"resolution" => 2560,
@@ -481,10 +487,12 @@
 						return response()->json(['status' => 'error', 'message' => 'Failed to download the generated image.']);
 					}
 
-					$filename = 'upscaled_cover_' . $cover->id . '_' . Str::random(10) . '.png';
+					// The path for the final upscaled image.
+					$filename = 'upscaled_kontext_' . $cover->id . '_' . Str::random(10) . '.png';
 					$storagePath = 'public/album-covers/upscaled/' . $filename;
 					Storage::put($storagePath, $imageContents);
 
+					// We use the 'upscaled_path' field to store the final result.
 					$cover->upscaled_path = 'album-covers/upscaled/' . $filename;
 					$cover->upscale_status = 2; // Completed
 					$cover->save();

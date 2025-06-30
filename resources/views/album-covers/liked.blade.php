@@ -63,22 +63,28 @@
 											<div class="mt-3 border-top pt-2">
 												<label class="form-label fw-bold">Upscale</label>
 												<div id="upscale-controls-{{ $image->id }}">
-													@if($image->upscale_status == 0)
-														<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Upscale Image</button>
-													@elseif($image->upscale_status == 1)
-														<div class="text-warning">Upscaling in progress...</div>
-														<script>
-															document.addEventListener('DOMContentLoaded', function() {
-																if (typeof pollUpscaleStatus === 'function') {
-																	pollUpscaleStatus('{{ $image->id }}', '{{ $image->upscale_prediction_id }}');
-																}
-															});
-														</script>
-													@elseif($image->upscale_status == 2)
-														<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>
-													@elseif($image->upscale_status == 3)
-														<div class="text-danger">Upscale failed.</div>
-														<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Retry Upscale</button>
+													@if($image->kontext_path)
+														{{-- This logic only runs if a Kontext image exists --}}
+														@if(is_null($image->upscale_status) || $image->upscale_status == 0)
+															<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Upscale Image</button>
+														@elseif($image->upscale_status == 1)
+															<div class="text-warning">Upscaling in progress...</div>
+															<script>
+																document.addEventListener('DOMContentLoaded', function() {
+																	if (typeof pollUpscaleStatus === 'function') {
+																		pollUpscaleStatus('{{ $image->id }}', '{{ $image->upscale_prediction_id }}');
+																	}
+																});
+															</script>
+														@elseif($image->upscale_status == 2)
+															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>
+														@elseif($image->upscale_status == 3)
+															<div class="text-danger">Upscale failed.</div>
+															<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Retry Upscale</button>
+														@endif
+													@else
+														{{-- If no Kontext image, show a disabled button --}}
+														<button type="button" class="btn btn-success btn-sm" disabled title="Generate a Kontext image first to enable upscaling">Upscale Image</button>
 													@endif
 												</div>
 												<div class="upscale-status mt-2 small" id="upscale-status-{{ $image->id }}"></div>
