@@ -1,5 +1,6 @@
 <?php
 
+	use App\Http\Controllers\AlbumCoverController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageMixController;
@@ -62,5 +63,11 @@
 		Route::delete('/queue/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('prompts.queue.delete-all');
 		Route::delete('/queue/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('prompts.queue.delete');
 		Route::post('/queue/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('prompts.queue.requeue');
+
+		Route::get('/album-covers', [AlbumCoverController::class, 'index'])->name('album-covers.index');
+		Route::get('/album-covers/liked', [AlbumCoverController::class, 'showLiked'])->name('album-covers.liked');
+		Route::post('/album-covers/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('album-covers.update-liked');
+		Route::post('/album-covers/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('album-covers.generate-prompts');
+
 	});
 

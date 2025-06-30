@@ -1,6 +1,7 @@
 <?php
 
-	// app/Services/ChatGPTService.php
+// app/Services/ChatGPTService.php
+
 	namespace App\Services;
 
 	use Exception;
@@ -9,7 +10,7 @@
 	{
 		private $temperature;
 		private $max_retries = 4;
-		private $originalPrompt = '';  // Add this line
+		private $originalPrompt = ''; // Add this line
 
 		public function __construct()
 		{
@@ -28,12 +29,10 @@
 			$promptSplit = explode("::", $chatgptPrompt);
 			$prompts = [];
 			$explodePrompts = false;
-
 			for ($index = 0; $index < count($promptSplit); $index++) {
 				// Remove leading numbers from prompt
 				$prompt = preg_replace('/^[\d]+/', '', $promptSplit[$index]);
 				$promptCount = $batchCount;
-
 				// Check if next prompt starts with a number (batch count)
 				if ($index != count($promptSplit) - 1) {
 					if (preg_match('/^[\d]+/', $promptSplit[$index + 1], $matches)) {
@@ -41,7 +40,6 @@
 						$promptCount = intval($matches[0]);
 					}
 				}
-
 				if (trim($prompt) !== '') {
 					$prompts[] = [
 						'count' => $promptCount,
@@ -54,7 +52,6 @@
 			foreach ($prompts as $promptData) {
 				$prompt = str_replace('{prompt}', "\"$originalPrompt\"", $promptData['prompt_template']);
 				$chatgptAnswers = $this->retryQueryChatGPT($prompt, $promptData['count']);
-
 				if (empty($results)) {
 					$results = $chatgptAnswers;
 					continue;
@@ -78,15 +75,12 @@
 					}
 				}
 			}
-
 			return $results;
 		}
 
 		public function generatePrompts($prompt, $count, $precision, $originalPrompt = '')
 		{
-			$this->originalPrompt = $originalPrompt;
-
-			// Set temperature based on precision
+			$this->originalPrompt = $originalPrompt; // Set temperature based on precision
 			switch ($precision) {
 				case 'Specific':
 					$this->temperature = 0.5;
@@ -120,11 +114,9 @@
 		{
 			$answers = [];
 			$current_temperature = $this->temperature;
-
 			for ($i = 0; $i < $this->max_retries; $i++) {
 				try {
 					$is_last_retry = ($i == $this->max_retries - 1 && $this->max_retries > 1);
-
 					$messages = [
 						[
 							'role' => 'system',
@@ -135,18 +127,14 @@
 							'content' => "I want you to act as a prompt generator. Compose each answer as a visual sentence. " .
 								"Do not write explanations on replies. Format the answers as javascript json arrays with a " .
 								"single string per answer. Return exactly {$count} to my question. Answer the questions exactly. " .
-								"Answer the following question:\n{$prompt}" .
-								($is_last_retry ? "\nReturn exactly {$count} answers to my question." : "")
+								"Answer the following question:\n{$prompt}" . ($is_last_retry ? "\nReturn exactly {$count} answers to my question." : "")
 						]
 					];
-
 					$response = $this->queryChatGPT($messages); //, $current_temperature);
 					$answers = $this->parseResponse($response);
-
 					if (count($answers) === $count) {
 						return $answers;
 					}
-
 				} catch (Exception $e) {
 					if ($i === $this->max_retries - 1) {
 						throw $e;
@@ -155,39 +143,30 @@
 					$current_temperature = max(0.5, $current_temperature - 0.3);
 				}
 			}
-
 			throw new Exception("ChatGPT answers doesn't match batch count. Got " . count($answers) . " answers, expected {$count}.");
 		}
 
 		private function queryChatGPT($messages)
 		{
 			session_write_close();
-
 			$llm_base_url = 'https://api.openai.com/v1/chat/completions';
-
 			foreach ($messages as &$message) {
 				if (isset($message['content'])) {
 					$message['content'] = preg_replace('/\{prompt\}/', $this->originalPrompt, $message['content']);
 				}
 			}
-
 			$data = array(
-				'model' =>  env('OPEN_AI_MODEL'),
+				'model' => env('OPEN_AI_MODEL'),
 				'messages' => $messages,
 				'max_tokens' => 1024,
 				'temperature' => $this->temperature,
 			);
-
 			$this->log_to_file("\n\n Request Data: \n\n");
 			$this->log_to_file(json_encode($messages));
-
-
 			$post_json = json_encode($data);
-
 			if (json_last_error() !== JSON_ERROR_NONE) {
 				echo 'JSON Encoding Error: ' . json_last_error_msg();
 			}
-
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, $llm_base_url);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
@@ -195,12 +174,10 @@
 			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
 			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
 			curl_setopt($ch, CURLOPT_POSTFIELDS, $post_json);
-
 			$headers = array();
 			$headers[] = 'Content-Type: application/json';
 			$headers[] = "Authorization: Bearer " . env('OPEN_AI_API_KEY');
 			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-
 			$response = curl_exec($ch);
 			if (curl_errno($ch)) {
 				echo 'CURL Error: ' . curl_error($ch);
@@ -208,21 +185,87 @@
 			}
 			curl_close($ch);
 			session_start();
-
 			$this->log_to_file("\n\n Response Data: \n\n");
 			$this->log_to_file($response);
-
 			return $response;
+		}
+
+		public function generatePromptFromImage(string $prompt, string $base64Image, string $mimeType = 'image/jpeg'): string
+		{
+			session_write_close();
+
+			$dataUri = "data:" . $mimeType . ";base64," . $base64Image;
+			$messages = [
+				[
+					"role" => "user",
+					"content" => [
+						["type" => "text", "text" => $prompt],
+						["type" => "image_url", "image_url" => ["url" => $dataUri, "detail" => "auto"]]
+					]
+				]
+			];
+
+			$data = [
+				'model' => env('OPENAI_VISION_MODEL', 'gpt-4-vision-preview'),
+				'messages' => $messages,
+				'max_tokens' => 300,
+				'temperature' => 0.5,
+			];
+
+			$this->log_to_file("\n\n Vision API Request Data: \n\n");
+			$this->log_to_file(json_encode($data));
+
+			$post_json = json_encode($data);
+			if (json_last_error() !== JSON_ERROR_NONE) {
+				throw new Exception('JSON Encoding Error: ' . json_last_error_msg());
+			}
+
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, 'https://api.openai.com/v1/chat/completions');
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+			curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+			curl_setopt($ch, CURLOPT_POSTFIELDS, $post_json);
+
+			$headers = [];
+			$headers[] = 'Content-Type: application/json';
+			$headers[] = "Authorization: Bearer " . env('OPEN_AI_API_KEY');
+			curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+			$response = curl_exec($ch);
+
+			if (curl_errno($ch)) {
+				$error = 'CURL Error: ' . curl_error($ch);
+				curl_close($ch);
+				session_start();
+				throw new Exception($error);
+			}
+			curl_close($ch);
+			session_start();
+
+			$this->log_to_file("\n\n Vision API Response Data: \n\n");
+			$this->log_to_file($response);
+
+			$responseData = json_decode($response, true);
+
+			if (isset($responseData['choices'][0]['message']['content'])) {
+				return $responseData['choices'][0]['message']['content'];
+			}
+
+			if (isset($responseData['error']['message'])) {
+				throw new Exception("OpenAI API Error: " . $responseData['error']['message']);
+			}
+
+			throw new Exception("Failed to get a valid response from OpenAI Vision API.");
 		}
 
 		private function parseResponse($response)
 		{
 			$data = json_decode($response, true);
-
 			if (!isset($data['choices'][0]['message']['content'])) {
 				throw new Exception("Invalid response format from ChatGPT");
 			}
-
 			$content = $data['choices'][0]['message']['content'];
 
 			// Try to extract JSON from the response
@@ -230,11 +273,9 @@
 			if (empty($matches)) {
 				preg_match('/\{.*\}/s', $content, $matches);
 			}
-
 			if (empty($matches)) {
 				throw new Exception("No JSON structure found in response");
 			}
-
 			$jsonStr = $matches[0];
 
 			// Clean up common formatting issues
@@ -248,7 +289,6 @@
 				// If parsing failed, try wrapping in array
 				$parsed = json_decode("[$jsonStr]", true);
 			}
-
 			if (json_last_error() !== JSON_ERROR_NONE) {
 				throw new Exception("Failed to parse JSON response: " . json_last_error_msg());
 			}
@@ -262,7 +302,6 @@
 			if (is_string($data)) {
 				return [$data];
 			}
-
 			if (is_array($data)) {
 				$result = [];
 				foreach ($data as $item) {
@@ -274,7 +313,6 @@
 				}
 				return $result;
 			}
-
 			return [];
 		}
 
@@ -288,6 +326,4 @@
 			$text = preg_replace('/\s+/', ' ', $text);
 			return trim($text);
 		}
-
-
 	}

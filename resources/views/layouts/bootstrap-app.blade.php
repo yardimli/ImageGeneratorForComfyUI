@@ -51,6 +51,9 @@
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
 					<li class="nav-item">
+						<a class="nav-link" href="{{ route('album-covers.index') }}">Album Covers</a>
+					</li>
+					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.queue') }}">
 							Queue Management <span class="badge bg-primary" id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
 						</a>
