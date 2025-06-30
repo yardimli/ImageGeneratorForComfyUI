@@ -326,7 +326,7 @@
 	<!-- Image Modal -->
 	<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -341,7 +341,7 @@
 	<!-- Confirmation Modal -->
 	<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Confirm Delete</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -361,7 +361,7 @@
 	<!-- Source Images Modal -->
 	<div class="modal fade" id="sourceImagesModal" tabindex="-1" aria-hidden="true">
 		<div class="modal-dialog">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Source Images</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

@@ -1,53 +1,43 @@
-body {
+[data-bs-theme="dark"] body {
     background-color: #1a1a1a;
     color: #e0e0e0;
 }
 
-.form-control, .form-select {
+[data-bs-theme="dark"] .form-control,
+[data-bs-theme="dark"] .form-select {
     background-color: #2b2b2b;
     border-color: #404040;
     color: #e0e0e0;
 }
 
-.form-control:focus, .form-select:focus {
+[data-bs-theme="dark"] .form-control:focus,
+[data-bs-theme="dark"] .form-select:focus {
     background-color: #333333;
     border-color: #0d6efd;
     color: #e0e0e0;
 }
 
-.card {
+[data-bs-theme="dark"] .card {
     background-color: #2b2b2b;
     border-color: #404040;
 }
 
-.result-container {
+[data-bs-theme="dark"] .result-container {
     background-color: #2b2b2b;
     border: 1px solid #404040;
-    border-radius: 6px;
-    padding: 20px;
-    margin-top: 20px;
 }
 
-.result-item {
+[data-bs-theme="dark"] .result-item {
     background-color: #333333;
     border: 1px solid #404040;
-    border-radius: 4px;
-    padding: 15px;
-    margin-bottom: 10px;
 }
 
-.form-check-input:checked {
-    background-color: #0d6efd;
-    border-color: #0d6efd;
-}
-
-.form-control:disabled {
+[data-bs-theme="dark"] .form-control:disabled {
     background-color: #1a1a1a;
     opacity: 0.7;
 }
 
-
-/* Add these styles for the login page */
+/* Specific login page styles that might be needed in both themes */
 .bg-dark {
     background-color: #2b2b2b !important;
 }
@@ -71,12 +61,12 @@ body {
     color: #0d6efd !important;
 }
 
-.form-check-input {
+[data-bs-theme="dark"] .form-check-input {
     background-color: #2b2b2b;
     border-color: #404040;
 }
 
-.form-check-input:checked {
+[data-bs-theme="dark"] .form-check-input:checked {
     background-color: #0d6efd;
     border-color: #0d6efd;
 }
@@ -85,6 +75,13 @@ body {
     border-radius: 4px;
     display: block;
     object-fit: contain;
+}
+
+[data-bs-theme="light"] .result-item img {
+    background-color: #f1f1f1;
+}
+
+[data-bs-theme="dark"] .result-item img {
     background-color: #1a1a1a;
 }
 
@@ -106,41 +103,37 @@ body {
     text-align: center;
 }
 
-
-/* Pagination Styles */
-.pagination {
-    margin-bottom: 0;
-}
-
-.pagination .page-link {
+/* Pagination Styles for Dark Mode */
+[data-bs-theme="dark"] .pagination .page-link {
     background-color: #2b2b2b;
     border-color: #404040;
     color: #e0e0e0;
 }
 
-.pagination .page-link:hover {
+[data-bs-theme="dark"] .pagination .page-link:hover {
     background-color: #333333;
     border-color: #404040;
     color: #ffffff;
 }
 
-.pagination .page-item.active .page-link {
+[data-bs-theme="dark"] .pagination .page-item.active .page-link {
     background-color: #0d6efd;
     border-color: #0d6efd;
     color: #ffffff;
 }
 
-.pagination .page-item.disabled .page-link {
+[data-bs-theme="dark"] .pagination .page-item.disabled .page-link {
     background-color: #1a1a1a;
     border-color: #404040;
     color: #666666;
 }
 
-.pagination .page-link:focus {
+[data-bs-theme="dark"] .pagination .page-link:focus {
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
     background-color: #333333;
 }
 
+/* Universal structural styles */
 .cursor-pointer {
     cursor: pointer;
 }

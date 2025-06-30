@@ -147,7 +147,7 @@
 	<!-- Image Modal -->
 	<div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -162,7 +162,7 @@
 	<!-- Image Upload Modal -->
 	<div class="modal fade" id="uploadImageModal" tabindex="-1" aria-labelledby="uploadImageModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="uploadImageModalLabel">Upload Image</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -188,7 +188,7 @@
 	<!-- Upload History Modal -->
 	<div class="modal fade" id="uploadHistoryModal" tabindex="-1" aria-labelledby="uploadHistoryModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="uploadHistoryModalLabel">Upload History</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -249,7 +249,7 @@
 	<!-- Prompt Queued Modal -->
 	<div class="modal fade" id="promptQueuedModal" tabindex="-1" aria-labelledby="promptQueuedModalLabel" aria-hidden="true">
 		<div class="modal-dialog">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="promptQueuedModalLabel">Success</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -267,7 +267,7 @@
 	<!-- Pexels Search Modal -->
 	<div class="modal fade" id="pexelsModal" tabindex="-1" aria-labelledby="pexelsModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl">
-			<div class="modal-content bg-dark">
+			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="pexelsModalLabel">Search Pexels Images</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>

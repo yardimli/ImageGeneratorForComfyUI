@@ -56,7 +56,7 @@
 								</ul>
 								
 								<h6 class="border-bottom pb-2 mb-3 mt-4">Total</h6>
-								<div class="card bg-light">
+								<div class="card bg-body-secondary">
 									<div class="card-body text-center">
 										<h3>{{ $totalImages }}</h3>
 										<p class="mb-0">Total Images</p>

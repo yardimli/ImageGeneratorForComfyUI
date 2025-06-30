@@ -242,6 +242,7 @@
 				])->post($endpoint, [
 					'prompt' => "Remove the texts, " . $cover->mix_prompt,
 					'image_url' => $cloudfrontUrl . '/' . $cover->album_path,
+					'safety_tolerance' => 5,
 				]);
 
 				if ($response->failed()) {
