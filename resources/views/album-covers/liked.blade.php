@@ -33,9 +33,8 @@
 											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]" value="{{ $image->id }}" style="transform: scale(1.5);">
 										</div>
 										<img src="{{ $cloudfrontUrl }}/{{ $image->album_path }}" class="card-img-top" alt="Liked Album Cover">
-										@if($image->mix_prompt)
 											<div class="card-body">
-												<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt }}"</p>
+												<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 												<!-- Edit Button Added Here -->
 												<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
 												        data-bs-toggle="modal" data-bs-target="#editPromptModal"
@@ -44,7 +43,6 @@
 													Edit
 												</button>
 											</div>
-										@endif
 										<div class="card-footer text-center">
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group" data-cover-id="{{ $image->id }}">
