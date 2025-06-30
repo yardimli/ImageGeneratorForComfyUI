@@ -93,7 +93,7 @@
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link" href="{{ route('album-covers.index') }}">Album Covers</a>
+						<a class="nav-link" href="{{ route('album-covers.index') }}">Kontext</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.queue') }}">

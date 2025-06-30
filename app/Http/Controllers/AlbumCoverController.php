@@ -254,7 +254,7 @@
 
 				return response()->json(['success' => true, 'message' => "Successfully generated prompts for {$processedCount} covers."]);
 			} catch (Exception $e) {
-				Log::error("Failed to generate prompts for album covers: " . $e->getMessage());
+				Log::error("Failed to generate prompts for covers: " . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
 			}
 		}
