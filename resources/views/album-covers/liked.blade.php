@@ -33,16 +33,16 @@
 											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]" value="{{ $image->id }}" style="transform: scale(1.5);">
 										</div>
 										<img src="{{ $cloudfrontUrl }}/{{ $image->album_path }}" class="card-img-top" alt="Liked Album Cover">
-											<div class="card-body">
-												<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
-												<!-- Edit Button Added Here -->
-												<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
-												        data-bs-toggle="modal" data-bs-target="#editPromptModal"
-												        data-cover-id="{{ $image->id }}"
-												        data-prompt="{{ $image->mix_prompt }}">
-													Edit
-												</button>
+										<div class="card-body">
+											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
+											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}" data-prompt="{{ $image->mix_prompt }}">
+												Edit
+											</button>
+											<div class="mt-2">
+												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..." data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
+												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn" data-cover-id="{{ $image->id }}">Save Notes</button>
 											</div>
+										</div>
 										<div class="card-footer text-center">
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group" data-cover-id="{{ $image->id }}">
@@ -57,6 +57,31 @@
 														<img src="{{ Storage::url($image->kontext_path) }}" class="img-fluid rounded mt-2" alt="Kontext Result">
 													</a>
 												@endif
+											</div>
+											
+											<!-- Upscale Section -->
+											<div class="mt-3 border-top pt-2">
+												<label class="form-label fw-bold">Upscale</label>
+												<div id="upscale-controls-{{ $image->id }}">
+													@if($image->upscale_status == 0)
+														<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Upscale Image</button>
+													@elseif($image->upscale_status == 1)
+														<div class="text-warning">Upscaling in progress...</div>
+														<script>
+															document.addEventListener('DOMContentLoaded', function() {
+																if (typeof pollUpscaleStatus === 'function') {
+																	pollUpscaleStatus('{{ $image->id }}', '{{ $image->upscale_prediction_id }}');
+																}
+															});
+														</script>
+													@elseif($image->upscale_status == 2)
+														<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>
+													@elseif($image->upscale_status == 3)
+														<div class="text-danger">Upscale failed.</div>
+														<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Retry Upscale</button>
+													@endif
+												</div>
+												<div class="upscale-status mt-2 small" id="upscale-status-{{ $image->id }}"></div>
 											</div>
 										</div>
 									</div>
@@ -130,14 +155,11 @@
           aspect-ratio: 1 / 1;
           object-fit: cover;
       }
-
       .image-card {
           transition: border-color 0.2s, box-shadow 0.2s;
       }
-
       .image-card.selected {
-          border: 2px solid #198754;
-          /* success green */
+          border: 2px solid #198754; /* success green */
           box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
       }
 	</style>
@@ -145,9 +167,56 @@
 
 @section('scripts')
 	<script>
+		// --- Upscale Polling Function (defined globally to be accessible by inline scripts) ---
+		const upscalePollingIntervals = {};
+		function pollUpscaleStatus(coverId, predictionId) {
+			const controlsDiv = document.getElementById(`upscale-controls-${coverId}`);
+			const statusDiv = document.getElementById(`upscale-status-${coverId}`);
+			
+			if (upscalePollingIntervals[coverId]) {
+				clearInterval(upscalePollingIntervals[coverId]);
+			}
+			
+			upscalePollingIntervals[coverId] = setInterval(async () => {
+				let urlTemplate = '{{ route("album-covers.upscale.status", ["cover" => ":id", "prediction_id" => ":pid"]) }}';
+				let url = urlTemplate.replace(':id', coverId).replace(':pid', predictionId);
+				
+				try {
+					const response = await fetch(url, {
+						method: 'GET',
+						headers: {
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+							'Accept': 'application/json',
+						}
+					});
+					const data = await response.json();
+					
+					if (!response.ok) {
+						throw new Error(data.message || 'Failed to check status.');
+					}
+					
+					if (data.status === 'completed') {
+						clearInterval(upscalePollingIntervals[coverId]);
+						delete upscalePollingIntervals[coverId];
+						controlsDiv.innerHTML = `<a href="${data.image_url}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>`;
+						statusDiv.innerHTML = `<span class="text-success">Completed!</span>`;
+					} else if (data.status === 'processing') {
+						statusDiv.textContent = 'Still processing...';
+					} else if (data.status === 'error') {
+						throw new Error(data.message || 'An error occurred during processing.');
+					}
+				} catch (error) {
+					clearInterval(upscalePollingIntervals[coverId]);
+					delete upscalePollingIntervals[coverId];
+					console.error('Error polling upscale status:', error);
+					controlsDiv.innerHTML = `<div class="text-danger">Upscale failed.</div><button type="button" class="btn btn-success btn-sm upscale-btn mt-1" data-cover-id="${coverId}">Retry Upscale</button>`;
+					statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+				}
+			}, 5000); // Poll every 5 seconds
+		}
+		
 		document.addEventListener('DOMContentLoaded', function() {
 			// --- Existing Script for Generate Prompts & Kontext ---
-			// (The script from the previous step goes here, unchanged)
 			const generateBtn = document.getElementById('generatePromptsBtn');
 			const modalElement = document.getElementById('generatePromptsModal');
 			if (generateBtn && modalElement) {
@@ -207,6 +276,7 @@
 					const formData = new FormData();
 					coverIds.forEach(id => formData.append('cover_ids[]', id));
 					formData.append('prompt_text', promptText);
+					
 					try {
 						const response = await fetch('{{ route("album-covers.generate-prompts") }}', {
 							method: 'POST',
@@ -241,7 +311,6 @@
 			});
 			
 			const pollingIntervals = {};
-			
 			async function handleKontextClick(button) {
 				const model = button.dataset.model;
 				const controls = button.closest('.kontext-controls');
@@ -251,6 +320,7 @@
 				controls.querySelectorAll('.kontext-btn').forEach(btn => btn.disabled = true);
 				statusDiv.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...`;
 				resultDiv.innerHTML = '';
+				
 				try {
 					const response = await fetch('{{ route("album-covers.kontext.generate") }}', {
 						method: 'POST',
@@ -283,9 +353,11 @@
 				const controls = document.querySelector(`.kontext-controls[data-cover-id="${coverId}"]`);
 				const statusDiv = document.getElementById(`kontext-status-${coverId}`);
 				const resultDiv = document.getElementById(`kontext-result-${coverId}`);
+				
 				if (pollingIntervals[coverId]) {
 					clearInterval(pollingIntervals[coverId]);
 				}
+				
 				pollingIntervals[coverId] = setInterval(async () => {
 					try {
 						const response = await fetch('{{ route("album-covers.kontext.status") }}', {
@@ -309,7 +381,10 @@
 							clearInterval(pollingIntervals[coverId]);
 							delete pollingIntervals[coverId];
 							statusDiv.innerHTML = `<span class="text-success">Completed!</span>`;
-							resultDiv.innerHTML = ` <a href="${data.image_url}" target="_blank" title="View full size"> <img src="${data.image_url}" class="img-fluid rounded mt-2" alt="Kontext Result"> </a>`;
+							resultDiv.innerHTML = `
+                                <a href="${data.image_url}" target="_blank" title="View full size">
+                                    <img src="${data.image_url}" class="img-fluid rounded mt-2" alt="Kontext Result">
+                                </a>`;
 							controls.querySelectorAll('.kontext-btn').forEach(btn => {
 								if (btn.title !== "No mix prompt available") btn.disabled = false;
 							});
@@ -335,31 +410,24 @@
 			const editPromptForm = document.getElementById('edit-prompt-form');
 			const editPromptModal = new bootstrap.Modal(editPromptModalEl);
 			
-			// Use event delegation to handle clicks on any "Edit" button
 			document.body.addEventListener('click', function(event) {
 				if (event.target.classList.contains('edit-prompt-btn')) {
 					const button = event.target;
 					const coverId = button.dataset.coverId;
 					const promptText = button.dataset.prompt;
-					
-					// Populate the modal
 					editPromptModalEl.querySelector('#edit-cover-id').value = coverId;
 					editPromptModalEl.querySelector('#edit-prompt-text').value = promptText;
 				}
 			});
 			
-			// Handle the form submission
 			editPromptForm.addEventListener('submit', async function(e) {
 				e.preventDefault();
 				const saveBtn = this.querySelector('#save-prompt-btn');
 				const originalBtnText = saveBtn.textContent;
 				saveBtn.disabled = true;
 				saveBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
-				
 				const coverId = this.querySelector('#edit-cover-id').value;
 				const newPromptText = this.querySelector('#edit-prompt-text').value;
-				
-				// Use a template for the URL and replace the ID
 				let urlTemplate = '{{ route("album-covers.update-prompt", ["cover" => ":id"]) }}';
 				let url = urlTemplate.replace(':id', coverId);
 				
@@ -375,26 +443,100 @@
 							prompt_text: newPromptText
 						})
 					});
-					
 					const data = await response.json();
-					
 					if (response.ok && data.success) {
-						// Update the prompt text on the page
 						document.getElementById(`prompt-text-${coverId}`).textContent = `"${newPromptText}"`;
-						// Update the data attribute on the button for the next edit
 						document.querySelector(`.edit-prompt-btn[data-cover-id="${coverId}"]`).dataset.prompt = newPromptText;
-						
 						editPromptModal.hide();
 					} else {
 						alert('Error: ' + (data.message || 'Failed to update prompt.'));
 					}
-					
 				} catch (error) {
 					console.error('Error updating prompt:', error);
 					alert('An unexpected error occurred.');
 				} finally {
 					saveBtn.disabled = false;
 					saveBtn.textContent = originalBtnText;
+				}
+			});
+			
+			// --- New Script for Notes ---
+			document.body.addEventListener('click', async function(event) {
+				if (event.target.classList.contains('update-notes-btn')) {
+					const button = event.target;
+					const coverId = button.dataset.coverId;
+					const textarea = document.querySelector(`.notes-textarea[data-cover-id="${coverId}"]`);
+					const notes = textarea.value;
+					const originalBtnText = 'Save Notes';
+					button.disabled = true;
+					button.textContent = 'Saving...';
+					let urlTemplate = '{{ route("album-covers.update-notes", ["cover" => ":id"]) }}';
+					let url = urlTemplate.replace(':id', coverId);
+					
+					try {
+						const response = await fetch(url, {
+							method: 'POST',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+								'Content-Type': 'application/json',
+							},
+							body: JSON.stringify({
+								notes: notes
+							})
+						});
+						const data = await response.json();
+						if (response.ok && data.success) {
+							button.textContent = 'Saved!';
+							setTimeout(() => {
+								button.textContent = originalBtnText;
+								button.disabled = false;
+							}, 2000);
+						} else {
+							alert('Error: ' + (data.message || 'Failed to save notes.'));
+							button.disabled = false;
+							button.textContent = originalBtnText;
+						}
+					} catch (error) {
+						console.error('Error updating notes:', error);
+						alert('An unexpected error occurred.');
+						button.disabled = false;
+						button.textContent = originalBtnText;
+					}
+				}
+			});
+			
+			// --- New Script for Upscaling ---
+			document.body.addEventListener('click', async function(event) {
+				if (event.target.classList.contains('upscale-btn')) {
+					const button = event.target;
+					const coverId = button.dataset.coverId;
+					const controlsDiv = document.getElementById(`upscale-controls-${coverId}`);
+					const statusDiv = document.getElementById(`upscale-status-${coverId}`);
+					button.disabled = true;
+					controlsDiv.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Starting upscale...`;
+					statusDiv.innerHTML = '';
+					let urlTemplate = '{{ route("album-covers.upscale", ["cover" => ":id"]) }}';
+					let url = urlTemplate.replace(':id', coverId);
+					
+					try {
+						const response = await fetch(url, {
+							method: 'POST',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							}
+						});
+						const data = await response.json();
+						if (!response.ok || !data.success) {
+							throw new Error(data.message || 'Failed to start upscale process.');
+						}
+						controlsDiv.innerHTML = `<div class="text-warning">Upscaling in progress...</div>`;
+						pollUpscaleStatus(coverId, data.prediction_id);
+					} catch (error) {
+						console.error('Error starting upscale:', error);
+						controlsDiv.innerHTML = `<div class="text-danger">Error: ${error.message}</div><button type="button" class="btn btn-success btn-sm upscale-btn mt-1" data-cover-id="${coverId}">Retry Upscale</button>`;
+					}
 				}
 			});
 		});

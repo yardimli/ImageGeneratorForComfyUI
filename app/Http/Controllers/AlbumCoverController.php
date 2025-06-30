@@ -67,7 +67,6 @@
 			$perPage = 96;
 			$currentPage = Paginator::resolveCurrentPage('page');
 			$currentPageItems = array_slice($imageFiles, ($currentPage - 1) * $perPage, $perPage);
-
 			$paginator = new LengthAwarePaginator($currentPageItems, count($imageFiles), $perPage, $currentPage, [
 				'path' => Paginator::resolveCurrentPath(),
 				'pageName' => 'page'
@@ -163,7 +162,6 @@
 							Log::warning("Failed to create image from data for cover ID {$cover->id}");
 							continue;
 						}
-
 						$resizedImage = imagescale($sourceImage, 512, 512);
 						ob_start();
 						switch ($mimeType) {
@@ -370,11 +368,143 @@
 				$cover->update([
 					'mix_prompt' => $request->input('prompt_text')
 				]);
-
 				return response()->json(['success' => true, 'message' => 'Prompt updated successfully.']);
 			} catch (Exception $e) {
 				Log::error("Failed to update mix_prompt for cover ID {$cover->id}: " . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
+			}
+		}
+
+		public function updateNotes(Request $request, GoodAlbumCover $cover)
+		{
+			$request->validate([
+				'notes' => 'nullable|string|max:5000',
+			]);
+
+			try {
+				$cover->update([
+					'notes' => $request->input('notes')
+				]);
+				return response()->json(['success' => true, 'message' => 'Notes updated successfully.']);
+			} catch (Exception $e) {
+				Log::error("Failed to update notes for cover ID {$cover->id}: " . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
+			}
+		}
+
+		public function upscaleCover(Request $request, GoodAlbumCover $cover)
+		{
+			$cloudfrontUrl = rtrim(env('COVERS_AWS_CLOUDFRONT_URL'), '/');
+			$imageUrl = $cloudfrontUrl . '/' . $cover->album_path;
+
+			try {
+				$response = Http::withHeaders([
+					'Authorization' => 'Bearer ' . env('REPLICATE_API_TOKEN'),
+					'Content-Type' => 'application/json',
+				])->post('https://api.replicate.com/v1/predictions', [
+					"version" => "4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29",
+					"input" => [
+						"hdr" => 0.1,
+						"image" => $imageUrl,
+						"prompt" => "4k, enhance",
+						"creativity" => 0.3,
+						"guess_mode" => true,
+						"resolution" => 2560,
+						"resemblance" => 1,
+						"guidance_scale" => 5,
+						"negative_prompt" => ""
+					]
+				]);
+
+				if ($response->failed()) {
+					Log::error('Replicate API error on upscale submit: ' . $response->body());
+					return response()->json(['success' => false, 'message' => 'Error starting upscale process.'], 502);
+				}
+
+				$json_result = $response->json();
+
+				if (isset($json_result['id'])) {
+					$cover->upscale_prediction_id = $json_result['id'];
+					$cover->upscale_status_url = $json_result['urls']['get'] ?? null;
+					$cover->upscale_status = 1; // In progress
+					$cover->save();
+
+					return response()->json([
+						'success' => true,
+						'message' => 'Upscale process started.',
+						'prediction_id' => $json_result['id'],
+						'status_url' => $json_result['urls']['get'] ?? null
+					]);
+				} else {
+					Log::error('Replicate API did not return an ID: ' . $response->body());
+					return response()->json(['success' => false, 'message' => 'Error starting upscale process.'], 502);
+				}
+			} catch (Exception $e) {
+				Log::error("Exception during cover upscale for ID {$cover->id}: " . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
+			}
+		}
+
+		public function checkUpscaleStatus(Request $request, GoodAlbumCover $cover, $prediction_id)
+		{
+			if (!$cover->upscale_status_url) {
+				return response()->json(['status' => 'error', 'message' => 'No status URL found for this job.']);
+			}
+
+			try {
+				$response = Http::withHeaders([
+					'Authorization' => 'Bearer ' . env('REPLICATE_API_TOKEN'),
+					'Content-Type' => 'application/json',
+				])->get($cover->upscale_status_url);
+
+				if ($response->failed()) {
+					Log::error("Replicate status check failed for {$prediction_id}: " . $response->body());
+					return response()->json(['status' => 'error', 'message' => 'Failed to get job status.']);
+				}
+
+				$body = $response->json();
+				$jobStatus = $body['status'] ?? 'unknown';
+
+				if ($jobStatus === 'succeeded') {
+					if (empty($body['output'][0])) {
+						Log::warning("Replicate job {$prediction_id} succeeded but no output URL found: " . $response->body());
+						$cover->upscale_status = 3; // Failed
+						$cover->save();
+						return response()->json(['status' => 'error', 'message' => 'Upscale succeeded but no output URL found.']);
+					}
+
+					$upscaledImageUrl = $body['output'][0];
+					$imageContents = @file_get_contents($upscaledImageUrl);
+
+					if ($imageContents === false) {
+						Log::error("Failed to download upscaled image from {$upscaledImageUrl}");
+						return response()->json(['status' => 'error', 'message' => 'Failed to download the generated image.']);
+					}
+
+					$filename = 'upscaled_cover_' . $cover->id . '_' . Str::random(10) . '.png';
+					$storagePath = 'public/album-covers/upscaled/' . $filename;
+					Storage::put($storagePath, $imageContents);
+
+					$cover->upscaled_path = 'album-covers/upscaled/' . $filename;
+					$cover->upscale_status = 2; // Completed
+					$cover->save();
+
+					return response()->json([
+						'status' => 'completed',
+						'image_url' => Storage::url($cover->upscaled_path)
+					]);
+				} elseif ($jobStatus === 'failed' || $jobStatus === 'canceled') {
+					Log::error("Replicate job {$prediction_id} failed: " . ($body['error'] ?? 'Unknown error'));
+					$cover->upscale_status = 3; // Failed
+					$cover->save();
+					return response()->json(['status' => 'error', 'message' => "Job failed: " . ($body['error'] ?? 'Unknown error')]);
+				} else {
+					// Still processing (in_progress, starting, etc.)
+					return response()->json(['status' => 'processing']);
+				}
+			} catch (Exception $e) {
+				Log::error("Exception checking Replicate status for {$prediction_id}: " . $e->getMessage());
+				return response()->json(['status' => 'error', 'message' => 'An unexpected server error occurred.']);
 			}
 		}
 	}

@@ -16,15 +16,17 @@
 			'liked',
 			'mixed',
 			'mix_prompt',
-			'upscaled',
 			'mixed_path',
 			'upscaled_path',
 			'kontext_path',
+			'notes',
+			'upscale_status',
+			'upscale_prediction_id',
+			'upscale_status_url',
 		];
 
 		protected $casts = [
 			'liked' => 'boolean',
 			'mixed' => 'boolean',
-			'upscaled' => 'boolean',
 		];
 	}
