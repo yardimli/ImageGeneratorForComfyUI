@@ -67,6 +67,7 @@
 		Route::get('/album-covers', [AlbumCoverController::class, 'index'])->name('album-covers.index');
 		Route::get('/album-covers/liked', [AlbumCoverController::class, 'showLiked'])->name('album-covers.liked');
 		Route::post('/album-covers/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('album-covers.update-liked');
+		Route::post('/album-covers/upload', [AlbumCoverController::class, 'upload'])->name('album-covers.upload'); // New Route
 		Route::post('/album-covers/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('album-covers.generate-prompts');
 		Route::post('/album-covers/kontext/generate', [AlbumCoverController::class, 'generateKontext'])->name('album-covers.kontext.generate');
 		Route::post('/album-covers/kontext/status', [AlbumCoverController::class, 'checkKontextStatus'])->name('album-covers.kontext.status');

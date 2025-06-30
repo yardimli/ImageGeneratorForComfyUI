@@ -7,6 +7,9 @@
 				<div class="d-flex justify-content-between align-items-center">
 					<h3 class="mb-0">Liked Album Covers</h3>
 					<div>
+						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#uploadCoverModal">
+							Upload Cover
+						</button>
 						<button id="generatePromptsBtn" class="btn btn-success btn-sm me-2">Generate Prompts for Selected</button>
 						<a href="{{ route('album-covers.index') }}" class="btn btn-outline-secondary btn-sm">Back to Folders</a>
 					</div>
@@ -32,7 +35,10 @@
 										<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
 											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]" value="{{ $image->id }}" style="transform: scale(1.5);">
 										</div>
-										<a target="_blank" href="{{ $cloudfrontUrl }}/{{ $image->album_path }}"><img src="{{ $cloudfrontUrl }}/{{ $image->album_path }}" class="card-img-top" alt="Liked Album Cover"></a>
+										@php
+											$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
+										@endphp
+										<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top" alt="Liked Album Cover"></a>
 										<div class="card-body">
 											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}" data-prompt="{{ $image->mix_prompt }}">
@@ -58,7 +64,6 @@
 													</a>
 												@endif
 											</div>
-											
 											<!-- Upscale Section -->
 											<div class="mt-3 border-top pt-2">
 												<label class="form-label fw-bold">Upscale</label>
@@ -99,6 +104,32 @@
 						{{ $likedImages->links('pagination::bootstrap-5') }}
 					</div>
 				@endif
+			</div>
+		</div>
+	</div>
+	
+	<!-- Upload Cover Modal -->
+	<div class="modal fade" id="uploadCoverModal" tabindex="-1" aria-labelledby="uploadCoverModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="uploadCoverModalLabel">Upload New Album Cover</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<form id="upload-cover-form" action="{{ route('album-covers.upload') }}" method="POST" enctype="multipart/form-data">
+					@csrf
+					<div class="modal-body">
+						<div class="mb-3">
+							<label for="cover_file_input" class="form-label">Select image file</label>
+							<input class="form-control" type="file" id="cover_file_input" name="cover_file" required accept="image/*">
+						</div>
+						<div id="upload-status" class="mt-3"></div>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+						<button type="submit" class="btn btn-primary" id="submit-upload-btn">Upload</button>
+					</div>
+				</form>
 			</div>
 		</div>
 	</div>
@@ -161,11 +192,14 @@
           aspect-ratio: 1 / 1;
           object-fit: cover;
       }
+
       .image-card {
           transition: border-color 0.2s, box-shadow 0.2s;
       }
+
       .image-card.selected {
-          border: 2px solid #198754; /* success green */
+          border: 2px solid #198754;
+          /* success green */
           box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
       }
 	</style>
@@ -545,6 +579,49 @@
 					}
 				}
 			});
+			
+			const uploadForm = document.getElementById('upload-cover-form');
+			if (uploadForm) {
+				uploadForm.addEventListener('submit', async function(e) {
+					e.preventDefault();
+					const submitBtn = document.getElementById('submit-upload-btn');
+					const statusDiv = document.getElementById('upload-status');
+					const originalBtnText = submitBtn.innerHTML;
+					
+					submitBtn.disabled = true;
+					submitBtn.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...`;
+					statusDiv.innerHTML = '';
+					
+					const formData = new FormData(uploadForm);
+					
+					try {
+						const response = await fetch(uploadForm.action, {
+							method: 'POST',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							},
+							body: formData
+						});
+						
+						const data = await response.json();
+						
+						if (response.ok && data.success) {
+							statusDiv.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+							setTimeout(() => {
+								location.reload();
+							}, 1500);
+						} else {
+							throw new Error(data.message || 'Upload failed.');
+						}
+					} catch (error) {
+						console.error('Upload error:', error);
+						statusDiv.innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+						submitBtn.disabled = false;
+						submitBtn.innerHTML = originalBtnText;
+					}
+				});
+			}
 		});
 	</script>
 @endsection
