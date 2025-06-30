@@ -32,7 +32,7 @@
 										<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
 											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]" value="{{ $image->id }}" style="transform: scale(1.5);">
 										</div>
-										<img src="{{ $cloudfrontUrl }}/{{ $image->album_path }}" class="card-img-top" alt="Liked Album Cover">
+										<a target="_blank" href="{{ $cloudfrontUrl }}/{{ $image->album_path }}"><img src="{{ $cloudfrontUrl }}/{{ $image->album_path }}" class="card-img-top" alt="Liked Album Cover"></a>
 										<div class="card-body">
 											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}" data-prompt="{{ $image->mix_prompt }}">
