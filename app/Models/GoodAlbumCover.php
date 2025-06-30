@@ -19,6 +19,7 @@
 			'upscaled',
 			'mixed_path',
 			'upscaled_path',
+			'kontext_path',
 		];
 
 		protected $casts = [
