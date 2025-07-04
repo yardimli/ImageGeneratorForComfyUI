@@ -10,12 +10,17 @@
 						<!-- Sorting Dropdown -->
 						<form action="{{ route('album-covers.liked') }}" method="GET" id="sort-form" class="me-2">
 							<select name="sort" class="form-select form-select-sm" onchange="this.form.submit()">
-								<option value="updated_at" {{ ($sort ?? 'updated_at') == 'updated_at' ? 'selected' : '' }}>Sort by Updated</option>
-								<option value="created_at" {{ ($sort ?? 'updated_at') == 'created_at' ? 'selected' : '' }}>Sort by Added</option>
+								<option value="updated_at" {{ ($sort ?? 'updated_at') == 'updated_at' ? 'selected' : '' }}>Sort by
+									Updated
+								</option>
+								<option value="created_at" {{ ($sort ?? 'updated_at') == 'created_at' ? 'selected' : '' }}>Sort by
+									Added
+								</option>
 							</select>
 						</form>
 						<!-- Original Buttons -->
-						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#uploadCoverModal">
+						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal"
+						        data-bs-target="#uploadCoverModal">
 							Upload Cover
 						</button>
 						<button id="generatePromptsBtn" class="btn btn-success btn-sm me-2">Generate Prompts for Selected</button>
@@ -41,34 +46,50 @@
 								<div class="col-md-3 mb-4">
 									<div class="card h-100 image-card">
 										<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
-											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]" value="{{ $image->id }}" style="transform: scale(1.5);">
+											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
+											       value="{{ $image->id }}" style="transform: scale(1.5);">
 										</div>
 										@php
 											$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
 										@endphp
-										<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top" alt="Liked Album Cover"></a>
+										<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
+										                                               alt="Liked Album Cover"></a>
 										<div class="card-body">
-											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
-											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}" data-prompt="{{ $image->mix_prompt }}">
+											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">
+												"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
+											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
+											        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}"
+											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
 											<div class="mt-2">
-												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..." data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
-												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn" data-cover-id="{{ $image->id }}">Save Notes</button>
+												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
+												          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
+												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
+												        data-cover-id="{{ $image->id }}">Save Notes
+												</button>
 											</div>
 										</div>
 										<div class="card-footer text-center">
 											<label class="form-label fw-bold">Kontext</label>
-											<div class="btn-group btn-group-sm kontext-controls" role="group" data-cover-id="{{ $image->id }}">
-												<button type="button" class="btn btn-primary kontext-btn" data-model="dev" @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>dev</button>
-												<button type="button" class="btn btn-secondary kontext-btn" data-model="pro" @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>pro</button>
-												<button type="button" class="btn btn-success kontext-btn" data-model="max" @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>max</button>
+											<div class="btn-group btn-group-sm kontext-controls" role="group"
+											     data-cover-id="{{ $image->id }}">
+												<button type="button" class="btn btn-primary kontext-btn" data-model="dev"
+												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>dev
+												</button>
+												<button type="button" class="btn btn-secondary kontext-btn" data-model="pro"
+												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>pro
+												</button>
+												<button type="button" class="btn btn-success kontext-btn" data-model="max"
+												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>max
+												</button>
 											</div>
 											<div class="kontext-status mt-2 small" id="kontext-status-{{ $image->id }}"></div>
 											<div class="kontext-result mt-2" id="kontext-result-{{ $image->id }}">
 												@if($image->kontext_path)
 													<a href="{{ Storage::url($image->kontext_path) }}" target="_blank" title="View full size">
-														<img src="{{ Storage::url($image->kontext_path) }}" class="img-fluid rounded mt-2" alt="Kontext Result">
+														<img src="{{ Storage::url($image->kontext_path) }}" class="img-fluid rounded mt-2"
+														     alt="Kontext Result">
 													</a>
 												@endif
 											</div>
@@ -80,25 +101,37 @@
 													@if($image->kontext_path)
 														{{-- This logic only runs if a Kontext image exists --}}
 														@if(is_null($image->upscale_status) || $image->upscale_status == 0)
-															<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Upscale Image</button>
+															<button type="button" class="btn btn-success btn-sm upscale-btn"
+															        data-cover-id="{{ $image->id }}">Upscale Image
+															</button>
 														@elseif($image->upscale_status == 1)
 															<div class="text-warning">Upscaling in progress...</div>
 															<script>
-																document.addEventListener('DOMContentLoaded', function() {
+																document.addEventListener('DOMContentLoaded', function () {
 																	if (typeof pollUpscaleStatus === 'function') {
 																		pollUpscaleStatus('{{ $image->id }}', '{{ $image->upscale_prediction_id }}');
 																	}
 																});
 															</script>
 														@elseif($image->upscale_status == 2)
-															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>
+															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm"
+															   target="_blank">View/Download Upscaled</a>
+															{{-- START MODIFICATION: Add a button to redo the upscale --}}
+															<button type="button" class="btn btn-warning btn-sm upscale-btn ms-1"
+															        data-cover-id="{{ $image->id }}">Redo Upscale
+															</button>
+															{{-- END MODIFICATION --}}
 														@elseif($image->upscale_status == 3)
 															<div class="text-danger">Upscale failed.</div>
-															<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="{{ $image->id }}">Retry Upscale</button>
+															<button type="button" class="btn btn-success btn-sm upscale-btn"
+															        data-cover-id="{{ $image->id }}">Retry Upscale
+															</button>
 														@endif
 													@else
 														{{-- If no Kontext image, show a disabled button --}}
-														<button type="button" class="btn btn-success btn-sm" disabled title="Generate a Kontext image first to enable upscaling">Upscale Image</button>
+														<button type="button" class="btn btn-success btn-sm" disabled
+														        title="Generate a Kontext image first to enable upscaling">Upscale Image
+														</button>
 													@endif
 												</div>
 												<div class="upscale-status mt-2 small" id="upscale-status-{{ $image->id }}"></div>
@@ -118,14 +151,16 @@
 	</div>
 	
 	<!-- Upload Cover Modal -->
-	<div class="modal fade" id="uploadCoverModal" tabindex="-1" aria-labelledby="uploadCoverModalLabel" aria-hidden="true">
+	<div class="modal fade" id="uploadCoverModal" tabindex="-1" aria-labelledby="uploadCoverModalLabel"
+	     aria-hidden="true">
 		<div class="modal-dialog">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="uploadCoverModalLabel">Upload New Album Cover</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
-				<form id="upload-cover-form" action="{{ route('album-covers.upload') }}" method="POST" enctype="multipart/form-data">
+				<form id="upload-cover-form" action="{{ route('album-covers.upload') }}" method="POST"
+				      enctype="multipart/form-data">
 					@csrf
 					<div class="modal-body">
 						<div class="mb-3">
@@ -144,7 +179,8 @@
 	</div>
 	
 	<!-- Generate Prompts Modal -->
-	<div class="modal fade" id="generatePromptsModal" tabindex="-1" aria-labelledby="generatePromptsModalLabel" aria-hidden="true">
+	<div class="modal fade" id="generatePromptsModal" tabindex="-1" aria-labelledby="generatePromptsModalLabel"
+	     aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
 				<div class="modal-header">
@@ -156,7 +192,8 @@
 					<form id="modal-prompt-form">
 						<div class="mb-3">
 							<label for="prompt-text" class="form-label">Prompt Text:</label>
-							<textarea class="form-control" id="prompt-text" name="prompt_text" rows="6">{{ $defaultPromptText ?? '' }}</textarea>
+							<textarea class="form-control" id="prompt-text" name="prompt_text"
+							          rows="6">{{ $defaultPromptText ?? '' }}</textarea>
 						</div>
 						<p class="text-muted">Selected images: <span id="selected-count">0</span></p>
 					</form>
@@ -201,9 +238,11 @@
           aspect-ratio: 1 / 1;
           object-fit: cover;
       }
+
       .image-card {
           transition: border-color 0.2s, box-shadow 0.2s;
       }
+
       .image-card.selected {
           border: 2px solid #198754; /* success green */
           box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
@@ -215,6 +254,7 @@
 	<script>
 		// --- Upscale Polling Function (defined globally to be accessible by inline scripts) ---
 		const upscalePollingIntervals = {};
+		
 		function pollUpscaleStatus(coverId, predictionId) {
 			const controlsDiv = document.getElementById(`upscale-controls-${coverId}`);
 			const statusDiv = document.getElementById(`upscale-status-${coverId}`);
@@ -242,7 +282,7 @@
 					if (data.status === 'completed') {
 						clearInterval(upscalePollingIntervals[coverId]);
 						delete upscalePollingIntervals[coverId];
-						controlsDiv.innerHTML = `<a href="${data.image_url}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a>`;
+						controlsDiv.innerHTML = `<a href="${data.image_url}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a><button type="button" class="btn btn-warning btn-sm upscale-btn ms-1" data-cover-id="${coverId}">Redo Upscale</button>`;
 						statusDiv.innerHTML = `<span class="text-success">Completed!</span>`;
 					} else if (data.status === 'processing') {
 						statusDiv.textContent = 'Still processing...';
@@ -260,7 +300,7 @@
 		}
 		
 		
-		document.addEventListener('DOMContentLoaded', function() {
+		document.addEventListener('DOMContentLoaded', function () {
 			// --- Existing Script for Generate Prompts & Kontext ---
 			const generateBtn = document.getElementById('generatePromptsBtn');
 			const modalElement = document.getElementById('generatePromptsModal');
@@ -295,7 +335,7 @@
 					});
 				});
 				
-				selectAllCheckbox.addEventListener('click', function() {
+				selectAllCheckbox.addEventListener('click', function () {
 					imageCheckboxes.forEach(checkbox => {
 						checkbox.checked = this.checked;
 						updateCardSelection(checkbox);
@@ -303,7 +343,7 @@
 					updateSelectedCount();
 				});
 				
-				generateBtn.addEventListener('click', function() {
+				generateBtn.addEventListener('click', function () {
 					const selectedCount = updateSelectedCount();
 					if (selectedCount === 0) {
 						alert('Please select at least one image to generate prompts for.');
@@ -312,7 +352,7 @@
 					generatePromptsModal.show();
 				});
 				
-				submitPromptsBtn.addEventListener('click', async function() {
+				submitPromptsBtn.addEventListener('click', async function () {
 					this.disabled = true;
 					this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Generating...`;
 					const selectedCheckboxes = document.querySelectorAll('.image-checkbox:checked');
@@ -349,13 +389,14 @@
 				});
 			}
 			
-			document.body.addEventListener('click', function(event) {
+			document.body.addEventListener('click', function (event) {
 				if (event.target.classList.contains('kontext-btn')) {
 					handleKontextClick(event.target);
 				}
 			});
 			
 			const pollingIntervals = {};
+			
 			async function handleKontextClick(button) {
 				const model = button.dataset.model;
 				const controls = button.closest('.kontext-controls');
@@ -464,7 +505,7 @@
 			const editPromptForm = document.getElementById('edit-prompt-form');
 			const editPromptModal = new bootstrap.Modal(editPromptModalEl);
 			
-			document.body.addEventListener('click', function(event) {
+			document.body.addEventListener('click', function (event) {
 				if (event.target.classList.contains('edit-prompt-btn')) {
 					const button = event.target;
 					const coverId = button.dataset.coverId;
@@ -474,7 +515,7 @@
 				}
 			});
 			
-			editPromptForm.addEventListener('submit', async function(e) {
+			editPromptForm.addEventListener('submit', async function (e) {
 				e.preventDefault();
 				const saveBtn = this.querySelector('#save-prompt-btn');
 				const originalBtnText = saveBtn.textContent;
@@ -494,7 +535,7 @@
 							'Accept': 'application/json',
 							'Content-Type': 'application/json',
 						},
-						body: JSON.stringify({ prompt_text: newPromptText })
+						body: JSON.stringify({prompt_text: newPromptText})
 					});
 					const data = await response.json();
 					if (response.ok && data.success) {
@@ -526,7 +567,7 @@
 			});
 			
 			// --- New Script for Notes ---
-			document.body.addEventListener('click', async function(event) {
+			document.body.addEventListener('click', async function (event) {
 				if (event.target.classList.contains('update-notes-btn')) {
 					const button = event.target;
 					const coverId = button.dataset.coverId;
@@ -547,7 +588,7 @@
 								'Accept': 'application/json',
 								'Content-Type': 'application/json',
 							},
-							body: JSON.stringify({ notes: notes })
+							body: JSON.stringify({notes: notes})
 						});
 						const data = await response.json();
 						if (response.ok && data.success) {
@@ -571,7 +612,7 @@
 			});
 			
 			// --- New Script for Upscaling ---
-			document.body.addEventListener('click', async function(event) {
+			document.body.addEventListener('click', async function (event) {
 				if (event.target.classList.contains('upscale-btn')) {
 					const button = event.target;
 					const coverId = button.dataset.coverId;
@@ -608,7 +649,7 @@
 			
 			const uploadForm = document.getElementById('upload-cover-form');
 			if (uploadForm) {
-				uploadForm.addEventListener('submit', async function(e) {
+				uploadForm.addEventListener('submit', async function (e) {
 					e.preventDefault();
 					const submitBtn = document.getElementById('submit-upload-btn');
 					const statusDiv = document.getElementById('upload-status');

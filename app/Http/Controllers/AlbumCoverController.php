@@ -276,9 +276,20 @@
 				return response()->json(['success' => false, 'message' => 'This cover does not have a mix prompt.'], 422);
 			}
 
-			if ($cover->kontext_path) {
-				Storage::disk('public')->delete($cover->kontext_path);
-				$cover->kontext_path = null;
+			// When regenerating a Kontext image, clear any previous versions and associated upscales,
+			// as they will become outdated.
+			if ($cover->kontext_path || $cover->upscaled_path) {
+				if ($cover->kontext_path) {
+					Storage::disk('public')->delete($cover->kontext_path);
+					$cover->kontext_path = null;
+				}
+				if ($cover->upscaled_path) {
+					Storage::disk('public')->delete($cover->upscaled_path);
+					$cover->upscaled_path = null;
+					$cover->upscale_status = null;
+					$cover->upscale_prediction_id = null;
+					$cover->upscale_status_url = null;
+				}
 				$cover->save();
 			}
 
@@ -483,6 +494,18 @@
 			if (!$cover->kontext_path) {
 				return response()->json(['success' => false, 'message' => 'A Kontext image must be generated before upscaling.'], 422);
 			}
+
+			// START MODIFICATION: If re-doing an upscale, clear the old data and file first.
+			if ($cover->upscaled_path) {
+				Storage::disk('public')->delete($cover->upscaled_path);
+			}
+			// Null out all upscale fields to reset the state. They will be repopulated on success.
+			// These changes are not persisted until the save() call below.
+			$cover->upscaled_path = null;
+			$cover->upscale_status = null;
+			$cover->upscale_prediction_id = null;
+			$cover->upscale_status_url = null;
+			// END MODIFICATION
 
 			// Use the generated Kontext image as the source for upscaling.
 			// We need a full, public URL for the Replicate API.
