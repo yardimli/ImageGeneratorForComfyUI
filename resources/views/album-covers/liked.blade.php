@@ -94,7 +94,7 @@
 												@endif
 											</div>
 											
-											<div class="mt-2">
+											<div class="mt-2 text-start">
 												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
 												          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
 												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
