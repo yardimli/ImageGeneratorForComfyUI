@@ -49,7 +49,6 @@
 						</div>
 						<div class="row">
 							@foreach($likedImages as $image)
-								{{-- START MODIFICATION: Add a data-attribute to the column for filtering logic and a class to the card for styling --}}
 								<div class="col-md-3 mb-4" data-has-generated="{{ $image->kontext_path ? 'true' : 'false' }}">
 									<div class="card h-100 image-card original-cover-card">
 										<div class="card-body p-0">
@@ -69,8 +68,6 @@
 											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
-										</div>
-										<div class="card-footer text-center p-0">
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
 											     data-cover-id="{{ $image->id }}">
@@ -84,6 +81,8 @@
 												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>max
 												</button>
 											</div>
+										</div>
+										<div class="card-footer text-center p-0">
 											<div class="kontext-status mt-2 small" id="kontext-status-{{ $image->id }}"></div>
 											<div class="kontext-result mt-2" id="kontext-result-{{ $image->id }}">
 												@if($image->kontext_path)
@@ -105,13 +104,12 @@
 											
 											<!-- Upscale Section -->
 											<div class="mt-3 border-top pt-2">
-												<label class="form-label fw-bold">Upscale</label>
 												<div id="upscale-controls-{{ $image->id }}">
 													@if($image->kontext_path)
 														{{-- This logic only runs if a Kontext image exists --}}
 														@if(is_null($image->upscale_status) || $image->upscale_status == 0)
 															<button type="button" class="btn btn-success btn-sm upscale-btn"
-															        data-cover-id="{{ $image->id }}">Upscale Image
+															        data-cover-id="{{ $image->id }}">Upscale
 															</button>
 														@elseif($image->upscale_status == 1)
 															<div class="text-warning">Upscaling in progress...</div>
@@ -124,7 +122,7 @@
 															</script>
 														@elseif($image->upscale_status == 2)
 															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm"
-															   target="_blank">View/Download Upscaled</a>
+															   target="_blank">View Upscaled</a>
 															<button type="button" class="btn btn-warning btn-sm upscale-btn ms-1"
 															        data-cover-id="{{ $image->id }}">Redo Upscale
 															</button>
