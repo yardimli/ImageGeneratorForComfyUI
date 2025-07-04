@@ -20,7 +20,8 @@
 						</form>
 						
 						<!-- START MODIFICATION: Add a button to toggle viewing only generated cards -->
-						<button type="button" id="toggleGeneratedBtn" class="btn btn-outline-info btn-sm me-2">Show Generated Only</button>
+						<button type="button" id="toggleGeneratedBtn" class="btn btn-outline-info btn-sm me-2">Show Generated Only
+						</button>
 						<!-- END MODIFICATION -->
 						
 						<!-- Original Buttons -->
@@ -51,7 +52,7 @@
 								{{-- START MODIFICATION: Add a data-attribute to the column for filtering logic and a class to the card for styling --}}
 								<div class="col-md-3 mb-4" data-has-generated="{{ $image->kontext_path ? 'true' : 'false' }}">
 									<div class="card h-100 image-card original-cover-card">
-										<div class="card-body">
+										<div class="card-body p-0">
 											<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
 												<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
 												       value="{{ $image->id }}" style="transform: scale(1.5);">
@@ -258,6 +259,7 @@
       .original-cover-card {
           background-color: var(--bs-tertiary-bg);
       }
+
       /* END MODIFICATION */
 	</style>
 @endsection
@@ -313,31 +315,42 @@
 		
 		
 		document.addEventListener('DOMContentLoaded', function () {
-			// --- START MODIFICATION: Script for toggling generated view ---
+			// --- START MODIFICATION: Script to toggle card body visibility ---
 			const toggleBtn = document.getElementById('toggleGeneratedBtn');
 			if (toggleBtn) {
-				let showGeneratedOnly = false; // Initial state
+				let showGeneratedOnly = false; // Initial state: everything is expanded.
 				
 				toggleBtn.addEventListener('click', function () {
-					showGeneratedOnly = !showGeneratedOnly; // Toggle state
+					showGeneratedOnly = !showGeneratedOnly; // Toggle state.
 					
-					const allCards = document.querySelectorAll('.col-md-3[data-has-generated]');
+					// Find all columns containing a card.
+					const allCardColumns = document.querySelectorAll('.col-md-3[data-has-generated]');
 					
-					allCards.forEach(card => {
+					allCardColumns.forEach(column => {
+						// Find the card body within this column's card.
+						const cardBody = column.querySelector('.card-body');
+						if (!cardBody) {
+							return; // Skip if the structure is not as expected.
+						}
+						
 						if (showGeneratedOnly) {
-							// If we're showing only generated, hide cards that don't have generated content
-							if (card.dataset.hasGenerated === 'false') {
-								card.style.display = 'none';
+							// When "Show Generated Only" mode is active...
+							if (column.dataset.hasGenerated === 'false') {
+								// ...hide the body of cards that have NOT been generated.
+								// This keeps the footer controls visible but de-clutters the view.
+								cardBody.style.display = 'none';
 							} else {
-								card.style.display = ''; // Ensure generated cards are visible
+								// For cards that HAVE been generated, ensure their body is visible
+								// for comparison with the generated result in the footer.
+								cardBody.style.display = '';
 							}
 						} else {
-							// If we're showing all, make all cards visible
-							card.style.display = '';
+							// When toggled back to "Show All", ensure all card bodies are visible again.
+							cardBody.style.display = '';
 						}
 					});
 					
-					// Update button text and style
+					// Update button text and style to reflect the current state.
 					if (showGeneratedOnly) {
 						this.textContent = 'Show All Covers';
 						this.classList.remove('btn-outline-info');
