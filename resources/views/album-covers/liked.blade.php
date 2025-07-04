@@ -18,6 +18,11 @@
 								</option>
 							</select>
 						</form>
+						
+						<!-- START MODIFICATION: Add a button to toggle viewing only generated cards -->
+						<button type="button" id="toggleGeneratedBtn" class="btn btn-outline-info btn-sm me-2">Show Generated Only</button>
+						<!-- END MODIFICATION -->
+						
 						<!-- Original Buttons -->
 						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal"
 						        data-bs-target="#uploadCoverModal">
@@ -43,8 +48,10 @@
 						</div>
 						<div class="row">
 							@foreach($likedImages as $image)
-								<div class="col-md-3 mb-4">
-									<div class="card h-100 image-card">
+								{{-- START MODIFICATION: Add a data-attribute to the column for filtering logic and a class to the card for styling --}}
+								<div class="col-md-3 mb-4" data-has-generated="{{ $image->kontext_path ? 'true' : 'false' }}">
+									<div class="card h-100 image-card original-cover-card">
+										{{-- END MODIFICATION --}}
 										<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
 											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
 											       value="{{ $image->id }}" style="transform: scale(1.5);">
@@ -62,13 +69,6 @@
 											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
-											<div class="mt-2">
-												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
-												          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
-												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
-												        data-cover-id="{{ $image->id }}">Save Notes
-												</button>
-											</div>
 										</div>
 										<div class="card-footer text-center">
 											<label class="form-label fw-bold">Kontext</label>
@@ -94,6 +94,15 @@
 												@endif
 											</div>
 											
+											<div class="mt-2">
+												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
+												          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
+												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
+												        data-cover-id="{{ $image->id }}">Save Notes
+												</button>
+											</div>
+											
+											
 											<!-- Upscale Section -->
 											<div class="mt-3 border-top pt-2">
 												<label class="form-label fw-bold">Upscale</label>
@@ -116,11 +125,9 @@
 														@elseif($image->upscale_status == 2)
 															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm"
 															   target="_blank">View/Download Upscaled</a>
-															{{-- START MODIFICATION: Add a button to redo the upscale --}}
 															<button type="button" class="btn btn-warning btn-sm upscale-btn ms-1"
 															        data-cover-id="{{ $image->id }}">Redo Upscale
 															</button>
-															{{-- END MODIFICATION --}}
 														@elseif($image->upscale_status == 3)
 															<div class="text-danger">Upscale failed.</div>
 															<button type="button" class="btn btn-success btn-sm upscale-btn"
@@ -247,6 +254,12 @@
           border: 2px solid #198754; /* success green */
           box-shadow: 0 0 10px rgba(25, 135, 84, 0.5);
       }
+
+      /* START MODIFICATION: Add background for original cover cards that adapts to theme */
+      .original-cover-card {
+          background-color: var(--bs-tertiary-bg);
+      }
+      /* END MODIFICATION */
 	</style>
 @endsection
 
@@ -301,6 +314,44 @@
 		
 		
 		document.addEventListener('DOMContentLoaded', function () {
+			// --- START MODIFICATION: Script for toggling generated view ---
+			const toggleBtn = document.getElementById('toggleGeneratedBtn');
+			if (toggleBtn) {
+				let showGeneratedOnly = false; // Initial state
+				
+				toggleBtn.addEventListener('click', function () {
+					showGeneratedOnly = !showGeneratedOnly; // Toggle state
+					
+					const allCards = document.querySelectorAll('.col-md-3[data-has-generated]');
+					
+					allCards.forEach(card => {
+						if (showGeneratedOnly) {
+							// If we're showing only generated, hide cards that don't have generated content
+							if (card.dataset.hasGenerated === 'false') {
+								card.style.display = 'none';
+							} else {
+								card.style.display = ''; // Ensure generated cards are visible
+							}
+						} else {
+							// If we're showing all, make all cards visible
+							card.style.display = '';
+						}
+					});
+					
+					// Update button text and style
+					if (showGeneratedOnly) {
+						this.textContent = 'Show All Covers';
+						this.classList.remove('btn-outline-info');
+						this.classList.add('btn-info');
+					} else {
+						this.textContent = 'Show Generated Only';
+						this.classList.remove('btn-info');
+						this.classList.add('btn-outline-info');
+					}
+				});
+			}
+			// --- END MODIFICATION ---
+			
 			// --- Existing Script for Generate Prompts & Kontext ---
 			const generateBtn = document.getElementById('generatePromptsBtn');
 			const modalElement = document.getElementById('generatePromptsModal');
