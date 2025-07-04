@@ -104,7 +104,7 @@
 											
 											
 											<!-- Upscale Section -->
-											<div class="mt-3 border-top pt-2">
+											<div class="mt-1 border-top pt-1">
 												<div id="upscale-controls-{{ $image->id }}">
 													@if($image->kontext_path)
 														{{-- This logic only runs if a Kontext image exists --}}
