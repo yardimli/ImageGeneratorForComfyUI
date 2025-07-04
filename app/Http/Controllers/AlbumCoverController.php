@@ -484,6 +484,32 @@
 			}
 		}
 
+		// START MODIFICATION: Add method to unlike a cover
+		/**
+		 * Set a liked cover's status to unliked.
+		 *
+		 * @param Request $request
+		 * @param GoodAlbumCover $cover
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function unlikeCover(Request $request, GoodAlbumCover $cover)
+		{
+			// Ensure the authenticated user owns this cover.
+			if ($cover->user_id !== auth()->id()) {
+				abort(403, 'Unauthorized action.');
+			}
+
+			try {
+				// Set the 'liked' status to false.
+				$cover->update(['liked' => false]);
+				return response()->json(['success' => true, 'message' => 'Cover has been unliked.']);
+			} catch (Exception $e) {
+				Log::error("Failed to unlike cover ID {$cover->id}: " . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
+			}
+		}
+		// END MODIFICATION
+
 		public function upscaleCover(Request $request, GoodAlbumCover $cover)
 		{
 			if ($cover->user_id !== auth()->id()) {
