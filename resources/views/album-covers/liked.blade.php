@@ -324,7 +324,7 @@
 					showGeneratedOnly = !showGeneratedOnly; // Toggle state.
 					
 					// Find all columns containing a card.
-					const allCardColumns = document.querySelectorAll('.col-md-3[data-has-generated]');
+					const allCardColumns = document.querySelectorAll('[data-has-generated]');
 					
 					allCardColumns.forEach(column => {
 						// Find the card body within this column's card.
