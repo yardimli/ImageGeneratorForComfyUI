@@ -76,7 +76,6 @@
 											</button>
 											{{-- END MODIFICATION --}}
 											<br>
-											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
 											     data-cover-id="{{ $image->id }}">
 												<button type="button" class="btn btn-primary kontext-btn" data-model="dev"
