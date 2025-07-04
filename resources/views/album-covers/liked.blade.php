@@ -68,13 +68,6 @@
 											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
-											{{-- START MODIFICATION: Add unlike button --}}
-											<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
-											        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
-											        data-cover-id="{{ $image->id }}">
-												Unlike
-											</button>
-											{{-- END MODIFICATION --}}
 											<br>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
 											     data-cover-id="{{ $image->id }}">
@@ -106,6 +99,14 @@
 												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
 												        data-cover-id="{{ $image->id }}">Save Notes
 												</button>
+												{{-- START MODIFICATION: Add unlike button --}}
+												<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
+												        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
+												        data-cover-id="{{ $image->id }}">
+													Unlike
+												</button>
+												{{-- END MODIFICATION --}}
+											
 											</div>
 											
 											
