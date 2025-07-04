@@ -51,17 +51,16 @@
 								{{-- START MODIFICATION: Add a data-attribute to the column for filtering logic and a class to the card for styling --}}
 								<div class="col-md-3 mb-4" data-has-generated="{{ $image->kontext_path ? 'true' : 'false' }}">
 									<div class="card h-100 image-card original-cover-card">
-										{{-- END MODIFICATION --}}
-										<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
-											<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
-											       value="{{ $image->id }}" style="transform: scale(1.5);">
-										</div>
-										@php
-											$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
-										@endphp
-										<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
-										                                               alt="Liked Album Cover"></a>
 										<div class="card-body">
+											<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
+												<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
+												       value="{{ $image->id }}" style="transform: scale(1.5);">
+											</div>
+											@php
+												$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
+											@endphp
+											<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
+											                                               alt="Liked Album Cover"></a>
 											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">
 												"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
