@@ -334,16 +334,7 @@
 						}
 						
 						if (showGeneratedOnly) {
-							// When "Show Generated Only" mode is active...
-							if (column.dataset.hasGenerated === 'false') {
-								// ...hide the body of cards that have NOT been generated.
-								// This keeps the footer controls visible but de-clutters the view.
-								cardBody.style.display = 'none';
-							} else {
-								// For cards that HAVE been generated, ensure their body is visible
-								// for comparison with the generated result in the footer.
-								cardBody.style.display = '';
-							}
+							cardBody.style.display = 'none';
 						} else {
 							// When toggled back to "Show All", ensure all card bodies are visible again.
 							cardBody.style.display = '';
