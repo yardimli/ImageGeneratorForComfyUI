@@ -70,7 +70,7 @@
 												Edit
 											</button>
 										</div>
-										<div class="card-footer text-center">
+										<div class="card-footer text-center p-0">
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
 											     data-cover-id="{{ $image->id }}">
