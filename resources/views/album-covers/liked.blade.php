@@ -68,6 +68,13 @@
 											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
+											{{-- START MODIFICATION: Add unlike button --}}
+											<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
+											        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
+											        data-cover-id="{{ $image->id }}">
+												Unlike
+											</button>
+											{{-- END MODIFICATION --}}
 											<br>
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
@@ -236,6 +243,26 @@
 			</div>
 		</div>
 	</div>
+	
+	{{-- START MODIFICATION: Add Unlike Confirmation Modal --}}
+	<div class="modal fade" id="unlikeConfirmModal" tabindex="-1" aria-labelledby="unlikeConfirmModalLabel" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="unlikeConfirmModalLabel">Confirm Unlike</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Are you sure you want to unlike this cover? This will remove it from this page.
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-danger" id="confirm-unlike-btn">Unlike</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	{{-- END MODIFICATION --}}
 @endsection
 
 @section('styles')
@@ -739,6 +766,65 @@
 					}
 				});
 			}
+			
+			// --- START MODIFICATION: New Script for Unlike Confirmation ---
+			const unlikeModalEl = document.getElementById('unlikeConfirmModal');
+			if (unlikeModalEl) {
+				const unlikeModal = new bootstrap.Modal(unlikeModalEl);
+				const confirmUnlikeBtn = document.getElementById('confirm-unlike-btn');
+				let coverToUnlikeId = null;
+				
+				// Use event delegation to capture clicks on the unlike buttons
+				document.body.addEventListener('click', function (event) {
+					if (event.target.classList.contains('unlike-btn')) {
+						coverToUnlikeId = event.target.dataset.coverId;
+					}
+				});
+				
+				// Handle the click on the final confirmation button in the modal
+				confirmUnlikeBtn.addEventListener('click', async function () {
+					if (!coverToUnlikeId) return;
+					
+					const originalBtnText = this.textContent;
+					this.disabled = true;
+					this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Unliking...`;
+					
+					let urlTemplate = '{{ route("album-covers.unlike", ["cover" => ":id"]) }}';
+					let url = urlTemplate.replace(':id', coverToUnlikeId);
+					
+					try {
+						const response = await fetch(url, {
+							method: 'POST',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							}
+						});
+						
+						const data = await response.json();
+						
+						if (response.ok && data.success) {
+							// Find the card's parent column and remove it from the DOM for an instant UI update
+							const cardColumn = document.querySelector(`.unlike-btn[data-cover-id="${coverToUnlikeId}"]`).closest('.col-md-3');
+							if (cardColumn) {
+								cardColumn.remove();
+							}
+							unlikeModal.hide();
+						} else {
+							throw new Error(data.message || 'Failed to unlike the cover.');
+						}
+					} catch (error) {
+						console.error('Unlike error:', error);
+						alert('An error occurred: ' + error.message);
+					} finally {
+						// Reset the button and the stored ID
+						this.disabled = false;
+						this.innerHTML = originalBtnText;
+						coverToUnlikeId = null;
+					}
+				});
+			}
+			// --- END MODIFICATION ---
 		});
 	</script>
 @endsection

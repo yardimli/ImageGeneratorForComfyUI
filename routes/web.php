@@ -73,8 +73,10 @@
 		Route::post('/album-covers/kontext/status', [AlbumCoverController::class, 'checkKontextStatus'])->name('album-covers.kontext.status');
 		Route::post('/album-covers/{cover}/update-prompt', [AlbumCoverController::class, 'updateMixPrompt'])->name('album-covers.update-prompt');
 		Route::post('/album-covers/{cover}/update-notes', [AlbumCoverController::class, 'updateNotes'])->name('album-covers.update-notes');
+		// START MODIFICATION: Add route for unliking a cover
+		Route::post('/album-covers/{cover}/unlike', [AlbumCoverController::class, 'unlikeCover'])->name('album-covers.unlike');
+		// END MODIFICATION
 		Route::post('/album-covers/{cover}/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('album-covers.upscale');
 		Route::get('/album-covers/{cover}/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('album-covers.upscale.status');
 
 	});
-
