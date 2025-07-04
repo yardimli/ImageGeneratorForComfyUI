@@ -61,7 +61,7 @@
 											@endphp
 											<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
 											                                               alt="Liked Album Cover"></a>
-											<p class="card-text small text-muted fst-italic" id="prompt-text-{{ $image->id }}">
+											<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $image->id }}">
 												"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
 											        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}"
