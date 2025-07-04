@@ -68,6 +68,7 @@
 											        data-prompt="{{ $image->mix_prompt }}">
 												Edit
 											</button>
+											<br>
 											<label class="form-label fw-bold">Kontext</label>
 											<div class="btn-group btn-group-sm kontext-controls" role="group"
 											     data-cover-id="{{ $image->id }}">
