@@ -92,8 +92,14 @@
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('album-covers.index') }}">Kontext</a>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="kontextDropdown" role="button"
+						   data-bs-toggle="dropdown" aria-expanded="false">
+							Kontext
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="kontextDropdown">
+							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
+						</ul>
 					</li>
 					
 					<li class="nav-item">

@@ -128,36 +128,6 @@ def update_image_filename(id, file_path, is_s3_url=True):
     except Exception as err:
         print(f"Error updating prompt via API: {err}")
 
-
-def queue_prompt(prompt):
-    p = {"prompt": prompt}
-    data = json.dumps(p).encode('utf-8')
-    req = request.Request("http://127.0.0.1:8188/prompt", data=data)
-    request.urlopen(req)
-
-
-def get_workflow_file(generation_type,model):
-    """Get the appropriate workflow file based on type"""
-    workflow_file = ""
-    if generation_type == "prompt":
-        if model == "schnell":
-            workflow_file = "flux_schnell_for_image_gen.json"
-        elif model == "dev":
-            workflow_file = "flux_dev_for_image_gen.json"
-    elif generation_type == "outpaint":
-        workflow_file = "flux_outpaint_for_image_gen.json"
-    elif generation_type == "mix-one":
-        workflow_file = "flux_one_image_mix_for_image_gen.json"
-    elif generation_type == "mix":
-        workflow_file = "flux_two_image_mix_for_image_gen.json"
-    else:
-        raise ValueError(f"Unknown generation type: {generation_type}")
-
-    file_path = os.path.join(current_dir, workflow_file)
-    with open(file_path, 'r') as file:
-        return json.load(file)
-
-
 def update_render_status(id, status):
     """Update render status via API"""
     try:
@@ -191,18 +161,23 @@ def generate_images_from_api():
 
             prompt_id = prompt['id']
             render_status = prompt['render_status']
+            generation_type = prompt['generation_type']
+            model = prompt['model']
+
+            if generation_type in ["prompt"] and model in ["imagen3", "aura-flow", "ideogram-v2a", "luma-photon", "recraft-20b", "minimax", "minimax-expand"]:
+                pass
+            else:
+                print(f"Skipping prompt {prompt_id} - local model")
+                continue
 
             print(f"Processing prompt {idx + 1} id: {prompt_id} - type: {prompt['generation_type']} - model: {prompt['model']} - status: {render_status} - user id: {prompt['user_id']}")
 
             try:
-                generation_type = prompt['generation_type']
-                model = prompt['model']
                 output_filename = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
                 output_file = str(Path(OUTPUT_DIR) / output_filename)
                 s3_file_path = f"images/{output_filename}"
 
                 Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
-
 
                 if render_status in (1, 3):
 
@@ -229,25 +204,7 @@ def generate_images_from_api():
 
                 workflow = {}
                 if generation_type == "prompt":
-                    if model == "schnell":
-                        workflow = get_workflow_file(generation_type,model)
-                        workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                        workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                        workflow["31"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
-                        workflow["5"]["inputs"]["width"] = prompt['width']
-                        workflow["5"]["inputs"]["height"] = prompt['height']
-
-                    elif model == "dev":
-                        workflow = get_workflow_file(generation_type,model)
-                        workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                        workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                        workflow["41"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
-                        workflow["27"]["inputs"]["width"] = prompt['width']
-                        workflow["27"]["inputs"]["height"] = prompt['height']
-                        workflow["30"]["inputs"]["width"] = prompt['width']
-                        workflow["30"]["inputs"]["height"] = prompt['height']
-
-                    elif model == "imagen3":
+                    if model == "imagen3":
                         print(f"Sending to Imagen: {prompt['generated_prompt']}...")
                         aspect_ratio_value = get_aspect_ratio(prompt['width'], prompt['height'])
                         print(f"Using aspect ratio: {aspect_ratio_value}")
@@ -431,107 +388,6 @@ def generate_images_from_api():
                             print(f"Failed to download image: {image_response.status_code}")
                         time.sleep(6)
 
-                elif generation_type == "outpaint":
-                    # load source image from absolute path
-                    workflow = get_workflow_file(generation_type,model)
-                    workflow["17"]["inputs"]["image"] = prompt['source_image']
-
-                    workflow["23"]["inputs"]["text"] = prompt['generated_prompt']
-                    workflow["3"]["inputs"]["seed"] = random.randint(1, 2**32)
-                    workflow["41"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
-
-                    # postprocessing resize width and height (proportional)
-                    workflow["46"]["inputs"]["width"] = prompt['width']
-                    workflow["46"]["inputs"]["height"] = prompt['height']
-
-                    # padding
-                    workflow["44"]["inputs"]["left"] = prompt['left_padding']
-                    workflow["44"]["inputs"]["right"] = prompt['right_padding']
-                    workflow["44"]["inputs"]["top"] = prompt['top_padding']
-                    workflow["44"]["inputs"]["bottom"] = prompt['bottom_padding']
-                    workflow["44"]["inputs"]["feathering"] = prompt['feathering']
-                elif generation_type == "mix":
-                    temp_dir = tempfile.mkdtemp()
-
-                    # Download images
-                    image1_path = os.path.join(temp_dir, "image1.png")
-                    image2_path = os.path.join(temp_dir, "image2.png")
-
-                    # Download image 1
-                    if not download_image(prompt['input_image_1'], image1_path):
-                        raise Exception(f"Failed to download image 1 from {prompt['input_image_1']}")
-
-                    # Download image 2
-                    if not download_image(prompt['input_image_2'], image2_path):
-                        raise Exception(f"Failed to download image 2 from {prompt['input_image_2']}")
-
-                    workflow = get_workflow_file(generation_type,model)
-
-                    # load source image from absolute path
-                    workflow["40"]["inputs"]["image"] = image1_path
-                    workflow["56"]["inputs"]["image"] = image2_path
-
-                    workflow["54"]["inputs"]["downsampling_factor"] = prompt.get('input_image_1_strength', 1)
-                    workflow["55"]["inputs"]["downsampling_factor"] = prompt.get('input_image_2_strength', 1)
-
-                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                    workflow["57"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
-
-                    # postprocessing resize width and height (proportional)
-                    workflow["27"]["inputs"]["width"] = prompt['width']
-                    workflow["27"]["inputs"]["height"] = prompt['height']
-
-                    workflow["30"]["inputs"]["width"] = prompt['width']
-                    workflow["30"]["inputs"]["height"] = prompt['height']
-
-                    print("Debugging mix prompt:")
-                    print (f"Using images with strengths: {prompt.get('input_image_1', 1)} and {prompt.get('input_image_2', 1)} :: {prompt.get('input_image_1_strength', 1)} and {prompt.get('input_image_2_strength', 1)}")
-                    print (f"Prompt and width and height: {prompt['generated_prompt']} :: {prompt['width']} and {prompt['height']}")
-                elif generation_type == "mix-one":
-                    temp_dir = tempfile.mkdtemp()
-
-                    # Download images
-                    image1_path = os.path.join(temp_dir, "image1.png")
-
-                    # Download image 1
-                    if not download_image(prompt['input_image_1'], image1_path):
-                        raise Exception(f"Failed to download image 1 from {prompt['input_image_1']}")
-
-                    workflow = get_workflow_file(generation_type,model)
-
-                    # load source image from absolute path
-                    workflow["40"]["inputs"]["image"] = image1_path
-
-                    strength_int = prompt.get('input_image_1_strength', 1)
-                    if strength_int == 1:
-                        strength_str = "highest"
-                    elif strength_int == 2:
-                        strength_str = "high"
-                    elif strength_int == 3:
-                        strength_str = "medium"
-                    elif strength_int == 4:
-                        strength_str = "low"
-                    elif strength_int == 5:
-                        strength_str = "lowest"
-                    workflow["54"]["inputs"]["image_strength"] = strength_str
-
-                    workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
-                    workflow["25"]["inputs"]["noise_seed"] = random.randint(1, 2**32)
-                    workflow["56"]["inputs"]["file_name_template"] = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
-
-                    # postprocessing resize width and height (proportional)
-                    workflow["27"]["inputs"]["width"] = prompt['width']
-                    workflow["27"]["inputs"]["height"] = prompt['height']
-
-                    workflow["30"]["inputs"]["width"] = prompt['width']
-                    workflow["30"]["inputs"]["height"] = prompt['height']
-
-                    print("Debugging mix-one prompt:")
-                    print (f"Using image with strength: {prompt.get('input_image_1', 1)} :: {prompt.get('input_image_1_strength', 1)}")
-                    print (f"Prompt and width and height: {prompt['generated_prompt']} :: {prompt['width']} and {prompt['height']}")
-
-
                 if os.path.exists(output_file):
                     print(f"Image exists for prompt {prompt_id}, uploading to S3...")
                     if prompt['upload_to_s3']:
@@ -541,26 +397,6 @@ def generate_images_from_api():
                     else:
                         update_image_filename(prompt_id, output_file, False)
                 else:
-                    if (model == "schnell" or model == "dev"):
-                        print(f"Rendering image for prompt {prompt_id}")
-                        queue_prompt(workflow)
-                        update_render_status(prompt_id, 1)
-                        print(f"Queued prompt for: {prompt['generated_prompt']}...")
-
-                        wait_time = 60
-                        if generation_type == "prompt":
-                            if model == "schnell":
-                                wait_time = 5
-                            elif model == "dev":
-                                wait_time = 10
-                        elif generation_type == "mix":
-                            wait_time = 25
-                        elif generation_type == "mix-one":
-                            wait_time = 25
-
-                        time.sleep(wait_time)
-
-
                     if os.path.exists(output_file):
                         if prompt['upload_to_s3']:
                             s3_url = upload_to_s3(output_file, s3_file_path)

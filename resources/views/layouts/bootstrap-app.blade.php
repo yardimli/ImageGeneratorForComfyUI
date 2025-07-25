@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-	<meta charset="utf-8">
+	<meta charset="utf-t">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	
 	<!-- CSRF Token -->
@@ -92,8 +92,17 @@
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('album-covers.index') }}">Kontext</a>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="kontextDropdown" role="button"
+						   data-bs-toggle="dropdown" aria-expanded="false">
+							Kontext
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="kontextDropdown">
+							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
+							{{-- START MODIFICATION: Add link to new Kontext Basic page --}}
+							<li><a class="dropdown-item" href="{{ route('kontext-basic.index') }}">Kontext Basic</a></li>
+							{{-- END MODIFICATION --}}
+						</ul>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.queue') }}">

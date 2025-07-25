@@ -4,6 +4,7 @@
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageMixController;
+	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -55,6 +56,10 @@
 		Route::post('/image-mix/store', [ImageMixController::class, 'store'])->name('image-mix.store');
 		Route::post('/image-mix/upload', [ImageMixController::class, 'uploadImage'])->name('image-mix.upload');
 		Route::get('/image-mix/uploads', [ImageMixController::class, 'getUploadedImages'])->name('image-mix.uploads');
+
+		Route::get('/kontext-basic', [KontextBasicController::class, 'index'])->name('kontext-basic.index');
+		Route::post('/kontext-basic/store', [KontextBasicController::class, 'store'])->name('kontext-basic.store');
+		Route::get('/kontext-basic/render-history', [KontextBasicController::class, 'getRenderHistory'])->name('kontext-basic.render-history');
 
 		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
 		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');
