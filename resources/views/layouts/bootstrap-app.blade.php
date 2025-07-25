@@ -99,9 +99,7 @@
 						</a>
 						<ul class="dropdown-menu" aria-labelledby="kontextDropdown">
 							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
-							{{-- START MODIFICATION: Add link to new Kontext Basic page --}}
 							<li><a class="dropdown-item" href="{{ route('kontext-basic.index') }}">Kontext Basic</a></li>
-							{{-- END MODIFICATION --}}
 						</ul>
 					</li>
 					<li class="nav-item">
