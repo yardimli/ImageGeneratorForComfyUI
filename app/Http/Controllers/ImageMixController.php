@@ -179,7 +179,7 @@
 			// --- Start: Logic to gather images, usage counts, and DATES ---
 			// Get usage counts first (remains the same)
 			$prompts = Prompt::where('user_id', auth()->id())
-				->where('generation_type', 'mix')
+				->whereIn('generation_type', ['mix', 'mix-one', 'kontext-basic', 'kontext-lora'])
 				->where(function ($q) {
 					$q->whereNotNull('input_image_1')->where('input_image_1', '!=', '')
 						->orWhereNotNull('input_image_2')->where('input_image_2', '!=', '');
@@ -200,7 +200,7 @@
 			// Get settings to extract images and their creation dates
 			$settings = PromptSetting::where('user_id', auth()->id())
 				// START MODIFICATION: Include 'kontext-basic' to share upload history
-				->whereIn('generation_type', ['mix', 'mix-one', 'kontext-basic'])
+				->whereIn('generation_type', ['mix', 'mix-one', 'kontext-basic', 'kontext-lora'])
 				// END MODIFICATION
 				->where(function ($query) {
 					$query->whereNotNull('input_images_1')

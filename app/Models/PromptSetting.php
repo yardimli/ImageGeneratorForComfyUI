@@ -17,6 +17,11 @@
 			'width',
 			'height',
 			'model',
+			// START MODIFICATION
+			'lora_name',
+			'strength_model',
+			'guidance',
+			// END MODIFICATION
 			'upload_to_s3',
 			'create_minimax',
 			'create_imagen',

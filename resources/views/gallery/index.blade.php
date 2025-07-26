@@ -412,6 +412,7 @@
 @endsection
 
 @section('scripts')
+	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {

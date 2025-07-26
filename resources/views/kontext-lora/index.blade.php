@@ -9,15 +9,42 @@
 	<div class="container py-4">
 		<div class="card mb-4">
 			<div class="card-header">
-				<h3 class="mb-0">Kontext Basic Tool</h3>
+				{{-- New page title --}}
+				<h3 class="mb-0">Kontext Lora Tool</h3>
 			</div>
 			<div class="card-body">
-				<form id="kontextBasicForm" method="POST" action="{{ route('kontext-basic.store') }}">
+				{{-- Updated form ID and action route --}}
+				<form id="kontextLoraForm" method="POST" action="{{ route('kontext-lora.store') }}">
 					@csrf
 					
 					{{-- Top row settings --}}
-					<div class="row mb-4">
+					<div class="row align-items-end">
+						{{-- START MODIFICATION: Replace text input with a dropdown for Lora selection. --}}
 						<div class="col-md-3">
+							<label for="loraNameSelect" class="form-label">Lora</label>
+							<select id="loraNameSelect" class="form-select" name="lora_name" required>
+								<option value="" selected disabled>Select a Lora...</option>
+								@if(!empty($loras))
+									@foreach($loras as $lora)
+										<option value="{{ $lora['model'] }}"
+										        data-trigger="{{ htmlspecialchars($lora['trigger']) }}"
+										        data-notes="{{ htmlspecialchars($lora['notes']) }}">
+											{{ $lora['trigger'] }}
+										</option>
+									@endforeach
+								@endif
+							</select>
+						</div>
+						{{-- END MODIFICATION --}}
+						<div class="col-md-2">
+							<label class="form-label">Strength Model</label>
+							<input type="number" class="form-control" name="strength_model" value="1.0" step="0.1" min="0">
+						</div>
+						<div class="col-md-2">
+							<label class="form-label">Guidance</label>
+							<input type="number" class="form-control" name="guidance" value="2.5" step="0.1" min="0">
+						</div>
+						<div class="col-md-2">
 							<label class="form-label">Render Count</label>
 							<input type="number" class="form-control" name="render_each_prompt_times" value="1" min="1">
 						</div>
@@ -29,6 +56,13 @@
 							</div>
 						</div>
 					</div>
+					
+					<div class="row mt-0">
+					<div id="loraInfo" class="col-12 form-text text-muted mt-2" style="min-height: 40px;">
+						Select a Lora to see its trigger and notes.
+					</div>
+					</div>
+					
 					
 					<div class="row">
 						{{-- Image Column --}}
@@ -221,5 +255,5 @@
 
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
-	<script src="{{ asset('js/kontext-basic-script.js') }}"></script>
+	<script src="{{ asset('js/kontext-lora-script.js') }}"></script>
 @endsection

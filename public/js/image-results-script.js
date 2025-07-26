@@ -171,7 +171,7 @@ function attachButtonEventListeners(settingId) {
 	});
 	
 	document.querySelectorAll('.delete-image-btn').forEach(button => {
-		button.addEventListener('click', async function() {
+		button.addEventListener('click', async function () {
 			if (!confirm('Are you sure you want to delete this image?')) return;
 			
 			const promptId = this.dataset.promptId;
@@ -199,7 +199,7 @@ function attachButtonEventListeners(settingId) {
 	
 	const deleteAllBtn = document.querySelector('.delete-all-btn');
 	if (deleteAllBtn) {
-		deleteAllBtn.addEventListener('click', async function() {
+		deleteAllBtn.addEventListener('click', async function () {
 			if (!confirm('Are you sure you want to delete these settings and ALL associated images? This cannot be undone!')) return;
 			
 			const settingId = this.dataset.settingId;
@@ -252,31 +252,6 @@ function getUpscaleButton(prompt) {
 	return '';
 }
 
-// Add this to image-results-script.js
-function updateQueueCount() {
-	fetch('/api/prompts/queue-count')
-		.then(response => response.json())
-		.then(data => {
-			// Update all queue count elements on the page
-			document.querySelectorAll('#queueCount, #navQueueCount').forEach(element => {
-				if (element) {
-					element.textContent = data.count;
-					element.className = 'badge ' + (data.count > 10 ? 'bg-danger' : data.count > 5 ? 'bg-info' : 'bg-primary');
-				}
-			});
-		})
-		.catch(error => console.error('Error fetching queue count:', error));
-}
-
 document.addEventListener('DOMContentLoaded', function () {
-	queueUpdateInterval = setInterval(updateQueueCount, 3000);
-	updateQueueCount();
-	
-	window.addEventListener('beforeunload', () => {
-		if (queueUpdateInterval) {
-			clearInterval(queueUpdateInterval);
-		}
-	});
-	
 	imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
 });

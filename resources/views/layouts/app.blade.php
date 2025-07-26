@@ -100,6 +100,7 @@
 						<ul class="dropdown-menu" aria-labelledby="kontextDropdown">
 							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
 							<li><a class="dropdown-item" href="{{ route('kontext-basic.index') }}">Kontext Basic</a></li>
+							<li><a class="dropdown-item" href="{{ route('kontext-lora.index') }}">Kontext Lora</a></li>
 						</ul>
 					</li>
 					

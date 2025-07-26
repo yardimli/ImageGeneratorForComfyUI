@@ -11,15 +11,27 @@ from shutil import copyfile
 import tempfile
 import math
 from pathlib import Path
+import argparse
 
 
 current_dir = Path(__file__).resolve().parent
 env_path = current_dir.parent / '.env'
 load_dotenv(env_path)
 
-# Existing environment variables
-API_BASE_URL = "http://localhost:8011/api"
-# API_BASE_URL = os.getenv('API_BASE_URL')
+parser = argparse.ArgumentParser(description="Run the image generation script.")
+parser.add_argument(
+    '--local',
+    action='store_true',
+    help='Use local API endpoint (http://localhost:8011/api) instead of the one in the .env file.'
+)
+args = parser.parse_args()
+
+if args.local:
+    API_BASE_URL = "http://localhost:8011/api"
+    print(f"--- Running in LOCAL mode. API endpoint set to: {API_BASE_URL} ---")
+else:
+    API_BASE_URL = os.getenv('API_BASE_URL')
+    print(f"--- Running in DEFAULT mode. API endpoint from .env: {API_BASE_URL} ---")
 
 OUTPUT_DIR = os.getenv('OUTPUT_DIR')
 COMFY_DEFAULT_OUTPUT_DIR = os.getenv('COMFY_DEFAULT_OUTPUT_DIR')
@@ -141,6 +153,8 @@ def get_workflow_file(generation_type, model):
         workflow_file = "flux_two_image_mix_for_image_gen.json"
     elif generation_type == "kontext-basic":
         workflow_file = "flux_kontext_basic.json"
+    elif generation_type == "kontext-lora":
+        workflow_file = "flix_kontext_lora.json"
     else:
         raise ValueError(f"Unknown generation type: {generation_type}")
 
@@ -185,7 +199,7 @@ def generate_images_from_api():
             generation_type = prompt['generation_type']
             model = prompt['model']
 
-            if generation_type in ["prompt", "mix", "mix-one", "kontext-basic"] and model in ["schnell", "dev"]:
+            if generation_type in ["prompt", "mix", "mix-one", "kontext-basic", "kontext-lora"] and model in ["schnell", "dev"]:
                 pass
             else:
                 print(f"Skipping prompt {prompt_id} - not local model")
@@ -195,14 +209,37 @@ def generate_images_from_api():
             print(f"Processing prompt {idx + 1} id: {prompt_id} - type: {prompt['generation_type']} - model: {prompt['model']} - status: {render_status} - user id: {prompt['user_id']}")
 
             try:
-                if generation_type in ["kontext-basic"]:
+                if generation_type in ["kontext-basic", "kontext-lora"]:
                     prompt_history = get_history(prompt_id)
                     print(f"Prompt History: {prompt_history}")
-                    if prompt_history:
+                    if prompt_history and generation_type == "kontext-basic":
                         node_info = prompt_history.get(prompt_id_str, {})
                         outputs = node_info.get('outputs', {})
                         output_136 = outputs.get('136', {})
                         images = output_136.get('images', []) # Default to an empty list for the images
+
+                        # Now, check if the 'images' list is not empty before accessing the first element
+                        if images:
+                            # We can now safely access the first element and its 'filename' key
+                            image_data = images[0]
+                            output_filename = image_data.get('filename')
+
+                            if output_filename:
+                                output_file = str(Path(COMFY_DEFAULT_OUTPUT_DIR) / output_filename)
+                                print(f"Successfully found output file: {output_file}")
+                            else:
+                                print("Image data found, but 'filename' key is missing.")
+                                output_filename = "kontext-not-ready.png"
+                                output_file = str(Path(COMFY_DEFAULT_OUTPUT_DIR) / output_filename)
+                        else:
+                            print("Could not find the required path or the 'images' list was empty.")
+                            output_filename = "kontext-not-ready.png"
+                            output_file = str(Path(COMFY_DEFAULT_OUTPUT_DIR) / output_filename)
+                    if prompt_history and generation_type == "kontext-lora":
+                        node_info = prompt_history.get(prompt_id_str, {})
+                        outputs = node_info.get('outputs', {})
+                        output_180 = outputs.get('180', {})
+                        images = output_180.get('images', []) # Default to an empty list for the images
 
                         # Now, check if the 'images' list is not empty before accessing the first element
                         if images:
@@ -237,9 +274,9 @@ def generate_images_from_api():
 
                     skip_continue = False
                     prompt_status_counter[prompt_id] = prompt_status_counter.get(prompt_id, 0) + 1
-                    if prompt_status_counter[prompt_id] > 20:
+                    if prompt_status_counter[prompt_id] > 60:
                         # skip_continue = True
-                        print(f"Skipping prompt {prompt_id} - seen with status 1 more than 20 times, try render again")
+                        print(f"Skipping prompt {prompt_id} - seen with status 1 more than 60 times, try render again")
                         update_render_status(prompt_id, 4)
                         del prompt_status_counter[prompt_id]
 
@@ -372,6 +409,27 @@ def generate_images_from_api():
 
                     workflow["6"]["inputs"]["text"] = prompt['generated_prompt']
                     workflow["31"]["inputs"]["seed"] = random.randint(1, 2**32)
+                elif generation_type == "kontext-lora":
+                    temp_dir = tempfile.mkdtemp()
+
+                    # Download images
+                    image1_path = os.path.join(temp_dir, "image1.png")
+
+                    # Download image 1
+                    if not download_image(prompt['input_image_1'], image1_path):
+                        raise Exception(f"Failed to download image 1 from {prompt['input_image_1']}")
+
+                    workflow = get_workflow_file(generation_type,model)
+
+                    workflow["133"]["inputs"]["image"] = image1_path
+
+                    workflow["186"]["inputs"]["lora_name"] = prompt['lora_name'] or ""
+                    strength_model = float(prompt['strength_model'] or 1.0)
+                    workflow["186"]["inputs"]["strength_model"] = strength_model
+                    guidance = float(prompt['guidance'] or 7.5)
+                    workflow["179"]["inputs"]["guidance"] = guidance
+                    workflow["181"]["inputs"]["text"] = prompt['generated_prompt'] or ""
+                    workflow["178"]["inputs"]["seed"] = random.randint(1, 2**32)
 
                 if os.path.exists(output_file):
                     print(f"Image exists for prompt {prompt_id}, uploading to S3...")

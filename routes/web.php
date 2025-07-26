@@ -5,6 +5,7 @@
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\KontextBasicController;
+	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -60,6 +61,10 @@
 		Route::get('/kontext-basic', [KontextBasicController::class, 'index'])->name('kontext-basic.index');
 		Route::post('/kontext-basic/store', [KontextBasicController::class, 'store'])->name('kontext-basic.store');
 		Route::get('/kontext-basic/render-history', [KontextBasicController::class, 'getRenderHistory'])->name('kontext-basic.render-history');
+
+		Route::get('/kontext-lora', [KontextLoraController::class, 'index'])->name('kontext-lora.index');
+		Route::post('/kontext-lora/store', [KontextLoraController::class, 'store'])->name('kontext-lora.store');
+		Route::get('/kontext-lora/render-history', [KontextLoraController::class, 'getRenderHistory'])->name('kontext-lora.render-history');
 
 		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
 		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');

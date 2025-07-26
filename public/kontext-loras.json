@@ -1,0 +1,37 @@
+[
+  {
+    "trigger": "D1gitalCart00n style",
+    "model": "D1gitalCart00n.safetensors",
+    "notes": "Turn this image to D1gitalCart00n style"
+  },
+  {
+    "trigger": "Put it here",
+    "model": "Put it here+_kontext_v1.safetensors",
+    "notes": "The texture must be a white background image. Just place it where you want"
+  },
+  {
+    "trigger": "show up in photos",
+    "model": "ShowUP【style】_flux_kontext_lora_v1-PAseer.safetensors",
+    "notes": "This is the model to dynamic one characters in several photos. Suggest Weight : 0.5"
+  },
+  {
+    "trigger": "Place it <your item>",
+    "model": "place_it.safetensors",
+    "notes": "Use the trigger 'Place it' followed by the item you want to place. Used to merge a new face to a photo."
+  },
+  {
+    "trigger": "Fuse this image into background",
+    "model": "fuse-it.safetensors",
+    "notes": ""
+  },
+  {
+    "trigger": "Add details to this face, improve skin details",
+    "model": "high_detail.safetensors",
+    "notes": ""
+  },
+  {
+    "trigger": "unflux this",
+    "model": "unflux_v1.safetensors",
+    "notes": ""
+  }
+]
