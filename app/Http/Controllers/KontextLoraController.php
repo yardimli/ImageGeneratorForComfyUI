@@ -155,7 +155,6 @@
 		public function getRenderHistory(Request $request)
 		{
 			$query = Prompt::where('user_id', auth()->id())
-				->where('generation_type', 'kontext-lora') // Filter by this tool's generation type
 				->whereNotNull('filename')
 				->where('filename', '!=', '');
 

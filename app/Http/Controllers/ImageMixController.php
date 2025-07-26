@@ -274,19 +274,20 @@
 			// --- End: Modified logic ---
 
 
+
 			// Apply sorting based on the 'sort' parameter
 			usort($images, function ($a, $b) use ($sort) {
 				switch ($sort) {
 					case 'oldest':
 						// Use the name (timestamp) for sorting oldest first
-						return strcmp($a['name'], $b['name']);
+						return strcmp($a['uploaded_at_formatted'], $b['uploaded_at_formatted']);
 					case 'count_desc':
 						$countComparison = $b['usage_count'] <=> $a['usage_count'];
 						return $countComparison !== 0 ? $countComparison : strcmp($b['name'], $a['name']); // Tie-break newest
 					case 'newest':
 					default:
 						// Use the name (timestamp) for sorting newest first
-						return strcmp($b['name'], $a['name']);
+						return strcmp($b['uploaded_at_formatted'], $a['uploaded_at_formatted']);
 				}
 			});
 
