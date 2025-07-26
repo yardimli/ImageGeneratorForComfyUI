@@ -9,6 +9,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	const uploadHistoryModal = new bootstrap.Modal(document.getElementById('uploadHistoryModal'));
 	const renderHistoryModal = new bootstrap.Modal(document.getElementById('renderHistoryModal'));
 	const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
+	// START MODIFICATION: Add cropper modal elements
+	const cropperModalEl = document.getElementById('cropperModal');
+	const cropperModal = new bootstrap.Modal(cropperModalEl);
+	const imageToCrop = document.getElementById('imageToCrop');
+	let cropper;
+	// END MODIFICATION
 	
 	// Buttons
 	document.getElementById('uploadBtn').addEventListener('click', () => uploadImageModal.show());
@@ -60,47 +66,94 @@ document.addEventListener('DOMContentLoaded', function () {
 	const urlParams = new URLSearchParams(window.location.search);
 	const editedImageUrl = urlParams.get('edited_image_url');
 	if (editedImageUrl) {
-		selectImage(decodeURIComponent(editedImageUrl));
+		openCropper(decodeURIComponent(editedImageUrl)); // Open cropper instead of selecting directly
 		// Clean up the URL to avoid re-triggering on refresh
 		const newUrl = window.location.pathname;
 		window.history.replaceState({}, document.title, newUrl);
 	}
 	// END MODIFICATION
 	
-	// --- Image Upload Logic ---
-	document.getElementById('confirmUploadBtn').addEventListener('click', async function () {
-		const form = document.getElementById('uploadImageForm');
-		const formData = new FormData(form);
-		formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
-		
-		const button = this;
-		button.disabled = true;
-		button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Uploading...';
-		
-		try {
-			const response = await fetch('/image-mix/upload', {
-				method: 'POST',
-				body: formData,
-				headers: {
-					'Accept': 'application/json',
-				},
-			});
-			const data = await response.json();
-			if (data.success) {
-				selectImage(data.path);
-				uploadImageModal.hide();
-			} else {
-				alert('Upload failed: ' + data.error);
-			}
-		} catch (error) {
-			alert('An error occurred during upload.');
-			console.error(error);
-		} finally {
-			button.disabled = false;
-			button.innerHTML = 'Upload';
-			form.reset();
+	// START MODIFICATION: Cropper Logic
+	function openCropper(imageUrl) {
+		imageToCrop.src = imageUrl;
+		cropperModal.show();
+	}
+	
+	cropperModalEl.addEventListener('shown.bs.modal', function () {
+		if (cropper) {
+			cropper.destroy();
+		}
+		cropper = new Cropper(imageToCrop, {
+			aspectRatio: 1,
+			viewMode: 1,
+			background: false,
+		});
+	});
+	
+	cropperModalEl.addEventListener('hidden.bs.modal', function () {
+		if (cropper) {
+			cropper.destroy();
+			cropper = null;
 		}
 	});
+	
+	document.getElementById('confirmCropBtn').addEventListener('click', () => {
+		if (!cropper) return;
+		
+		const button = document.getElementById('confirmCropBtn');
+		button.disabled = true;
+		button.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...';
+		
+		cropper.getCroppedCanvas({ width: 1024, height: 1024 }).toBlob(async (blob) => {
+			const formData = new FormData();
+			formData.append('image', blob, 'cropped-image.png');
+			formData.append('_token', document.querySelector('meta[name="csrf-token"]').content);
+			
+			try {
+				const response = await fetch('/image-mix/upload', {
+					method: 'POST',
+					body: formData,
+					headers: { 'Accept': 'application/json' },
+				});
+				const data = await response.json();
+				if (data.success) {
+					selectImage(data.path);
+					cropperModal.hide();
+				} else {
+					alert('Crop upload failed: ' + (data.error || 'Unknown error'));
+				}
+			} catch (error) {
+				alert('An error occurred during crop upload.');
+				console.error(error);
+			} finally {
+				button.disabled = false;
+				button.innerHTML = 'Confirm Crop';
+			}
+		}, 'image/png');
+	});
+	// END MODIFICATION
+	
+	// --- Image Upload Logic ---
+	// START MODIFICATION: Changed to open cropper instead of direct upload
+	document.getElementById('confirmUploadBtn').addEventListener('click', function () {
+		const form = document.getElementById('uploadImageForm');
+		const fileInput = document.getElementById('imageUpload');
+		const file = fileInput.files[0];
+		
+		if (!file) {
+			alert('Please select an image file.');
+			return;
+		}
+		
+		const reader = new FileReader();
+		reader.onload = (e) => {
+			openCropper(e.target.result);
+			uploadImageModal.hide();
+		};
+		reader.readAsDataURL(file);
+		form.reset();
+	});
+	// END MODIFICATION
 	
 	// --- Shared History Modal Logic ---
 	function setupHistoryModal(modalId, containerId, paginationId, loadFunction, addBtnId) {
@@ -127,15 +180,17 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 		
+		// START MODIFICATION: Open cropper on selection
 		addBtn.addEventListener('click', function() {
 			const selected = modalEl.querySelector('.history-image-card.selected');
 			if (selected) {
-				selectImage(selected.dataset.path);
+				openCropper(selected.dataset.path);
 				(modalId === 'uploadHistoryModal' ? uploadHistoryModal : renderHistoryModal).hide();
 			} else {
 				alert('Please select an image first.');
 			}
 		});
+		// END MODIFICATION
 	}
 	
 	// --- Upload History Logic ---

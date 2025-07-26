@@ -96,7 +96,8 @@
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-primary" id="confirmUploadBtn">Upload</button>
+					{{-- MODIFICATION: Changed button text to reflect new action --}}
+					<button type="button" class="btn btn-primary" id="confirmUploadBtn">Select</button>
 				</div>
 			</div>
 		</div>
@@ -202,9 +203,35 @@
 			</div>
 		</div>
 	</div>
+	
+	{{-- START MODIFICATION: Add Cropper Modal --}}
+	<div class="modal fade" id="cropperModal" tabindex="-1" aria-labelledby="cropperModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-lg">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="cropperModalLabel">Crop Image</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div>
+						{{-- Add crossorigin for S3/remote images --}}
+						<img id="imageToCrop" src="" style="max-width: 100%;" crossorigin="anonymous">
+					</div>
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-primary" id="confirmCropBtn">Confirm Crop</button>
+				</div>
+			</div>
+		</div>
+	</div>
+	{{-- END MODIFICATION --}}
 @endsection
 
 @section('styles')
+	{{-- START MODIFICATION: Add Cropper.js styles --}}
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"/>
+	{{-- END MODIFICATION --}}
 	<style>
       .history-image-card {
           cursor: pointer;
@@ -224,5 +251,8 @@
 
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
+	{{-- START MODIFICATION: Add Cropper.js script --}}
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/kontext-basic-script.js') }}"></script>
 @endsection
