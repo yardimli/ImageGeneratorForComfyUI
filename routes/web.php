@@ -3,6 +3,7 @@
 	use App\Http\Controllers\AlbumCoverController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
+	use App\Http\Controllers\ImageEditorController;
 	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
@@ -65,6 +66,9 @@
 		Route::get('/kontext-lora', [KontextLoraController::class, 'index'])->name('kontext-lora.index');
 		Route::post('/kontext-lora/store', [KontextLoraController::class, 'store'])->name('kontext-lora.store');
 		Route::get('/kontext-lora/render-history', [KontextLoraController::class, 'getRenderHistory'])->name('kontext-lora.render-history');
+
+		Route::get('/image-editor', [ImageEditorController::class, 'index'])->name('image-editor.index');
+		Route::post('/image-editor/save', [ImageEditorController::class, 'save'])->name('image-editor.save');
 
 		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
 		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');

@@ -58,9 +58,9 @@
 					</div>
 					
 					<div class="row mt-0">
-					<div id="loraInfo" class="col-12 form-text text-muted mt-2" style="min-height: 40px;">
-						Select a Lora to see its trigger and notes.
-					</div>
+						<div id="loraInfo" class="col-12 form-text text-muted mt-2" style="min-height: 40px;">
+							Select a Lora to see its trigger and notes.
+						</div>
 					</div>
 					
 					
@@ -78,6 +78,9 @@
 									<button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
 									<button type="button" class="btn btn-secondary" id="uploadHistoryBtn">Upload History</button>
 									<button type="button" class="btn btn-info" id="renderHistoryBtn">Render History</button>
+									{{-- START MODIFICATION: Add Image Editor button --}}
+									<a href="{{ route('image-editor.index', ['return_url' => url()->current()]) }}" class="btn btn-warning" target="_blank">Image Editor</a>
+									{{-- END MODIFICATION --}}
 								</div>
 							</div>
 						</div>

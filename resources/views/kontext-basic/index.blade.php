@@ -44,6 +44,9 @@
 									<button type="button" class="btn btn-primary" id="uploadBtn">Upload</button>
 									<button type="button" class="btn btn-secondary" id="uploadHistoryBtn">Upload History</button>
 									<button type="button" class="btn btn-info" id="renderHistoryBtn">Render History</button>
+									{{-- START MODIFICATION: Add Image Editor button --}}
+									<a href="{{ route('image-editor.index', ['return_url' => url()->current()]) }}" class="btn btn-warning" target="_blank">Image Editor</a>
+									{{-- END MODIFICATION --}}
 								</div>
 							</div>
 						</div>

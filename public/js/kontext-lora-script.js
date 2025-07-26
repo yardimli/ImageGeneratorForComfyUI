@@ -56,6 +56,17 @@ document.addEventListener('DOMContentLoaded', function () {
 		imageContainer.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 250px; object-fit: contain;" alt="Selected Image">`;
 	}
 	
+	// START MODIFICATION: Handle returning from image editor
+	const urlParams = new URLSearchParams(window.location.search);
+	const editedImageUrl = urlParams.get('edited_image_url');
+	if (editedImageUrl) {
+		selectImage(decodeURIComponent(editedImageUrl));
+		// Clean up the URL to avoid re-triggering on refresh
+		const newUrl = window.location.pathname;
+		window.history.replaceState({}, document.title, newUrl);
+	}
+	// END MODIFICATION
+	
 	// --- Image Upload Logic ---
 	document.getElementById('confirmUploadBtn').addEventListener('click', async function () {
 		const form = document.getElementById('uploadImageForm');
