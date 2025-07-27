@@ -483,7 +483,9 @@ document.addEventListener('DOMContentLoaded', function () {
 				
 				// START MODIFICATION: Check for unsaved changes to the prompt.
 				const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
-				if (imagePromptTextarea.value !== initialPrompt) {
+				// decode initialPrompt to handle any HTML entities
+				const decodedInitialPrompt = initialPrompt ? decodeURIComponent(initialPrompt) : '';
+				if (imagePromptTextarea.value !== decodedInitialPrompt) {
 					alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
 					e.preventDefault();
 					e.stopPropagation();
