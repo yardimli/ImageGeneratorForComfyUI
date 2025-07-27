@@ -29,7 +29,7 @@
 		{
 			$fontFamilyName = $this->argument('font_name');
 			$fontTtfFile = $fontFamilyName . '-Regular.ttf';
-			$fontPath = resource_path('fonts\\');
+			$fontPath = resource_path('fonts/');
 
 			$fullTtfPath = $fontPath . $fontTtfFile;
 
