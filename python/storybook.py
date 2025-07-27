@@ -176,7 +176,7 @@ def create_storybook_pdf(args, story_data):
 
     finally:
         # --- Clean up temporary image directory ---
-        shutil.rmtree(image_temp_dir)
+        # shutil.rmtree(image_temp_dir)
         print(f"Removed temporary image directory: {image_temp_dir}")
 
 
