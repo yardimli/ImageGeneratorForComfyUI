@@ -92,6 +92,9 @@
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('stories.index') }}">Story</a>
+					</li>
 					<li class="nav-item dropdown">
 						<a class="nav-link dropdown-toggle" href="#" id="kontextDropdown" role="button"
 						   data-bs-toggle="dropdown" aria-expanded="false">

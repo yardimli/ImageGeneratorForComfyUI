@@ -9,6 +9,7 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
+	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
 
@@ -92,5 +93,12 @@
 		// END MODIFICATION
 		Route::post('/album-covers/{cover}/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('album-covers.upscale');
 		Route::get('/album-covers/{cover}/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('album-covers.upscale.status');
+
+
+		Route::resource('stories', StoryController::class);
+		Route::get('/stories/{story}/characters', [StoryController::class, 'characters'])->name('stories.characters');
+		Route::post('/stories/{story}/characters', [StoryController::class, 'updateCharacters'])->name('stories.characters.update');
+		Route::get('/stories/{story}/places', [StoryController::class, 'places'])->name('stories.places');
+		Route::post('/stories/{story}/places', [StoryController::class, 'updatePlaces'])->name('stories.places.update');
 
 	});

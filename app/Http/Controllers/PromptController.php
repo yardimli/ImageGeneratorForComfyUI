@@ -508,13 +508,8 @@
 				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
 			}
 
-			// Only delete if the prompt is still in the queue
-			if ($prompt->render_status === 'queued' || $prompt->render_status === 'pending' || $prompt->render_status === null) {
-				$prompt->delete();
-				return response()->json(['success' => true, 'message' => 'Prompt deleted successfully']);
-			}
-
-			return response()->json(['success' => false, 'message' => 'Cannot delete prompt that is not in queue']);
+			$prompt->delete();
+			return response()->json(['success' => true, 'message' => 'Prompt deleted successfully']);
 		}
 
 		public function deleteAllQueuedPrompts()
