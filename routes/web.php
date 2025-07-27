@@ -94,6 +94,8 @@
 		Route::post('/album-covers/{cover}/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('album-covers.upscale');
 		Route::get('/album-covers/{cover}/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('album-covers.upscale.status');
 
+		Route::get('/stories/create/ai', [StoryController::class, 'createWithAi'])->name('stories.create-ai');
+		Route::post('/stories/create/ai', [StoryController::class, 'storeWithAi'])->name('stories.store-ai');
 
 		Route::resource('stories', StoryController::class);
 		Route::get('/stories/{story}/characters', [StoryController::class, 'characters'])->name('stories.characters');

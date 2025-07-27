@@ -30,7 +30,7 @@
 					</div>
 					<div class="d-flex gap-2">
 						<a href="{{ route('stories.characters', $story) }}" class="btn btn-info">Manage Characters</a>
-						<a href="{{ route('stories.places', 'story') }}" class="btn btn-info">Manage Places</a>
+						<a href="{{ route('stories.places',  $story) }}" class="btn btn-info">Manage Places</a>
 					</div>
 				</div>
 			</div>

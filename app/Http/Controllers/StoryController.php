@@ -2,16 +2,20 @@
 
 	namespace App\Http\Controllers;
 
+	// START MODIFICATION: Import new classes needed for AI story generation.
+	use App\Http\Controllers\LlmController;
 	use App\Models\Story;
 	use App\Models\StoryCharacter;
 	use App\Models\StoryPage;
 	use App\Models\StoryPlace;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
-
-// START MODIFICATION: Removed Gate facade as it's no longer used.
-// use Illuminate\Support\Facades\Gate;
+	use Illuminate\Support\Facades\Log;
+	use Illuminate\Support\Facades\Validator;
+	use Illuminate\Validation\ValidationException;
 // END MODIFICATION
+
+// use Illuminate\Support\Facades\Gate;
 
 	class StoryController extends Controller
 	{
@@ -32,6 +36,29 @@
 			return view('story.create');
 		}
 
+// START MODIFICATION: Add method to show the AI story creation form.
+		/**
+		 * Show the form for creating a new story with AI.
+		 *
+		 * @param LlmController $llmController
+		 * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+		 */
+		public function createWithAi(LlmController $llmController)
+		{
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = collect($modelsResponse['data'] ?? [])
+					->sortBy('name')
+					->all();
+
+				return view('story.create-ai', compact('models'));
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for AI Story Creator: ' . $e->getMessage());
+				return redirect()->route('stories.index')->with('error', 'Could not fetch AI models at this time. Please try again later.');
+			}
+		}
+// END MODIFICATION
+
 		/**
 		 * Store a newly created story in storage.
 		 */
@@ -51,16 +78,191 @@
 			return redirect()->route('stories.edit', $story)->with('success', 'Story created successfully. Now add some pages!');
 		}
 
+// START MODIFICATION: Add method to generate and store a story using AI.
+		/**
+		 * Generate and store a new story using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function storeWithAi(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'instructions' => 'required|string|max:4000',
+				'num_pages' => 'required|integer|min:1|max:99',
+				'model' => 'required|string',
+			]);
+
+			$prompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
+
+			try {
+				$storyData = $llmController->callLlmSync(
+					$prompt,
+					$validated['model'],
+					'AI Story Generation',
+					0.7, // A reasonable temperature for creative tasks
+					'json_object'
+				);
+
+				// Validate the structure of the JSON returned by the LLM
+				$this->validateStoryData($storyData);
+
+				$story = $this->saveStoryFromAiData($storyData);
+
+				return redirect()->route('stories.edit', $story)->with('success', 'Your AI-generated story has been created successfully!');
+
+			} catch (ValidationException $e) {
+				return back()->withInput()->withErrors($e->errors())->with('error', 'The AI returned data in an invalid format. Please try again.');
+			} catch (\Exception $e) {
+				Log::error('AI Story Generation Failed: ' . $e->getMessage());
+				return back()->withInput()->with('error', 'An error occurred while generating the story with AI. Please try again. Error: ' . $e->getMessage());
+			}
+		}
+
+		/**
+		 * Builds the prompt for the LLM to generate a story.
+		 *
+		 * @param string $instructions
+		 * @param int $numPages
+		 * @return string
+		 */
+		private function buildStoryPrompt(string $instructions, int $numPages): string
+		{
+			$jsonStructure = <<<'JSON'
+{
+  "title": "A string for the story title.",
+  "description": "A short description of the story.",
+  "characters": [
+    {
+      "name": "Character Name",
+      "description": "A description of the character."
+    }
+  ],
+  "places": [
+    {
+      "name": "Place Name",
+      "description": "A description of the place."
+    }
+  ],
+  "pages": [
+    {
+      "content": "The text for this page of the story.",
+      "characters": ["Character Name 1", "Character Name 2"],
+      "places": ["Place Name 1"]
+    }
+  ]
+}
+JSON;
+
+			return <<<PROMPT
+You are a creative storyteller. Based on the following instructions, create a complete story.
+The story must have a title, a short description, a list of characters, a list of places, and a series of pages.
+The number of pages must be exactly {$numPages}.
+
+Instructions from the user: "{$instructions}"
+
+Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+The JSON object must follow this exact structure:
+{$jsonStructure}
+
+Now, generate the story based on the user's instructions.
+PROMPT;
+		}
+
+		/**
+		 * Validates the structure of the data returned from the LLM.
+		 *
+		 * @param array|null $storyData
+		 * @throws ValidationException
+		 */
+		private function validateStoryData(?array $storyData): void
+		{
+			$validator = Validator::make($storyData ?? [], [
+				'title' => 'required|string',
+				'description' => 'required|string',
+				'characters' => 'present|array',
+				'characters.*.name' => 'required|string',
+				'characters.*.description' => 'required|string',
+				'places' => 'present|array',
+				'places.*.name' => 'required|string',
+				'places.*.description' => 'required|string',
+				'pages' => 'required|array|min:1',
+				'pages.*.content' => 'required|string',
+				'pages.*.characters' => 'present|array',
+				'pages.*.places' => 'present|array',
+			]);
+
+			if ($validator->fails()) {
+				Log::error('AI Story Validation Failed: ', $validator->errors()->toArray());
+				Log::error('Invalid AI Data: ', $storyData ?? []);
+				throw new ValidationException($validator);
+			}
+		}
+
+		/**
+		 * Saves the story and its components from the validated AI data.
+		 *
+		 * @param array $data
+		 * @return Story
+		 */
+		private function saveStoryFromAiData(array $data): Story
+		{
+			return DB::transaction(function () use ($data) {
+				$story = Story::create([
+					'user_id' => auth()->id(),
+					'title' => $data['title'],
+					'short_description' => $data['description'],
+				]);
+
+				$characterMap = [];
+				foreach ($data['characters'] as $charData) {
+					$character = $story->characters()->create([
+						'name' => $charData['name'],
+						'description' => $charData['description'],
+					]);
+					$characterMap[$character->name] = $character->id;
+				}
+
+				$placeMap = [];
+				foreach ($data['places'] as $placeData) {
+					$place = $story->places()->create([
+						'name' => $placeData['name'],
+						'description' => $placeData['description'],
+					]);
+					$placeMap[$place->name] = $place->id;
+				}
+
+				foreach ($data['pages'] as $index => $pageData) {
+					$page = $story->pages()->create([
+						'page_number' => $index + 1,
+						'story_text' => $pageData['content'],
+					]);
+
+					$charIds = collect($pageData['characters'])->map(fn($name) => $characterMap[$name] ?? null)->filter()->all();
+					$placeIds = collect($pageData['places'])->map(fn($name) => $placeMap[$name] ?? null)->filter()->all();
+
+					if (!empty($charIds)) {
+						$page->characters()->sync($charIds);
+					}
+					if (!empty($placeIds)) {
+						$page->places()->sync($placeIds);
+					}
+				}
+
+				return $story;
+			});
+		}
+// END MODIFICATION
+
 		/**
 		 * Show the form for editing the specified story.
 		 */
 		public function edit(Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
 			return view('story.edit', compact('story'));
@@ -71,11 +273,9 @@
 		 */
 		public function update(Request $request, Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$validated = $request->validate([
 				'title' => 'required|string|max:255',
@@ -138,11 +338,9 @@
 		 */
 		public function destroy(Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$story->delete();
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
@@ -153,11 +351,9 @@
 		 */
 		public function characters(Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$story->load('characters');
 			return view('story.characters', compact('story'));
@@ -168,11 +364,9 @@
 		 */
 		public function updateCharacters(Request $request, Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$validated = $request->validate([
 				'characters' => 'nullable|array',
@@ -208,11 +402,9 @@
 		 */
 		public function places(Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$story->load('places');
 			return view('story.places', compact('story'));
@@ -223,11 +415,9 @@
 		 */
 		public function updatePlaces(Request $request, Story $story)
 		{
-			// START MODIFICATION: Replaced Gate with a direct ownership check.
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			$validated = $request->validate([
 				'places' => 'nullable|array',

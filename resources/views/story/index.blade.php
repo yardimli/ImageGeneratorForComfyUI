@@ -4,7 +4,12 @@
 	<div class="container py-4">
 		<div class="d-flex justify-content-between align-items-center mb-4">
 			<h1>My Stories</h1>
-			<a href="{{ route('stories.create') }}" class="btn btn-primary">Create New Story</a>
+			{{-- START MODIFICATION: Add a button group for creation options. --}}
+			<div class="d-flex gap-2">
+				<a href="{{ route('stories.create-ai') }}" class="btn btn-info">Create Story with AI</a>
+				<a href="{{ route('stories.create') }}" class="btn btn-primary">Create New Story</a>
+			</div>
+			{{-- END MODIFICATION --}}
 		</div>
 		
 		@if(session('success'))
@@ -12,6 +17,14 @@
 				{{ session('success') }}
 			</div>
 		@endif
+		
+		{{-- START MODIFICATION: Add alert for errors (e.g., if AI models can't be fetched). --}}
+		@if(session('error'))
+			<div class="alert alert-danger">
+				{{ session('error') }}
+			</div>
+		@endif
+		{{-- END MODIFICATION --}}
 		
 		<div class="card">
 			<div class="card-body">
