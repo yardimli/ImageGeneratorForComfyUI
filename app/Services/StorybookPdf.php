@@ -54,14 +54,21 @@
 		 */
 		public function generate(Story $story, array $config): void
 		{
-			$this->fontName = preg_replace('/[^a-zA-Z0-9]/', '', $config['font_name']);
-			$fontTtfFile = resource_path('fonts/' . $config['font_name'] . '-Regular.ttf');
+			// START MODIFICATION: Simplify font handling
+			// The font name from the form (e.g., "CactusClassicalSerif")
+			$fontFamilyName = $config['font_name'];
+			// The actual filename (e.g., "CactusClassicalSerif-Regular.ttf")
+			$fontFileName = $fontFamilyName . '-Regular.ttf';
 
-			if (! File::exists($fontTtfFile)) {
-				throw new \Exception("Font file not found: " . $fontTtfFile);
-			}
-			$this->AddFont($this->fontName, '', $config['font_name'] . '-Regular.ttf');
-			$this->AddFont($this->fontName, 'I', $config['font_name'] . '-Regular.ttf'); // Fallback for Italic
+			// Set the internal font name for FPDF to use.
+			// The preg_replace is good practice to create a safe family name.
+			$this->fontName = preg_replace('/[^a-zA-Z0-9]/', '', $fontFamilyName);
+
+			// AddFont will now look for $fontFileName inside the FPDF_FONTPATH we defined.
+			// It will throw an error if the file is not found there.
+			$this->AddFont($this->fontName, '', $fontFileName);
+			$this->AddFont($this->fontName, 'I', $fontFileName); // Use regular for Italic if no specific italic file exists
+			// END MODIFICATION
 
 			if (! empty($config['wallpaper'])) {
 				$wallpaperFile = resource_path('wallpapers/' . $config['wallpaper']);

@@ -74,6 +74,7 @@
 
 			try {
 				// The StorybookPdf service will handle the PDF generation and output.
+				define('FPDF_FONTPATH', resource_path('fonts/'));
 				$pdf = new StorybookPdf('P', 'mm', [$width_mm, $height_mm]);
 				$pdf->generate($story, $validated);
 				// The script will terminate in the generate() method upon PDF output.
