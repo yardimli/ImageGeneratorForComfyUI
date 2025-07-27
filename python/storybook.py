@@ -1,63 +1,23 @@
+import argparse
 import json
 import os
-from PIL import Image
+import requests
+import shutil
+import sys
+import tempfile
 from fpdf import FPDF
 
 # ==============================================================================
-# --- CONFIGURATION ---
+# --- PDF Class (accepts config via constructor) ---
 # ==============================================================================
-CONFIG = {
-    # --- Page & Document Settings ---
-    "PAGE_WIDTH_MM": 150,
-    "PAGE_HEIGHT_MM": 150,
-    "PDF_DPI": 300,  # DPI for image processing within the PDF
-
-    # --- Content Settings ---
-    "BOOK_TITLE": "Les Misérables",
-    "BOOK_SUBTITLE": "A simplified storybook",
-
-    # --- Font Settings ---
-    "FONT_NAME": "LoveYaLikeASister",
-    "FONT_TTF_FILE": "LoveYaLikeASister-Regular.ttf",
-
-    # --- File & Folder Paths ---
-    "SOURCE_FOLDER": "./les-misrables-ch",  # Folder containing JSON, images, font, and wallpaper
-    "JSON_FILENAME": "storybook.json",
-    "WALLPAPER_FILENAME": "wallpaper3.jpg",
-    "OUTPUT_PDF_FILENAME": "les-misrables-ch.pdf"
-}
-# ==============================================================================
-
-
-def convert_png_to_jpg(folder, page_count):
-    """Converts PNG images (1.png, 2.png, etc.) to JPG format."""
-    print(f"--- Converting {page_count} PNGs to JPGs ---")
-    for i in range(1, page_count + 1):
-        png_path = os.path.join(folder, f"{i}.png")
-        jpg_path = os.path.join(folder, f"{i}.jpg")
-        if os.path.exists(png_path):
-            with Image.open(png_path) as im:
-                # Convert if it has transparency or is palette-based
-                if im.mode in ("RGBA", "P"):
-                    im = im.convert("RGB")
-                im.save(jpg_path, 'JPEG', quality=95)
-                print(f"Converted: {png_path} -> {jpg_path}")
-        else:
-            # This is not an error if a JPG already exists
-            if not os.path.exists(jpg_path):
-                print(f"Warning: Image not found for page {i}: {png_path}")
-    print("--- Conversion complete ---")
-
-
 class StorybookPDF(FPDF):
     """
     Custom PDF class with configurable page size, rounded borders, and footers.
-    The DPI setting influences how images are processed and embedded.
     """
-    def __init__(self, width, height, dpi):
+    def __init__(self, width, height, dpi, font_name):
         super().__init__(orientation='P', unit='mm', format=(width, height))
-        # The dpi parameter is used by fpdf2 for image processing
         self.dpi = dpi
+        self.font_name = font_name
         self.set_auto_page_break(auto=True, margin=15)
         self.show_footer = False
         self.logical_page_number = 0
@@ -65,7 +25,7 @@ class StorybookPDF(FPDF):
     def footer(self):
         if self.show_footer:
             self.set_y(-20)
-            self.set_font(CONFIG["FONT_NAME"], 'I', 10)
+            self.set_font(self.font_name, 'I', 10)
             self.set_text_color(128, 128, 128)
             self.cell(0, 10, f'{self.logical_page_number}', 0, 0, 'C')
 
@@ -95,105 +55,161 @@ class StorybookPDF(FPDF):
         self.draw_path(path)
         self.set_dash_pattern() # Reset dash pattern
 
+# ==============================================================================
+# --- Helper Functions ---
+# ==============================================================================
+def download_image(url, folder, page_num):
+    """Downloads an image from a URL into a specified folder."""
+    if not url:
+        print(f"Warning: No image URL for page {page_num}.")
+        return None
+    try:
+        response = requests.get(url, stream=True, timeout=30)
+        response.raise_for_status()
 
-def create_storybook_pdf(config, text_pages):
-    """Generates the complete storybook PDF from configuration and text data."""
+        # Determine file extension from URL or content type
+        content_type = response.headers.get('content-type', '').lower()
+        if 'jpeg' in content_type or 'jpg' in content_type:
+            ext = '.jpg'
+        elif 'png' in content_type:
+            ext = '.png'
+        else:
+            # Fallback to extension from URL path
+            _, url_ext = os.path.splitext(url)
+            ext = url_ext if url_ext in ['.jpg', '.jpeg', '.png'] else '.jpg'
+
+        filename = f"{page_num}{ext}"
+        filepath = os.path.join(folder, filename)
+
+        with open(filepath, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+
+        print(f"Downloaded image for page {page_num} to {filepath}")
+        return filepath
+    except requests.exceptions.RequestException as e:
+        print(f"Error downloading image for page {page_num} from {url}: {e}", file=sys.stderr)
+        return None
+
+# ==============================================================================
+# --- Main PDF Generation Logic ---
+# ==============================================================================
+def create_storybook_pdf(args, story_data):
+    """Generates the complete storybook PDF from arguments and story data."""
 
     pdf = StorybookPDF(
-        width=config["PAGE_WIDTH_MM"],
-        height=config["PAGE_HEIGHT_MM"],
-        dpi=config["PDF_DPI"]
+        width=args.width_mm,
+        height=args.height_mm,
+        dpi=args.dpi,
+        font_name=args.font_name
     )
 
     # --- Font Setup ---
-    font_path = config["FONT_TTF_FILE"]
     try:
-        pdf.add_font(config["FONT_NAME"], '', font_path)
-        pdf.add_font(config["FONT_NAME"], 'I', font_path) # Italic style
+        pdf.add_font(args.font_name, '', args.font_file)
+        pdf.add_font(args.font_name, 'I', args.font_file) # Italic style
     except RuntimeError as e:
-        print(f"WARNING: Font '{config['FONT_TTF_FILE']}' not found or failed to load. Falling back to Arial.")
-        print(f"Error details: {e}")
-        # Use a fallback font name that fpdf2 knows
-        config["FONT_NAME"] = "Arial"
-
+        print(f"ERROR: Font '{args.font_file}' not found or failed to load. {e}", file=sys.stderr)
+        # Use a fallback font that fpdf2 knows
+        pdf.font_name = "Arial"
+        args.font_name = "Arial"
 
     # --- Title Page ---
     pdf.add_page()
-    pdf.set_font(config["FONT_NAME"], '', 24)
+    pdf.set_font(args.font_name, '', 24)
     pdf.set_text_color(30, 30, 100)
     pdf.set_y(pdf.h / 2 - 20) # Center vertically
-    pdf.cell(0, 10, config["BOOK_TITLE"], align='C')
+    pdf.cell(0, 10, story_data.get("title", "Untitled Story"), align='C')
     pdf.ln(15)
-    pdf.set_font(config["FONT_NAME"], '', 14)
+    pdf.set_font(args.font_name, '', 14)
     pdf.set_text_color(0)
-    pdf.cell(0, 10, config["BOOK_SUBTITLE"], align='C')
+    pdf.cell(0, 10, story_data.get("subtitle", ""), align='C')
     pdf.show_footer = False
 
-    # --- Text and Image Pages ---
-    for i, text in enumerate(text_pages, start=1):
-        # --- TEXT PAGE ---
-        pdf.add_page()
-        pdf.logical_page_number += 1
+    # --- Create a temporary directory for downloaded images ---
+    image_temp_dir = tempfile.mkdtemp(prefix="storybook_images_")
+    print(f"Created temporary image directory: {image_temp_dir}")
 
-        wallpaper_path = config["WALLPAPER_FILENAME"]
-        if os.path.exists(wallpaper_path):
-            pdf.image(wallpaper_path, x=0, y=0, w=pdf.w, h=pdf.h)
-
-        pdf.draw_rounded_dotted_border(margin=10, radius=10)
-        pdf.set_font(config["FONT_NAME"], '', 14)
-        pdf.set_text_color(0)
-
-        # Vertical Centering Logic
-        border_margin = 10
-        text_area_height = pdf.h - (2 * border_margin)
-        cell_width = pdf.w - (2 * border_margin) - 20 # Inner padding
-        line_height = 8
-
-        lines = pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C', split_only=True)
-        text_block_height = len(lines) * line_height
-
-        y_start = (text_area_height - text_block_height) / 2 + border_margin
-
-        pdf.set_xy((pdf.w - cell_width) / 2, y_start)
-        pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C')
-        pdf.show_footer = True
-
-        # --- IMAGE PAGE ---
-        pdf.add_page()
-        image_path = os.path.join(config["SOURCE_FOLDER"], f"{i}.jpg")
-        if os.path.exists(image_path):
-            pdf.image(image_path, x=0, y=0, w=pdf.w, h=pdf.h)
-        else:
-            pdf.set_font(config["FONT_NAME"], '', 14)
-            pdf.set_xy(0, pdf.h / 2 - 5)
-            pdf.cell(0, 10, f"Image not found: {i}.jpg", align='C')
-        pdf.show_footer = False
-
-    output_path = os.path.join(config["SOURCE_FOLDER"], config["OUTPUT_PDF_FILENAME"])
-    pdf.output(output_path)
-    print(f"\nPDF successfully created: {output_path}")
-
-
-if __name__ == "__main__":
-    # 1. Load story data to determine page count
-    json_path = os.path.join(CONFIG["SOURCE_FOLDER"], CONFIG["JSON_FILENAME"])
     try:
-        with open(json_path, "r", encoding="utf-8") as f:
-            story_pages = json.load(f)
+        # --- Text and Image Pages ---
+        for i, page_data in enumerate(story_data.get("pages", []), start=1):
+            text = page_data.get("text", "")
+            image_url = page_data.get("image_url")
+
+            # --- TEXT PAGE ---
+            pdf.add_page()
+            pdf.logical_page_number += 1
+
+            if args.wallpaper_file and os.path.exists(args.wallpaper_file):
+                pdf.image(args.wallpaper_file, x=0, y=0, w=pdf.w, h=pdf.h)
+
+            pdf.draw_rounded_dotted_border(margin=10, radius=10)
+            pdf.set_font(args.font_name, '', 14)
+            pdf.set_text_color(0)
+
+            # Vertical Centering Logic
+            border_margin = 10
+            text_area_height = pdf.h - (2 * border_margin)
+            cell_width = pdf.w - (2 * border_margin) - 20 # Inner padding
+            line_height = 8
+
+            lines = pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C', split_only=True)
+            text_block_height = len(lines) * line_height
+            y_start = (text_area_height - text_block_height) / 2 + border_margin
+            pdf.set_xy((pdf.w - cell_width) / 2, y_start)
+            pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C')
+            pdf.show_footer = True
+
+            # --- IMAGE PAGE ---
+            pdf.add_page()
+            image_path = download_image(image_url, image_temp_dir, i)
+            if image_path and os.path.exists(image_path):
+                pdf.image(image_path, x=0, y=0, w=pdf.w, h=pdf.h)
+            else:
+                pdf.set_font(args.font_name, '', 14)
+                pdf.set_xy(0, pdf.h / 2 - 5)
+                pdf.cell(0, 10, f"Image for page {i} could not be loaded.", align='C')
+            pdf.show_footer = False
+
+        pdf.output(args.output_file)
+        print(f"\nPDF successfully created: {args.output_file}")
+
+    finally:
+        # --- Clean up temporary image directory ---
+        shutil.rmtree(image_temp_dir)
+        print(f"Removed temporary image directory: {image_temp_dir}")
+
+
+# ==============================================================================
+# --- Script Entry Point ---
+# ==============================================================================
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Generate a storybook PDF from JSON data.")
+    parser.add_argument("--data-file", required=True, help="Path to the JSON file containing story data.")
+    parser.add_argument("--output-file", required=True, help="Path to save the generated PDF file.")
+    parser.add_argument("--width-mm", required=True, type=float, help="Page width in millimeters.")
+    parser.add_argument("--height-mm", required=True, type=float, help="Page height in millimeters.")
+    parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing.")
+    parser.add_argument("--font-name", required=True, help="Logical name for the font (e.g., 'LoveYaLikeASister').")
+    parser.add_-argument("--font-file", required=True, help="Path to the .ttf font file.")
+    parser.add_argument("--wallpaper-file", help="Optional path to the wallpaper image for text pages.")
+
+    args = parser.parse_args()
+
+    # 1. Load story data from JSON file
+    try:
+        with open(args.data_file, "r", encoding="utf-8") as f:
+            story_data = json.load(f)
     except FileNotFoundError:
-        print(f"FATAL ERROR: JSON file not found at '{json_path}'")
-        exit()
+        print(f"FATAL ERROR: JSON data file not found at '{args.data_file}'", file=sys.stderr)
+        sys.exit(1)
     except json.JSONDecodeError:
-        print(f"FATAL ERROR: Could not parse the JSON file '{json_path}'. Check for syntax errors.")
-        exit()
+        print(f"FATAL ERROR: Could not parse the JSON file '{args.data_file}'.", file=sys.stderr)
+        sys.exit(1)
 
-    page_count = len(story_pages)
-    if page_count == 0:
-        print("Warning: JSON file is empty. No pages to generate.")
-        exit()
+    if not story_data.get("pages"):
+        print("Warning: JSON data contains no pages. Exiting.", file=sys.stderr)
+        sys.exit(0)
 
-    # 2. Convert necessary images from PNG to JPG
-    convert_png_to_jpg(CONFIG["SOURCE_FOLDER"], page_count)
-
-    # 3. Generate the PDF
-    create_storybook_pdf(CONFIG, story_pages)
+    # 2. Generate the PDF
+    create_storybook_pdf(args, story_data)
