@@ -9,6 +9,9 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
+	// START MODIFICATION: Import the new StoryPdfController
+	use App\Http\Controllers\StoryPdfController;
+	// END MODIFICATION
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -161,6 +164,11 @@
 			Route::post('/{story}/characters', [StoryController::class, 'updateCharacters'])->name('characters.update');
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
+
+			// START NEW MODIFICATION: Add routes for PDF generation
+			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
+			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');
+			// END NEW MODIFICATION
 		});
 		// END MODIFICATION
 	});

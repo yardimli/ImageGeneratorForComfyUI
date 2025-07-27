@@ -12,7 +12,8 @@
         "laravel/tinker": "^2.8",
         "laravel/ui": "^4.6",
         "league/flysystem-aws-s3-v3": "^3.0",
-        "rolandstarke/laravel-thumbnail": "^1.0"
+        "rolandstarke/laravel-thumbnail": "^1.0",
+        "setasign/fpdf": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
