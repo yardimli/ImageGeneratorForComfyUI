@@ -268,23 +268,30 @@ PROMPT;
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
 
-			// START NEW MODIFICATION: Check for generated images that haven't been assigned to the page yet.
+			// START MODIFICATION: Check for generated images and load prompt data for upscaling.
 			foreach ($story->pages as $page) {
-				if (empty($page->image_path)) {
+				$page->prompt_data = null; // Initialize
+				if (empty($page->image_path) && $page->id) {
 					// Find the latest successfully generated image for this page from the prompts table.
 					$generatedImage = Prompt::where('story_page_id', $page->id)
 						->whereNotNull('filename')
-						->latest('updated_at') // Use updated_at as it reflects completion time
+						->latest('updated_at')
 						->first();
 
 					if ($generatedImage) {
 						// This will pre-fill the image path in the view.
-						// If the user saves, this path will be persisted.
 						$page->image_path = $generatedImage->filename;
+						// Also attach the prompt data so the new image can be upscaled immediately.
+						$page->prompt_data = $generatedImage;
 					}
+				} elseif (!empty($page->image_path)) {
+					// If an image path already exists, find its prompt data for the modal.
+					$page->prompt_data = Prompt::where('filename', $page->image_path)
+						->select('id', 'upscale_status', 'upscale_url', 'filename')
+						->first();
 				}
 			}
-			// END NEW MODIFICATION
+			// END MODIFICATION
 
 			// Fetch models for the AI prompt generator modal
 			try {

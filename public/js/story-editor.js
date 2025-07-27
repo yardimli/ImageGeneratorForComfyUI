@@ -479,7 +479,17 @@ document.addEventListener('DOMContentLoaded', function () {
 			if (drawButton) {
 				const pageCard = drawButton.closest('.page-card');
 				const storyPageId = drawButton.dataset.storyPageId;
-				const imagePrompt = pageCard.querySelector('.image-prompt-textarea').value;
+				const imagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
+				
+				// START MODIFICATION: Check for unsaved changes to the prompt.
+				const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
+				if (imagePromptTextarea.value !== initialPrompt) {
+					alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+				// END MODIFICATION
 				
 				if (!storyPageId) {
 					alert('This page has not been saved yet. Please save the story first.');
@@ -489,7 +499,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 				
 				drawStoryPageIdInput.value = storyPageId;
-				drawImagePromptText.textContent = imagePrompt || '(No prompt has been set for this page yet)';
+				drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
 			}
 		});
 		
@@ -538,6 +548,61 @@ document.addEventListener('DOMContentLoaded', function () {
 				if (response.ok && data.success) {
 					alert(data.message); // A simple alert for now.
 					drawWithAiModal.hide();
+					
+					// START MODIFICATION: Show spinner and start polling for the new image.
+					const pageCard = document.querySelector(`.draw-with-ai-btn[data-story-page-id="${storyPageId}"]`).closest('.page-card');
+					const imageContainer = pageCard.querySelector('.image-upload-container');
+					const spinner = imageContainer.querySelector('.spinner-overlay');
+					const imagePreview = imageContainer.querySelector('.page-image-preview');
+					const imagePathInput = pageCard.querySelector('.image-path-input');
+					
+					spinner.classList.remove('d-none');
+					
+					let pollAttempts = 0;
+					const maxPollAttempts = 60; // 5 minutes
+					
+					const pollInterval = setInterval(async () => {
+						pollAttempts++;
+						if (pollAttempts > maxPollAttempts) {
+							clearInterval(pollInterval);
+							spinner.classList.add('d-none');
+							alert('Image generation is taking longer than expected. The page will be updated when you reload it later.');
+							return;
+						}
+						
+						try {
+							const statusResponse = await fetch(`/stories/pages/${storyPageId}/image-status`);
+							const statusData = await statusResponse.json();
+							
+							if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
+								clearInterval(pollInterval);
+								spinner.classList.add('d-none');
+								
+								// Update image and inputs
+								imagePreview.src = statusData.filename;
+								imagePathInput.value = statusData.filename;
+								
+								// Update the initial prompt data attribute to prevent false unsaved changes warnings
+								const promptTextarea = pageCard.querySelector('.image-prompt-textarea');
+								promptTextarea.dataset.initialValue = promptTextarea.value;
+								
+								// Make image clickable for modal and add all necessary data
+								imagePreview.style.cursor = 'pointer';
+								imagePreview.dataset.bsToggle = 'modal';
+								imagePreview.dataset.bsTarget = '#imageDetailModal';
+								imagePreview.dataset.imageUrl = statusData.filename;
+								imagePreview.dataset.promptId = statusData.prompt_id;
+								imagePreview.dataset.upscaleStatus = statusData.upscale_status;
+								imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+							}
+						} catch (pollError) {
+							console.error('Polling error:', pollError);
+							clearInterval(pollInterval);
+							spinner.classList.add('d-none');
+						}
+					}, 5000); // Poll every 5 seconds
+					// END MODIFICATION
+					
 				} else {
 					alert('An error occurred: ' + (data.message || 'Unknown error'));
 				}
@@ -552,4 +617,98 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	// END NEW MODIFICATION
+	
+	// START MODIFICATION: Logic for Image Detail Modal with Upscaling
+	const imageDetailModalEl = document.getElementById('imageDetailModal');
+	if (imageDetailModalEl) {
+		const imageDetailModal = new bootstrap.Modal(imageDetailModalEl);
+		const modalImage = document.getElementById('modalDetailImage');
+		const upscaleBtnContainer = document.getElementById('upscale-button-container');
+		const upscaleStatusContainer = document.getElementById('upscale-status-container');
+		
+		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
+			const triggerElement = event.relatedTarget; // The image that was clicked
+			if (!triggerElement || !triggerElement.dataset.imageUrl) {
+				// If triggered by something else, or image has no URL, do nothing.
+				event.preventDefault();
+				return;
+			}
+			
+			const imageUrl = triggerElement.dataset.imageUrl;
+			const promptId = triggerElement.dataset.promptId;
+			const upscaleStatus = parseInt(triggerElement.dataset.upscaleStatus, 10);
+			const upscaleUrl = triggerElement.dataset.upscaleUrl;
+			
+			modalImage.src = imageUrl;
+			upscaleStatusContainer.innerHTML = ''; // Clear previous status
+			
+			// Button logic
+			if (upscaleStatus === 2 && upscaleUrl) {
+				upscaleBtnContainer.innerHTML = `<a href="${upscaleUrl}" target="_blank" class="btn btn-info">View Upscaled</a>`;
+			} else if (upscaleStatus === 1) {
+				upscaleBtnContainer.innerHTML = `<button class="btn btn-warning" disabled>Upscaling...</button>`;
+			} else if (promptId) {
+				upscaleBtnContainer.innerHTML = `<button class="btn btn-success upscale-story-image-btn" data-prompt-id="${promptId}" data-filename="${imageUrl}">Upscale Image</button>`;
+			} else {
+				upscaleBtnContainer.innerHTML = ''; // No prompt, no upscale
+			}
+		});
+		
+		// Event delegation for the upscale button inside the modal
+		document.body.addEventListener('click', async function (e) {
+			if (e.target.classList.contains('upscale-story-image-btn')) {
+				const button = e.target;
+				const promptId = button.dataset.promptId;
+				const filename = button.dataset.filename;
+				
+				button.disabled = true;
+				button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Upscaling...';
+				upscaleStatusContainer.innerHTML = 'Sending request...';
+				
+				try {
+					const response = await fetch(`/images/${promptId}/upscale`, {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': csrfToken,
+							'Accept': 'application/json'
+						},
+						body: JSON.stringify({ filename })
+					});
+					const data = await response.json();
+					
+					if (data.prediction_id) {
+						upscaleStatusContainer.innerHTML = 'Upscale in progress. You can close this modal; the page will update on reload.';
+						
+						// Simple polling for the modal
+						const checkStatus = async () => {
+							const statusResponse = await fetch(`/images/${promptId}/upscale-status/${data.prediction_id}`);
+							const statusData = await statusResponse.json();
+							
+							if (statusData.message === 'Upscale in progress.') {
+								upscaleStatusContainer.innerHTML = `Upscale in progress... (${statusData.status || ''})`;
+								setTimeout(checkStatus, 5000);
+							} else if (statusData.upscale_result) {
+								upscaleStatusContainer.innerHTML = `<span class="text-success">Upscale complete! Reload page to see changes.</span>`;
+								upscaleBtnContainer.innerHTML = `<a href="${statusData.upscale_result}" target="_blank" class="btn btn-info">View Upscaled</a>`;
+							} else {
+								upscaleStatusContainer.innerHTML = `<span class="text-danger">Upscale failed: ${statusData.error || 'Unknown error'}</span>`;
+								button.disabled = false;
+								button.textContent = 'Upscale Image';
+							}
+						};
+						setTimeout(checkStatus, 5000);
+					} else {
+						throw new Error(data.message || 'Failed to start upscale.');
+					}
+				} catch (error) {
+					console.error('Upscale error:', error);
+					upscaleStatusContainer.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+					button.disabled = false;
+					button.textContent = 'Upscale Image';
+				}
+			}
+		});
+	}
+	// END MODIFICATION
 });

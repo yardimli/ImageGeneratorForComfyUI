@@ -91,4 +91,49 @@
 				return response()->json(['success' => false, 'message' => 'An error occurred while queueing the image.'], 500);
 			}
 		}
+
+		// START MODIFICATION: Add method to check image generation status.
+		/**
+		 * Checks the status of the latest image generation for a story page.
+		 *
+		 * @param StoryPage $storyPage
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function checkStatus(StoryPage $storyPage)
+		{
+			// Authorization check
+			if ($storyPage->story->user_id !== auth()->id()) {
+				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			}
+
+			try {
+				// Find the latest queued prompt for this page.
+				// We check for prompts created in the last hour to avoid picking up old, stuck jobs.
+				$prompt = Prompt::where('story_page_id', $storyPage->id)
+					->where('created_at', '>=', now()->subHour())
+					->latest()
+					->first();
+
+				if ($prompt && $prompt->filename) {
+					// Image is ready
+					return response()->json([
+						'success' => true,
+						'status' => 'ready',
+						'filename' => $prompt->filename,
+						'thumbnail' => $prompt->thumbnail,
+						'prompt_id' => $prompt->id,
+						'upscale_status' => $prompt->upscale_status,
+						'upscale_url' => $prompt->upscale_url,
+					]);
+				}
+
+				// Image not ready yet
+				return response()->json(['success' => true, 'status' => 'pending']);
+
+			} catch (Throwable $e) {
+				Log::error('Failed to check story image status: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while checking status.'], 500);
+			}
+		}
+		// END MODIFICATION
 	}

@@ -34,76 +34,126 @@
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-		Route::get('/gallery/filter', [GalleryController::class, 'filter'])->name('gallery.filter');
-		Route::get('/gallery', [GalleryController::class, 'index'])->name('gallery.index');
+		// Gallery Routes
+		Route::prefix('gallery')->name('gallery.')->group(function () {
+			Route::get('/', [GalleryController::class, 'index'])->name('index');
+			Route::get('/filter', [GalleryController::class, 'filter'])->name('filter');
+		});
 
+		// Prompt/Generate Routes
+		Route::prefix('prompts')->name('prompts.')->group(function () {
+			Route::get('/settings/latest', [PromptController::class, 'getLatestSetting'])->name('settings.latest');
+			Route::get('/settings/{id}', [PromptController::class, 'loadSettings'])->name('settings.load');
+			Route::post('/bulk-delete', [PromptController::class, 'bulkDelete'])->name('bulk-delete');
+			Route::delete('/{prompt}', [PromptController::class, 'deletePrompt'])->name('delete');
+		});
+
+		// Generate routes (keeping original paths for backward compatibility)
 		Route::get('/generate', [PromptController::class, 'index'])->name('prompts.index');
 		Route::post('/generate', [PromptController::class, 'generate'])->name('prompts.generate');
 		Route::post('/store-generated-prompts', [PromptController::class, 'storeGeneratedPrompts'])->name('prompts.store-generated');
-
-		Route::post('/prompts/bulk-delete', [PromptController::class, 'bulkDelete'])->name('prompts.bulk-delete');
-		Route::get('/prompts/settings/latest', [PromptController::class, 'getLatestSetting'])->name('prompts.settings.latest');
-		Route::get('/prompts/settings/{id}', [PromptController::class, 'loadSettings'])->name('prompts.settings.load');
-
-		Route::delete('/prompts/{prompt}', [PromptController::class, 'deletePrompt'])->name('prompts.delete');
 		Route::delete('/prompt-settings/{id}', [PromptController::class, 'deleteSettingWithImages'])->name('prompt-settings.delete');
 
+		// Queue Routes
+		Route::prefix('queue')->name('prompts.queue.')->group(function () {
+			Route::get('/', [PromptController::class, 'queue'])->name('index');
+			Route::delete('/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('delete-all');
+			Route::delete('/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('delete');
+			Route::post('/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('requeue');
+		});
 
-		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');
+		// Template Routes
+		Route::prefix('templates')->name('templates.')->group(function () {
+			Route::post('/save', [PromptController::class, 'saveTemplate'])->name('save');
+		});
 
-		Route::post('/images/{prompt}/update-notes', [UpscaleAndNotesController::class, 'updateNotes']);
-		Route::post('/images/{prompt}/upscale', [UpscaleAndNotesController::class, 'upscaleImage'])->name('image.upscale');
-		Route::get('/images/{prompt}/upscale-status/{prediction_id}', [UpscaleAndNotesController::class, 'checkUpscaleStatus'])->name('image.upscale.status');
+		// Image Routes
+		Route::prefix('images')->name('image.')->group(function () {
+			Route::post('/{prompt}/update-notes', [UpscaleAndNotesController::class, 'updateNotes']);
+			Route::post('/{prompt}/upscale', [UpscaleAndNotesController::class, 'upscaleImage'])->name('upscale');
+			Route::get('/{prompt}/upscale-status/{prediction_id}', [UpscaleAndNotesController::class, 'checkUpscaleStatus'])->name('upscale.status');
+		});
 
+		// Image Mix Routes
+		Route::prefix('image-mix')->name('image-mix.')->group(function () {
+			Route::get('/', [ImageMixController::class, 'index'])->name('index');
+			Route::post('/store', [ImageMixController::class, 'store'])->name('store');
+			Route::post('/upload', [ImageMixController::class, 'uploadImage'])->name('upload');
+			Route::get('/uploads', [ImageMixController::class, 'getUploadedImages'])->name('uploads');
+		});
 
-		Route::get('/image-mix', [ImageMixController::class, 'index'])->name('image-mix.index');
-		Route::post('/image-mix/store', [ImageMixController::class, 'store'])->name('image-mix.store');
-		Route::post('/image-mix/upload', [ImageMixController::class, 'uploadImage'])->name('image-mix.upload');
-		Route::get('/image-mix/uploads', [ImageMixController::class, 'getUploadedImages'])->name('image-mix.uploads');
+		// Kontext Basic Routes
+		Route::prefix('kontext-basic')->name('kontext-basic.')->group(function () {
+			Route::get('/', [KontextBasicController::class, 'index'])->name('index');
+			Route::post('/store', [KontextBasicController::class, 'store'])->name('store');
+			Route::get('/render-history', [KontextBasicController::class, 'getRenderHistory'])->name('render-history');
+		});
 
-		Route::get('/kontext-basic', [KontextBasicController::class, 'index'])->name('kontext-basic.index');
-		Route::post('/kontext-basic/store', [KontextBasicController::class, 'store'])->name('kontext-basic.store');
-		Route::get('/kontext-basic/render-history', [KontextBasicController::class, 'getRenderHistory'])->name('kontext-basic.render-history');
+		// Kontext Lora Routes
+		Route::prefix('kontext-lora')->name('kontext-lora.')->group(function () {
+			Route::get('/', [KontextLoraController::class, 'index'])->name('index');
+			Route::post('/store', [KontextLoraController::class, 'store'])->name('store');
+			Route::get('/render-history', [KontextLoraController::class, 'getRenderHistory'])->name('render-history');
+		});
 
-		Route::get('/kontext-lora', [KontextLoraController::class, 'index'])->name('kontext-lora.index');
-		Route::post('/kontext-lora/store', [KontextLoraController::class, 'store'])->name('kontext-lora.store');
-		Route::get('/kontext-lora/render-history', [KontextLoraController::class, 'getRenderHistory'])->name('kontext-lora.render-history');
+		// Image Editor Routes
+		Route::prefix('image-editor')->name('image-editor.')->group(function () {
+			Route::get('/', [ImageEditorController::class, 'index'])->name('index');
+			Route::post('/save', [ImageEditorController::class, 'save'])->name('save');
+		});
 
-		Route::get('/image-editor', [ImageEditorController::class, 'index'])->name('image-editor.index');
-		Route::post('/image-editor/save', [ImageEditorController::class, 'save'])->name('image-editor.save');
+		// Pexels Routes
+		Route::prefix('pexels')->name('pexels.')->group(function () {
+			Route::get('/search', [PexelsController::class, 'search'])->name('search');
+			Route::post('/download', [PexelsController::class, 'download'])->name('download');
+		});
 
-		Route::get('/pexels/search', [PexelsController::class, 'search'])->name('pexels.search');
-		Route::post('/pexels/download', [PexelsController::class, 'download'])->name('pexels.download');
+		// Album Covers Routes
+		Route::prefix('album-covers')->name('album-covers.')->group(function () {
+			Route::get('/', [AlbumCoverController::class, 'index'])->name('index');
+			Route::get('/liked', [AlbumCoverController::class, 'showLiked'])->name('liked');
+			Route::post('/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('update-liked');
+			Route::post('/upload', [AlbumCoverController::class, 'upload'])->name('upload');
+			Route::post('/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('generate-prompts');
 
-		Route::get('/queue', [PromptController::class, 'queue'])->name('prompts.queue');
-		Route::delete('/queue/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('prompts.queue.delete-all');
-		Route::delete('/queue/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('prompts.queue.delete');
-		Route::post('/queue/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('prompts.queue.requeue');
+			// Kontext sub-routes
+			Route::prefix('kontext')->name('kontext.')->group(function () {
+				Route::post('/generate', [AlbumCoverController::class, 'generateKontext'])->name('generate');
+				Route::post('/status', [AlbumCoverController::class, 'checkKontextStatus'])->name('status');
+			});
 
-		Route::get('/album-covers', [AlbumCoverController::class, 'index'])->name('album-covers.index');
-		Route::get('/album-covers/liked', [AlbumCoverController::class, 'showLiked'])->name('album-covers.liked');
-		Route::post('/album-covers/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('album-covers.update-liked');
-		Route::post('/album-covers/upload', [AlbumCoverController::class, 'upload'])->name('album-covers.upload'); // New Route
-		Route::post('/album-covers/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('album-covers.generate-prompts');
-		Route::post('/album-covers/kontext/generate', [AlbumCoverController::class, 'generateKontext'])->name('album-covers.kontext.generate');
-		Route::post('/album-covers/kontext/status', [AlbumCoverController::class, 'checkKontextStatus'])->name('album-covers.kontext.status');
-		Route::post('/album-covers/{cover}/update-prompt', [AlbumCoverController::class, 'updateMixPrompt'])->name('album-covers.update-prompt');
-		Route::post('/album-covers/{cover}/update-notes', [AlbumCoverController::class, 'updateNotes'])->name('album-covers.update-notes');
-		// START MODIFICATION: Add route for unliking a cover
-		Route::post('/album-covers/{cover}/unlike', [AlbumCoverController::class, 'unlikeCover'])->name('album-covers.unlike');
-		// END MODIFICATION
-		Route::post('/album-covers/{cover}/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('album-covers.upscale');
-		Route::get('/album-covers/{cover}/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('album-covers.upscale.status');
+			// Cover-specific routes
+			Route::prefix('{cover}')->group(function () {
+				Route::post('/update-prompt', [AlbumCoverController::class, 'updateMixPrompt'])->name('update-prompt');
+				Route::post('/update-notes', [AlbumCoverController::class, 'updateNotes'])->name('update-notes');
+				Route::post('/unlike', [AlbumCoverController::class, 'unlikeCover'])->name('unlike');
+				Route::post('/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('upscale');
+				Route::get('/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('upscale.status');
+			});
+		});
 
-		Route::get('/stories/create/ai', [StoryController::class, 'createWithAi'])->name('stories.create-ai');
-		Route::post('/stories/create/ai', [StoryController::class, 'storeWithAi'])->name('stories.store-ai');
-		Route::post('/stories/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('stories.generate-image-prompt');
-		Route::post('/stories/pages/{storyPage}/generate-image', [StoryImageController::class, 'generate'])->name('stories.pages.generate-image');
+		// Stories Routes
+		Route::prefix('stories')->name('stories.')->group(function () {
+			// AI creation routes
+			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
+			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
+			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
 
+			// Page image generation routes
+			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
+				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
+				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
+			});
+
+			// Story-specific routes
+			Route::prefix('{story}')->group(function () {
+				Route::get('/characters', [StoryController::class, 'characters'])->name('characters');
+				Route::post('/characters', [StoryController::class, 'updateCharacters'])->name('characters.update');
+				Route::get('/places', [StoryController::class, 'places'])->name('places');
+				Route::post('/places', [StoryController::class, 'updatePlaces'])->name('places.update');
+			});
+		});
+
+		// Stories resource routes (must be after prefix routes to avoid conflicts)
 		Route::resource('stories', StoryController::class);
-		Route::get('/stories/{story}/characters', [StoryController::class, 'characters'])->name('stories.characters');
-		Route::post('/stories/{story}/characters', [StoryController::class, 'updateCharacters'])->name('stories.characters.update');
-		Route::get('/stories/{story}/places', [StoryController::class, 'places'])->name('stories.places');
-		Route::post('/stories/{story}/places', [StoryController::class, 'updatePlaces'])->name('stories.places.update');
-
 	});
