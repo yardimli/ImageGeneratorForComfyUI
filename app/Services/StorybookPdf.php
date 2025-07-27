@@ -62,7 +62,7 @@
 
 			// Set the internal font name for FPDF to use.
 			// The preg_replace is good practice to create a safe family name.
-			$this->fontName = preg_replace('/[^a-zA-Z0-9]/', '', $fontFamilyName);
+			$this->fontName = $fontFamilyName;
 
 			// AddFont will now look for $fontFileName inside the FPDF_FONTPATH we defined.
 			// It will throw an error if the file is not found there.

@@ -56,8 +56,8 @@
 				$pdf->AddFont($fontFamilyName, '', $fontTtfFile);
 				ob_end_clean();
 
-				$phpFile = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $fontFamilyName)) . '.php';
-				$zFile = strtolower(preg_replace('/[^a-zA-Z0-9]/', '', $fontFamilyName)) . '.z';
+				$phpFile = $fontFamilyName . '.php';
+				$zFile = $fontFamilyName . '.z';
 
 				if (file_exists($fontPath . $phpFile) && file_exists($fontPath . $zFile)) {
 					$this->info("----------------------------------------");
