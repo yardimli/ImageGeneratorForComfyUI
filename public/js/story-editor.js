@@ -18,6 +18,14 @@ document.addEventListener('DOMContentLoaded', function () {
 		cropperModal.show();
 	}
 	
+	function decodeHtmlEntities(str) {
+		return str
+			// Decode decimal entities: &#12345;
+			.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+			// Decode hex entities: &#x1F600;
+			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+	}
+	
 	cropperModalEl.addEventListener('shown.bs.modal', function () {
 		if (cropper) cropper.destroy();
 		cropper = new Cropper(imageToCrop, {
@@ -484,7 +492,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				// START MODIFICATION: Check for unsaved changes to the prompt.
 				const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
 				// decode initialPrompt to handle any HTML entities
-				const decodedInitialPrompt = initialPrompt ? decodeURIComponent(initialPrompt) : '';
+				const decodedInitialPrompt = initialPrompt ? decodeHtmlEntities(initialPrompt) : '';
+				// console.log('Decoded initial prompt:', decodedInitialPrompt);
 				if (imagePromptTextarea.value !== decodedInitialPrompt) {
 					alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
 					e.preventDefault();
@@ -502,6 +511,8 @@ document.addEventListener('DOMContentLoaded', function () {
 				
 				drawStoryPageIdInput.value = storyPageId;
 				drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
+				drawWithAiModal.show();
+				
 			}
 		});
 		
