@@ -55,7 +55,7 @@
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => $validated['model'],
+					'model' => 'dev',
 					'lora_name' => '',
 					'strength_model' => 0,
 					'guidance' => 7.5,
