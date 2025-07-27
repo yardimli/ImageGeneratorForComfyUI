@@ -55,7 +55,7 @@
 				'width' => 'required|numeric|min:1|max:50',
 				'height' => 'required|numeric|min:1|max:50',
 				'dpi' => 'required|integer|min:72|max:1200',
-				'font_name' => 'required|string|max:100|regex:/^[a-zA-Z0-9\s-_]+$/',
+				'font_name' => 'required|string|max:100',
 				'wallpaper' => 'nullable|string',
 			]);
 
