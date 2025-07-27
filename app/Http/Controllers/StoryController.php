@@ -258,15 +258,30 @@ PROMPT;
 		/**
 		 * Show the form for editing the specified story.
 		 */
-		public function edit(Story $story)
+		// START MODIFICATION: Inject LlmController and fetch models for the view.
+		public function edit(Story $story, LlmController $llmController)
 		{
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
-			return view('story.edit', compact('story'));
+
+			// Fetch models for the AI prompt generator modal
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = collect($modelsResponse['data'] ?? [])
+					->sortBy('name')
+					->all();
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for Story Editor: ' . $e->getMessage());
+				$models = []; // Pass an empty array on failure
+				session()->flash('error', 'Could not fetch AI models for the prompt generator. The feature will be unavailable.');
+			}
+
+			return view('story.edit', compact('story', 'models'));
 		}
+		// END MODIFICATION
 
 		/**
 		 * Update the specified story in storage.
@@ -345,6 +360,109 @@ PROMPT;
 			$story->delete();
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
+
+		// START MODIFICATION: Add methods for AI image prompt generation.
+		/**
+		 * Generate an image prompt for a story page using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generateImagePrompt(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'page_text' => 'required|string',
+				'character_descriptions' => 'present|array',
+				'character_descriptions.*' => 'string',
+				'place_descriptions' => 'present|array',
+				'place_descriptions.*' => 'string',
+				'instructions' => 'nullable|string|max:1000',
+				'model' => 'required|string',
+			]);
+
+			$prompt = $this->buildImageGenerationPrompt(
+				$validated['page_text'],
+				$validated['character_descriptions'],
+				$validated['place_descriptions'],
+				$validated['instructions'] ?? ''
+			);
+
+			try {
+				$response = $llmController->callLlmSync(
+					$prompt,
+					$validated['model'],
+					'AI Image Prompt Generation',
+					0.7,
+					'json_object'
+				);
+
+				$generatedPrompt = $response['prompt'] ?? null;
+
+				if (!$generatedPrompt) {
+					Log::error('AI Image Prompt Generation failed to return a valid prompt.', ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'prompt' => trim($generatedPrompt)
+				]);
+
+			} catch (\Exception $e) {
+				Log::error('AI Image Prompt Generation Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
+			}
+		}
+
+		/**
+		 * Builds the prompt for the LLM to generate an image prompt.
+		 *
+		 * @param string $pageText
+		 * @param array $characterDescriptions
+		 * @param array $placeDescriptions
+		 * @param string $userInstructions
+		 * @return string
+		 */
+		private function buildImageGenerationPrompt(string $pageText, array $characterDescriptions, array $placeDescriptions, string $userInstructions): string
+		{
+			$characterText = !empty($characterDescriptions) ? "Characters in this scene:\n- " . implode("\n- ", $characterDescriptions) : "No specific characters are described for this scene.";
+			$placeText = !empty($placeDescriptions) ? "Places in this scene:\n- " . implode("\n- ", $placeDescriptions) : "No specific places are described for this scene.";
+			$instructionsText = !empty($userInstructions) ? "User's specific instructions: \"{$userInstructions}\"" : "No specific instructions from the user.";
+
+			$jsonStructure = <<<'JSON'
+{
+  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
+}
+JSON;
+
+			return <<<PROMPT
+You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
+Your task is to create a single, concise, and descriptive image prompt based on the provided context of a story page.
+
+**Context:**
+1.  **Page Content:**
+    "{$pageText}"
+
+2.  **Scene Details:**
+    {$characterText}
+    {$placeText}
+
+3.  **User Guidance:**
+    {$instructionsText}
+
+**Instructions:**
+- Synthesize all the information to create a vivid image prompt.
+- The prompt should be a single paragraph of comma-separated descriptive phrases.
+- Focus on visual details: the setting, character appearance, actions, mood, and lighting.
+- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+- The JSON object must follow this exact structure:
+{$jsonStructure}
+
+Now, generate the image prompt for the provided context in the specified JSON format.
+PROMPT;
+		}
+		// END MODIFICATION
 
 		/**
 		 * Show the character management page for a story.

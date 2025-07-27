@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	const cropperModalEl = document.getElementById('cropperModal');
 	const cropperModal = new bootstrap.Modal(cropperModalEl);
 	const imageToCrop = document.getElementById('imageToCrop');
-	const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+	const historyModalEl = document.getElementById('historyModal');
+	const historyModal = new bootstrap.Modal(historyModalEl);
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let cropper;
 	let activeImageUploadContainer = null;
@@ -170,15 +171,17 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	}
 	
-	document.getElementById('historyModal').addEventListener('click', e => {
-		if (e.target.closest('.page-link')) {
-			e.preventDefault();
-			loadHistory(parseInt(e.target.dataset.page));
-		} else if (e.target.closest('.history-image-card')) {
-			document.querySelectorAll('.history-image-card.selected').forEach(c => c.classList.remove('selected'));
-			e.target.closest('.history-image-card').classList.add('selected');
-		}
-	});
+	if (historyModalEl) {
+		historyModalEl.addEventListener('click', e => {
+			if (e.target.closest('.page-link')) {
+				e.preventDefault();
+				loadHistory(parseInt(e.target.dataset.page));
+			} else if (e.target.closest('.history-image-card')) {
+				document.querySelectorAll('.history-image-card.selected').forEach(c => c.classList.remove('selected'));
+				e.target.closest('.history-image-card').classList.add('selected');
+			}
+		});
+	}
 	
 	// START MODIFICATION: Add handlers for new image upload from history modal.
 	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
@@ -204,17 +207,23 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	// END MODIFICATION
 	
-	document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
-		const selected = document.querySelector('#historyModal .history-image-card.selected');
-		if (selected) {
-			openCropper(selected.dataset.path);
-			historyModal.hide();
-		} else {
-			alert('Please select an image.');
-		}
-	});
+	const addSelectedHistoryImageBtn = document.getElementById('addSelectedHistoryImageBtn');
+	if (addSelectedHistoryImageBtn) {
+		addSelectedHistoryImageBtn.addEventListener('click', () => {
+			const selected = document.querySelector('#historyModal .history-image-card.selected');
+			if (selected) {
+				openCropper(selected.dataset.path);
+				historyModal.hide();
+			} else {
+				alert('Please select an image.');
+			}
+		});
+	}
 	
-	['historySource', 'historySort', 'historyPerPage'].forEach(id => document.getElementById(id).addEventListener('change', () => loadHistory(1)));
+	['historySource', 'historySort', 'historyPerPage'].forEach(id => {
+		const el = document.getElementById(id);
+		if (el) el.addEventListener('change', () => loadHistory(1));
+	});
 	
 	// --- Page Management Logic ---
 	function reindexPages() {
@@ -234,9 +243,10 @@ document.addEventListener('DOMContentLoaded', function () {
 			card.querySelectorAll('[id^="char_"], [id^="place_"]').forEach(input => {
 				const id = input.getAttribute('id');
 				if (id) {
-					const newId = id.replace(/char_\d+|place_\d+/, (match) => match.split('_')[0] + `_${index}`);
+					const newId = id.replace(/_\d+_/, `_${index}_`);
+					const oldId = input.getAttribute('id');
 					input.setAttribute('id', newId);
-					const label = card.querySelector(`label[for="${id}"]`);
+					const label = card.querySelector(`label[for="${oldId}"]`);
 					if (label) {
 						label.setAttribute('for', newId);
 					}
@@ -245,26 +255,129 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	addPageBtn.addEventListener('click', () => {
-		const newPage = pageTemplate.innerHTML.replace(/__INDEX__/g, pagesContainer.children.length);
-		pagesContainer.insertAdjacentHTML('beforeend', newPage);
-		reindexPages();
-	});
+	if (addPageBtn) {
+		addPageBtn.addEventListener('click', () => {
+			const newPageHtml = pageTemplate.innerHTML.replace(/__INDEX__/g, pagesContainer.children.length);
+			pagesContainer.insertAdjacentHTML('beforeend', newPageHtml);
+			reindexPages();
+		});
+	}
 	
-	pagesContainer.addEventListener('click', (e) => {
-		// Handle remove button
-		if (e.target.matches('.remove-page-btn')) {
-			if (confirm('Are you sure you want to remove this page? This will happen immediately when you save the story.')) {
-				e.target.closest('.page-card').remove();
-				reindexPages();
+	if (pagesContainer) {
+		pagesContainer.addEventListener('click', (e) => {
+			// Handle remove button
+			if (e.target.matches('.remove-page-btn')) {
+				if (confirm('Are you sure you want to remove this page? This will happen immediately when you save the story.')) {
+					e.target.closest('.page-card').remove();
+					reindexPages();
+				}
 			}
-		}
+			
+			// Handle image selection
+			if (e.target.matches('.select-image-btn')) {
+				activeImageUploadContainer = e.target.closest('.col-md-4').querySelector('.image-upload-container');
+				loadHistory(1);
+				historyModal.show();
+			}
+		});
+	}
+	
+	// START MODIFICATION: Logic for AI Image Prompt Generation
+	const generatePromptModalEl = document.getElementById('generatePromptModal');
+	if (generatePromptModalEl) {
+		const generatePromptModal = new bootstrap.Modal(generatePromptModalEl);
+		const writePromptBtn = document.getElementById('write-prompt-btn');
+		const updatePromptBtn = document.getElementById('update-prompt-btn');
+		const promptResultArea = document.getElementById('prompt-result-area');
+		const generatedPromptText = document.getElementById('generated-prompt-text');
+		let activeImagePromptTextarea = null;
 		
-		// Handle image selection
-		if (e.target.matches('.select-image-btn')) {
-			activeImageUploadContainer = e.target.closest('.col-md-4').querySelector('.image-upload-container');
-			loadHistory(1);
-			historyModal.show();
-		}
-	});
+		// Reset modal on close
+		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
+			activeImagePromptTextarea = null;
+			promptResultArea.classList.add('d-none');
+			updatePromptBtn.classList.add('d-none');
+			generatedPromptText.value = '';
+			document.getElementById('prompt-instructions').value = '';
+			writePromptBtn.disabled = false;
+			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
+		});
+		
+		// Listener for all "Fill with AI" buttons
+		pagesContainer.addEventListener('click', (e) => {
+			if (e.target.matches('.generate-prompt-btn')) {
+				const pageCard = e.target.closest('.page-card');
+				activeImagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
+				// The button's data-bs-toggle attribute handles showing the modal
+			}
+		});
+		
+		// Listener for "Write with AI" button inside the modal
+		writePromptBtn.addEventListener('click', async () => {
+			if (!activeImagePromptTextarea) {
+				alert('Error: No active page selected.');
+				return;
+			}
+			
+			const pageCard = activeImagePromptTextarea.closest('.page-card');
+			
+			const pageText = pageCard.querySelector('textarea[name*="[story_text]"]').value;
+			const characterDescriptions = Array.from(pageCard.querySelectorAll('.character-checkbox:checked')).map(cb => cb.dataset.description);
+			const placeDescriptions = Array.from(pageCard.querySelectorAll('.place-checkbox:checked')).map(cb => cb.dataset.description);
+			const instructions = document.getElementById('prompt-instructions').value;
+			const model = document.getElementById('prompt-model').value;
+			
+			if (!model) {
+				alert('Please select an AI model.');
+				return;
+			}
+			
+			writePromptBtn.disabled = true;
+			writePromptBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			try {
+				const response = await fetch('/stories/generate-image-prompt', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': csrfToken,
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({
+						page_text: pageText,
+						character_descriptions: characterDescriptions,
+						place_descriptions: placeDescriptions,
+						instructions: instructions,
+						model: model,
+					}),
+				});
+				
+				const data = await response.json();
+				
+				if (response.ok && data.success) {
+					generatedPromptText.value = data.prompt;
+					promptResultArea.classList.remove('d-none');
+					updatePromptBtn.classList.remove('d-none');
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+				
+			} catch (error) {
+				console.error('Fetch error:', error);
+				alert('A network error occurred. Please try again.');
+			} finally {
+				writePromptBtn.disabled = false;
+				writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+		
+		// Listener for "Update Prompt" button inside the modal
+		updatePromptBtn.addEventListener('click', () => {
+			if (activeImagePromptTextarea) {
+				activeImagePromptTextarea.value = generatedPromptText.value;
+				generatePromptModal.hide();
+			}
+		});
+	}
+	// END MODIFICATION
 });

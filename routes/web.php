@@ -96,6 +96,7 @@
 
 		Route::get('/stories/create/ai', [StoryController::class, 'createWithAi'])->name('stories.create-ai');
 		Route::post('/stories/create/ai', [StoryController::class, 'storeWithAi'])->name('stories.store-ai');
+		Route::post('/stories/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('stories.generate-image-prompt');
 
 		Route::resource('stories', StoryController::class);
 		Route::get('/stories/{story}/characters', [StoryController::class, 'characters'])->name('stories.characters');
