@@ -39,8 +39,8 @@
 							<div class="row mb-3">
 								<div class="col-md-6">
 									<label for="font_name" class="form-label">Font Name</label>
-									<input type="text" class="form-control" id="font_name" name="font_name" value="CactusClassicalSerif" required>
-									<div class="form-text">The name of the font to use. The TTF file must exist in <code>resources/fonts/</code>. E.g., for "CactusClassicalSerif", the file should be "CactusClassicalSerif-Regular.ttf".</div>
+									<input type="text" class="form-control" id="font_name" name="font_name" value="LoveYaLikeASister" required>
+									<div class="form-text">The name of the font to use. The TTF file must exist in <code>resources/fonts/</code>. E.g., for "LoveYaLikeASister", the file should be "LoveYaLikeASister-Regular.ttf".</div>
 								</div>
 								<div class="col-md-6">
 									<label for="wallpaper" class="form-label">Text Page Wallpaper</label>

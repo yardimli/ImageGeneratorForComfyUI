@@ -15,10 +15,10 @@ CONFIG = {
     # --- Content Settings ---
     "BOOK_TITLE": "Les Misérables",
     "BOOK_SUBTITLE": "A simplified storybook",
-    
+
     # --- Font Settings ---
-    "FONT_NAME": "CactusClassicalSerif",
-    "FONT_TTF_FILE": "CactusClassicalSerif-Regular.ttf",
+    "FONT_NAME": "LoveYaLikeASister",
+    "FONT_TTF_FILE": "LoveYaLikeASister-Regular.ttf",
 
     # --- File & Folder Paths ---
     "SOURCE_FOLDER": "./les-misrables-ch",  # Folder containing JSON, images, font, and wallpaper
@@ -91,20 +91,20 @@ class StorybookPDF(FPDF):
             path.line_to(x, y + r)
             path.curve_to(x, y + r - (r * k), x + r - (r * k), y, x + r, y)
             path.close()
-        
+
         self.draw_path(path)
         self.set_dash_pattern() # Reset dash pattern
 
 
 def create_storybook_pdf(config, text_pages):
     """Generates the complete storybook PDF from configuration and text data."""
-    
+
     pdf = StorybookPDF(
         width=config["PAGE_WIDTH_MM"],
         height=config["PAGE_HEIGHT_MM"],
         dpi=config["PDF_DPI"]
     )
-    
+
     # --- Font Setup ---
     font_path = config["FONT_TTF_FILE"]
     try:
@@ -134,11 +134,11 @@ def create_storybook_pdf(config, text_pages):
         # --- TEXT PAGE ---
         pdf.add_page()
         pdf.logical_page_number += 1
-        
+
         wallpaper_path = config["WALLPAPER_FILENAME"]
         if os.path.exists(wallpaper_path):
             pdf.image(wallpaper_path, x=0, y=0, w=pdf.w, h=pdf.h)
-            
+
         pdf.draw_rounded_dotted_border(margin=10, radius=10)
         pdf.set_font(config["FONT_NAME"], '', 14)
         pdf.set_text_color(0)
@@ -148,12 +148,12 @@ def create_storybook_pdf(config, text_pages):
         text_area_height = pdf.h - (2 * border_margin)
         cell_width = pdf.w - (2 * border_margin) - 20 # Inner padding
         line_height = 8
-        
+
         lines = pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C', split_only=True)
         text_block_height = len(lines) * line_height
-        
+
         y_start = (text_area_height - text_block_height) / 2 + border_margin
-        
+
         pdf.set_xy((pdf.w - cell_width) / 2, y_start)
         pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C')
         pdf.show_footer = True
@@ -194,6 +194,6 @@ if __name__ == "__main__":
 
     # 2. Convert necessary images from PNG to JPG
     convert_png_to_jpg(CONFIG["SOURCE_FOLDER"], page_count)
-    
+
     # 3. Generate the PDF
     create_storybook_pdf(CONFIG, story_pages)
