@@ -191,7 +191,7 @@ if __name__ == "__main__":
     parser.add_argument("--height-mm", required=True, type=float, help="Page height in millimeters.")
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing.")
     parser.add_argument("--font-name", required=True, help="Logical name for the font (e.g., 'LoveYaLikeASister').")
-    parser.add_-argument("--font-file", required=True, help="Path to the .ttf font file.")
+    parser.add_argument("--font-file", required=True, help="Path to the .ttf font file.")
     parser.add_argument("--wallpaper-file", help="Optional path to the wallpaper image for text pages.")
 
     args = parser.parse_args()
