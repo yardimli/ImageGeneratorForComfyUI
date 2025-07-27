@@ -31,6 +31,12 @@
 
 	Auth::routes(['register' => false]);
 
+	// START MODIFICATION: Make story index and show pages public.
+	// Publicly viewable story routes
+	Route::get('stories', [StoryController::class, 'index'])->name('stories.index');
+	Route::get('stories/{story}', [StoryController::class, 'show'])->name('stories.show');
+	// END MODIFICATION
+
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
@@ -132,9 +138,16 @@
 		});
 
 		// --- Stories ---
-		Route::resource('stories', StoryController::class);
-
+		// START MODIFICATION: Group all authenticated story routes.
 		Route::prefix('stories')->name('stories.')->group(function () {
+			// Resource routes (except index and show)
+			Route::get('/create', [StoryController::class, 'create'])->name('create');
+			Route::post('/', [StoryController::class, 'store'])->name('store');
+			Route::get('/{story}/edit', [StoryController::class, 'edit'])->name('edit');
+			Route::put('/{story}', [StoryController::class, 'update'])->name('update');
+			Route::delete('/{story}', [StoryController::class, 'destroy'])->name('destroy');
+
+			// Custom routes
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
@@ -149,4 +162,5 @@
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
 		});
+		// END MODIFICATION
 	});

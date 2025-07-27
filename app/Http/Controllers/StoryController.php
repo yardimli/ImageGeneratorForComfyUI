@@ -25,9 +25,25 @@
 		 */
 		public function index()
 		{
-			$stories = Story::where('user_id', auth()->id())->orderBy('title')->get();
+			// START MODIFICATION: Fetch all stories for public view, with author info and pagination.
+			$stories = Story::with('user')->latest('updated_at')->paginate(15);
 			return view('story.index', compact('stories'));
+			// END MODIFICATION
 		}
+
+		// START MODIFICATION: Add a new method to publicly display a single story.
+		/**
+		 * Display the specified story publicly.
+		 *
+		 * @param \App\Models\Story $story
+		 * @return \Illuminate\View\View
+		 */
+		public function show(Story $story)
+		{
+			$story->load(['user', 'pages.characters', 'pages.places', 'characters', 'places']);
+			return view('story.show', compact('story'));
+		}
+		// END MODIFICATION
 
 		/**
 		 * Show the form for creating a new story.
