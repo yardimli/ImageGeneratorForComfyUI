@@ -90,7 +90,7 @@
 				'pages.*.places' => 'nullable|array',
 				'pages.*.places.*' => 'integer|exists:story_places,id',
 			]);
-			
+
 			DB::transaction(function () use ($story, $validated, $request) {
 				$story->update([
 					'title' => $validated['title'],

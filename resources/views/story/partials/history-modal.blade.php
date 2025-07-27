@@ -39,6 +39,10 @@
 				</div>
 			</div>
 			<div class="modal-footer">
+				{{-- START MODIFICATION: Add button and hidden input for direct image uploads --}}
+				<input type="file" id="newImageUploadInput" class="d-none" accept="image/*">
+				<button type="button" class="btn btn-info me-auto" id="uploadNewImageBtn">Upload New Image</button>
+				{{-- END MODIFICATION --}}
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="addSelectedHistoryImageBtn">Use Selected Image</button>
 			</div>

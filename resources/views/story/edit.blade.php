@@ -8,7 +8,9 @@
 			</div>
 		@endif
 		
-		<form action="{{ route('stories.update', $story) }}" method="POST">
+		{{-- START MODIFICATION: Added inline style to create padding at the bottom, preventing the fixed save bar from overlapping content. --}}
+		<form action="{{ route('stories.update', $story) }}" method="POST" style="padding-bottom: 100px;">
+			{{-- END MODIFICATION --}}
 			@csrf
 			@method('PUT')
 			
@@ -28,7 +30,7 @@
 					</div>
 					<div class="d-flex gap-2">
 						<a href="{{ route('stories.characters', $story) }}" class="btn btn-info">Manage Characters</a>
-						<a href="{{ route('stories.places', $story) }}" class="btn btn-info">Manage Places</a>
+						<a href="{{ route('stories.places', 'story') }}" class="btn btn-info">Manage Places</a>
 					</div>
 				</div>
 			</div>
@@ -44,9 +46,15 @@
 				@endforeach
 			</div>
 			
-			<div class="text-end mt-4">
-				<button type="submit" class="btn btn-success btn-lg">Save Story</button>
+			{{-- START MODIFICATION: Replaced the old save button div with a new structure for the fixed bar. --}}
+			<div class="fixed-save-bar">
+				<div class="container">
+					<div class="text-end">
+						<button type="submit" class="btn btn-success btn-lg">Save Story</button>
+					</div>
+				</div>
 			</div>
+			{{-- END MODIFICATION --}}
 		</form>
 	</div>
 	
@@ -67,6 +75,20 @@
       .history-image-card.selected { border-color: var(--bs-primary); }
       .history-image-card img { width: 100%; height: 150px; object-fit: cover; }
       .page-card .form-check-group { max-height: 150px; overflow-y: auto; }
+
+      /* START MODIFICATION: Added styles for the fixed save bar. */
+      .fixed-save-bar {
+          position: fixed;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          padding: 1rem;
+          background-color: var(--bs-body-bg); /* Respects light/dark theme */
+          border-top: 1px solid var(--bs-border-color);
+          box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.05);
+          z-index: 1030; /* Ensures it's above most content */
+      }
+      /* END MODIFICATION */
 	</style>
 @endsection
 

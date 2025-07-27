@@ -54,6 +54,71 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
+	// START MODIFICATION: Add handler for "Use Full Image" button and its helper function.
+	/**
+	 * Converts a data URL string to a Blob object.
+	 * @param {string} dataurl - The data URL to convert.
+	 * @returns {Blob}
+	 */
+	function dataURLtoBlob(dataurl) {
+		const arr = dataurl.split(',');
+		const mime = arr[0].match(/:(.*?);/)[1];
+		const bstr = atob(arr[1]);
+		let n = bstr.length;
+		const u8arr = new Uint8Array(n);
+		while (n--) {
+			u8arr[n] = bstr.charCodeAt(n);
+		}
+		return new Blob([u8arr], { type: mime });
+	}
+	
+	document.getElementById('useFullImageBtn').addEventListener('click', async () => {
+		if (!imageToCrop.src || !activeImageUploadContainer) return;
+		
+		const button = document.getElementById('useFullImageBtn');
+		button.disabled = true;
+		button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
+		
+		const imageUrl = imageToCrop.src;
+		
+		try {
+			let finalPath = imageUrl;
+			
+			// If it's a data URL (from a new upload), we need to upload it to get a server path.
+			if (imageUrl.startsWith('data:image')) {
+				const blob = dataURLtoBlob(imageUrl);
+				const formData = new FormData();
+				formData.append('image', blob, 'full-image.png'); // Filename can be anything.
+				formData.append('_token', csrfToken);
+				
+				const response = await fetch('/image-mix/upload', {
+					method: 'POST',
+					body: formData,
+					headers: { 'Accept': 'application/json' },
+				});
+				const data = await response.json();
+				
+				if (data.success) {
+					finalPath = data.path;
+				} else {
+					throw new Error(data.error || 'Full image upload failed.');
+				}
+			}
+			
+			// Now update the UI with the final path (either original or newly uploaded).
+			activeImageUploadContainer.querySelector('img').src = finalPath;
+			activeImageUploadContainer.closest('.card-body').querySelector('.image-path-input').value = finalPath;
+			cropperModal.hide();
+			
+		} catch (error) {
+			alert('An error occurred: ' + error.message);
+		} finally {
+			button.disabled = false;
+			button.innerHTML = 'Use Full Image (No Crop)';
+		}
+	});
+	// END MODIFICATION
+	
 	document.getElementById('confirmCropBtn').addEventListener('click', () => {
 		if (!cropper || !activeImageUploadContainer) return;
 		const button = document.getElementById('confirmCropBtn');
@@ -135,6 +200,30 @@ document.addEventListener('DOMContentLoaded', function () {
 			e.target.closest('.history-image-card').classList.add('selected');
 		}
 	});
+	
+	// START MODIFICATION: Add handlers for new image upload from history modal.
+	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
+	const newImageUploadInput = document.getElementById('newImageUploadInput');
+	
+	if (uploadNewImageBtn && newImageUploadInput) {
+		uploadNewImageBtn.addEventListener('click', () => {
+			newImageUploadInput.click();
+		});
+		
+		newImageUploadInput.addEventListener('change', (event) => {
+			const file = event.target.files[0];
+			if (file) {
+				const reader = new FileReader();
+				reader.onload = (e) => {
+					openCropper(e.target.result);
+					historyModal.hide();
+				};
+				reader.readAsDataURL(file);
+				newImageUploadInput.value = ''; // Reset for same-file selection.
+			}
+		});
+	}
+	// END MODIFICATION
 	
 	document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
 		const selected = document.querySelector('#historyModal .history-image-card.selected');

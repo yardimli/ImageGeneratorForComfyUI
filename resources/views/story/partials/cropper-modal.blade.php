@@ -12,6 +12,9 @@
 			</div>
 			<div class="modal-footer">
 				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				{{-- START MODIFICATION: Add button to use the full image without cropping --}}
+				<button type="button" class="btn btn-info" id="useFullImageBtn">Use Full Image (No Crop)</button>
+				{{-- END MODIFICATION --}}
 				<button type="button" class="btn btn-primary" id="confirmCropBtn">Confirm Crop</button>
 			</div>
 		</div>
