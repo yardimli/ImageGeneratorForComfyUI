@@ -1,3 +1,4 @@
+resources/views/story/create-ai.blade.php:
 @extends('layouts.bootstrap-app')
 
 @section('content')
@@ -94,6 +95,25 @@
 					btnSpinner.classList.remove('d-none');
 				});
 			}
+			
+			// START MODIFICATION: Remember the selected AI model in localStorage.
+			const modelSelect = document.getElementById('model');
+			const modelStorageKey = 'storyCreateAi_model';
+			
+			// On page load, try to set the model from localStorage, but only if
+			// a value hasn't already been set by the server (e.g., from an old() helper).
+			const savedModel = localStorage.getItem(modelStorageKey);
+			if (savedModel && modelSelect && !modelSelect.value) {
+				modelSelect.value = savedModel;
+			}
+			
+			// When the user changes the model, save it to localStorage.
+			if (modelSelect) {
+				modelSelect.addEventListener('change', function () {
+					localStorage.setItem(modelStorageKey, this.value);
+				});
+			}
+			// END MODIFICATION
 		});
 	</script>
 @endsection

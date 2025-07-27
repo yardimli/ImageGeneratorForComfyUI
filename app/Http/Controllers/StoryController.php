@@ -4,6 +4,7 @@
 
 	// START MODIFICATION: Import new classes needed for AI story generation.
 	use App\Http\Controllers\LlmController;
+	use App\Models\Prompt;
 	use App\Models\Story;
 	use App\Models\StoryCharacter;
 	use App\Models\StoryPage;
@@ -266,6 +267,24 @@ PROMPT;
 			}
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
+
+			// START NEW MODIFICATION: Check for generated images that haven't been assigned to the page yet.
+			foreach ($story->pages as $page) {
+				if (empty($page->image_path)) {
+					// Find the latest successfully generated image for this page from the prompts table.
+					$generatedImage = Prompt::where('story_page_id', $page->id)
+						->whereNotNull('filename')
+						->latest('updated_at') // Use updated_at as it reflects completion time
+						->first();
+
+					if ($generatedImage) {
+						// This will pre-fill the image path in the view.
+						// If the user saves, this path will be persisted.
+						$page->image_path = $generatedImage->filename;
+					}
+				}
+			}
+			// END NEW MODIFICATION
 
 			// Fetch models for the AI prompt generator modal
 			try {

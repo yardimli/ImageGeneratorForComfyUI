@@ -292,13 +292,38 @@ document.addEventListener('DOMContentLoaded', function () {
 		const generatedPromptText = document.getElementById('generated-prompt-text');
 		let activeImagePromptTextarea = null;
 		
+		// START NEW MODIFICATION: Remember and pre-fill AI prompt generator settings from localStorage.
+		const promptModelKey = 'storyEditor_promptModel';
+		const promptInstructionsKey = 'storyEditor_promptInstructions';
+		
+		// Load saved settings when modal is shown
+		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
+			const savedModel = localStorage.getItem(promptModelKey);
+			if (savedModel) {
+				document.getElementById('prompt-model').value = savedModel;
+			}
+			const savedInstructions = localStorage.getItem(promptInstructionsKey);
+			if (savedInstructions) {
+				document.getElementById('prompt-instructions').value = savedInstructions;
+			}
+		});
+		
+		// Save settings on change
+		document.getElementById('prompt-model').addEventListener('change', (e) => {
+			localStorage.setItem(promptModelKey, e.target.value);
+		});
+		document.getElementById('prompt-instructions').addEventListener('input', (e) => {
+			localStorage.setItem(promptInstructionsKey, e.target.value);
+		});
+		// END NEW MODIFICATION
+		
 		// Reset modal on close
 		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
 			activeImagePromptTextarea = null;
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
 			generatedPromptText.value = '';
-			document.getElementById('prompt-instructions').value = '';
+			// MODIFICATION: The line that cleared instructions is removed to allow them to persist.
 			writePromptBtn.disabled = false;
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
@@ -391,6 +416,23 @@ document.addEventListener('DOMContentLoaded', function () {
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
 		const drawHeightInput = document.getElementById('draw-height');
+		
+		// START NEW MODIFICATION: Remember and pre-fill AI draw model from localStorage.
+		const drawModelKey = 'storyEditor_drawModel';
+		
+		// Load saved settings when modal is shown
+		drawWithAiModalEl.addEventListener('shown.bs.modal', () => {
+			const savedModel = localStorage.getItem(drawModelKey);
+			if (savedModel) {
+				document.getElementById('draw-model').value = savedModel;
+			}
+		});
+		
+		// Save settings on change
+		document.getElementById('draw-model').addEventListener('change', (e) => {
+			localStorage.setItem(drawModelKey, e.target.value);
+		});
+		// END NEW MODIFICATION
 		
 		function setDrawDimensions(width, height) {
 			drawWidthInput.value = width;
