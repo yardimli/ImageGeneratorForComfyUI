@@ -46,25 +46,37 @@
 				// Create a PromptSetting entry
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
-					'generation_type' => 'story_image', // A new type to distinguish it
-					'original_prompt' => $promptText, // Store the base prompt here
-					'model' => $validated['model'],
+					'generation_type' => 'prompt',
+					'template_path' => '',
+					'prompt_template' => '',
+					'original_prompt' => $promptText,
+					'precision' => 'Normal',
+					'count' => 1,
+					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
+					'model' => $validated['model'],
+					'lora_name' => '',
+					'strength_model' => 0,
+					'guidance' => 7.5,
 					'upload_to_s3' => $validated['upload_to_s3'],
 					'aspect_ratio' => $validated['aspect_ratio'],
-					'count' => 1, // Always 1 for this action
-					'render_each_prompt_times' => 1, // Always 1
-					'story_page_id' => $storyPage->id, // Link to the story page
+					'prepend_text' => '',
+					'append_text' => '',
+					'generate_original_prompt' => false,
+					'append_to_prompt' => false,
+					'input_images_1' => '',
+					'input_images_2' => '',
+					'story_page_id' => $storyPage->id,
 				]);
 
 				// Create a Prompt entry
 				Prompt::create([
 					'user_id' => auth()->id(),
 					'prompt_setting_id' => $promptSetting->id,
-					'generation_type' => 'story_image',
+					'generation_type' => 'prompt',
 					'original_prompt' => $promptText,
-					'generated_prompt' => $promptText, // The prompt is already "generated"
+					'generated_prompt' => $promptText,
 					'model' => $validated['model'],
 					'width' => $validated['width'],
 					'height' => $validated['height'],

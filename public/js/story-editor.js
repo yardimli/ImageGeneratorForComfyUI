@@ -380,4 +380,134 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	// END MODIFICATION
+	
+	// START NEW MODIFICATION: Logic for "Draw with AI" Modal
+	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
+	if (drawWithAiModalEl) {
+		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
+		const generateImageBtn = document.getElementById('generate-image-btn');
+		const drawStoryPageIdInput = document.getElementById('draw-story-page-id');
+		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
+		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
+		const drawWidthInput = document.getElementById('draw-width');
+		const drawHeightInput = document.getElementById('draw-height');
+		
+		function setDrawDimensions(width, height) {
+			drawWidthInput.value = width;
+			drawHeightInput.value = height;
+		}
+		
+		if (drawAspectRatioSelect) {
+			drawAspectRatioSelect.addEventListener('change', function () {
+				const [ratio, baseSize] = this.value.split('-');
+				const [w, h] = ratio.split(':');
+				
+				if (baseSize === '1024') {
+					switch (ratio) {
+						case '1:1': setDrawDimensions(1024, 1024); break;
+						case '3:2': setDrawDimensions(1216, 832); break;
+						case '4:3': setDrawDimensions(1152, 896); break;
+						case '16:9': setDrawDimensions(1344, 768); break;
+						case '21:9': setDrawDimensions(1536, 640); break;
+						case '2:3': setDrawDimensions(832, 1216); break;
+						case '3:4': setDrawDimensions(896, 1152); break;
+						case '9:16': setDrawDimensions(768, 1344); break;
+						case '9:21': setDrawDimensions(640, 1536); break;
+					}
+				} else { // baseSize 1408
+					switch (ratio) {
+						case '1:1': setDrawDimensions(1408, 1408); break;
+						case '3:2': setDrawDimensions(1728, 1152); break;
+						case '4:3': setDrawDimensions(1664, 1216); break;
+						case '16:9': setDrawDimensions(1920, 1088); break;
+						case '21:9': setDrawDimensions(2176, 960); break;
+						case '2:3': setDrawDimensions(1152, 1728); break;
+						case '3:4': setDrawDimensions(1216, 1664); break;
+						case '9:16': setDrawDimensions(1088, 1920); break;
+						case '9:21': setDrawDimensions(960, 2176); break;
+					}
+				}
+			});
+		}
+		
+		
+		// Listener for all "Draw with AI" buttons
+		pagesContainer.addEventListener('click', (e) => {
+			const drawButton = e.target.closest('.draw-with-ai-btn');
+			if (drawButton) {
+				const pageCard = drawButton.closest('.page-card');
+				const storyPageId = drawButton.dataset.storyPageId;
+				const imagePrompt = pageCard.querySelector('.image-prompt-textarea').value;
+				
+				if (!storyPageId) {
+					alert('This page has not been saved yet. Please save the story first.');
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+				
+				drawStoryPageIdInput.value = storyPageId;
+				drawImagePromptText.textContent = imagePrompt || '(No prompt has been set for this page yet)';
+			}
+		});
+		
+		// Listener for "Generate Image Only" button inside the modal
+		generateImageBtn.addEventListener('click', async () => {
+			const storyPageId = drawStoryPageIdInput.value;
+			const imagePrompt = drawImagePromptText.textContent;
+			
+			if (!storyPageId) {
+				alert('Error: No page selected.');
+				return;
+			}
+			if (!imagePrompt || imagePrompt.startsWith('(No prompt')) {
+				alert('Please add an image prompt to the page before generating an image.');
+				return;
+			}
+			
+			const model = document.getElementById('draw-model').value;
+			const width = drawWidthInput.value;
+			const height = drawHeightInput.value;
+			const upload_to_s3 = document.getElementById('draw-upload-to-s3').checked;
+			const aspect_ratio = drawAspectRatioSelect.value;
+			
+			generateImageBtn.disabled = true;
+			generateImageBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			try {
+				const response = await fetch(`/stories/pages/${storyPageId}/generate-image`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': csrfToken,
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({
+						model: model,
+						width: width,
+						height: height,
+						upload_to_s3: upload_to_s3,
+						aspect_ratio: aspect_ratio,
+					}),
+				});
+				
+				const data = await response.json();
+				
+				if (response.ok && data.success) {
+					alert(data.message); // A simple alert for now.
+					drawWithAiModal.hide();
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+				
+			} catch (error) {
+				console.error('Fetch error:', error);
+				alert('A network error occurred. Please try again.');
+			} finally {
+				generateImageBtn.disabled = false;
+				generateImageBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+	}
+	// END NEW MODIFICATION
 });

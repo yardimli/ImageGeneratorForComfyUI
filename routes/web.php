@@ -10,6 +10,7 @@
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\StoryController;
+	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
 
@@ -97,6 +98,7 @@
 		Route::get('/stories/create/ai', [StoryController::class, 'createWithAi'])->name('stories.create-ai');
 		Route::post('/stories/create/ai', [StoryController::class, 'storeWithAi'])->name('stories.store-ai');
 		Route::post('/stories/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('stories.generate-image-prompt');
+		Route::post('/stories/pages/{storyPage}/generate-image', [StoryImageController::class, 'generate'])->name('stories.pages.generate-image');
 
 		Route::resource('stories', StoryController::class);
 		Route::get('/stories/{story}/characters', [StoryController::class, 'characters'])->name('stories.characters');

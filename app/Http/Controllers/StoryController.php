@@ -279,7 +279,22 @@ PROMPT;
 				session()->flash('error', 'Could not fetch AI models for the prompt generator. The feature will be unavailable.');
 			}
 
-			return view('story.edit', compact('story', 'models'));
+			// START NEW MODIFICATION: Define models for the "Draw with AI" feature.
+			$imageModels = [
+				['id' => 'schnell', 'name' => 'Schnell'],
+				['id' => 'dev', 'name' => 'Dev'],
+				['id' => 'outpaint', 'name' => 'Outpaint'],
+				['id' => 'minimax', 'name' => 'MiniMax'],
+				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
+				['id' => 'imagen3', 'name' => 'Imagen 3'],
+				['id' => 'aura-flow', 'name' => 'Aura Flow'],
+				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
+				['id' => 'luma-photon', 'name' => 'Luma Photon'],
+				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+			];
+			// END NEW MODIFICATION
+
+			return view('story.edit', compact('story', 'models', 'imageModels'));
 		}
 		// END MODIFICATION
 

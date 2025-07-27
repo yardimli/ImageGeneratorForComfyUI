@@ -22,6 +22,9 @@
 			'lora_name',
 			'strength_model',
 			'guidance',
+			// START NEW MODIFICATION
+			'story_page_id',
+			// END NEW MODIFICATION
 			// END MODIFICATION
 			'upload_to_s3',
 			'generation_type',

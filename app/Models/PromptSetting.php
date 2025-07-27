@@ -17,11 +17,10 @@
 			'width',
 			'height',
 			'model',
-			// START MODIFICATION
 			'lora_name',
 			'strength_model',
 			'guidance',
-			// END MODIFICATION
+			'story_page_id',
 			'upload_to_s3',
 			'create_minimax',
 			'create_imagen',
