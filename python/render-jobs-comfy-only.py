@@ -183,7 +183,7 @@ def generate_images_from_api():
     global prompt_status_counter
 
     try:
-        print("Starting image generation from API...")
+        print("Starting image generation from API (Local Jobs)...")
         response = requests.get(f"{API_BASE_URL}/prompts/pending")
         if response.status_code != 200:
             print(f"Error fetching prompts: {response.status_code} {response.json()}")

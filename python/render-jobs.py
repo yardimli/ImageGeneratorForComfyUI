@@ -18,11 +18,11 @@ current_dir = Path(__file__).resolve().parent
 env_path = current_dir.parent / '.env'
 load_dotenv(env_path)
 
-import vertexai
-from vertexai.preview.vision_models import ImageGenerationModel
-from google.oauth2 import service_account
-from google.api_core.exceptions import GoogleAPIError
-import traceback
+#import vertexai
+#from vertexai.preview.vision_models import ImageGenerationModel
+#from google.oauth2 import service_account
+#from google.api_core.exceptions import GoogleAPIError
+#import traceback
 
 import fal_client
 
@@ -51,12 +51,12 @@ s3_client = boto3.client(
     region_name=AWS_REGION
 )
 
-credentials = service_account.Credentials.from_service_account_file(
- os.getenv('GOOGLE_AUTH_KEY_PATH',"google.json"),
- scopes=["https://www.googleapis.com/auth/cloud-platform"],)
+#credentials = service_account.Credentials.from_service_account_file(
+# os.getenv('GOOGLE_AUTH_KEY_PATH',"google.json"),
+# scopes=["https://www.googleapis.com/auth/cloud-platform"],)
 
-vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID',""), location="us-central1", credentials=credentials)
-vertexai_model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
+#vertexai.init(project=os.getenv('GOOGLE_PROJECT_ID',""), location="us-central1", credentials=credentials)
+#vertexai_model = ImageGenerationModel.from_pretrained("imagen-3.0-generate-002")
 
 
 def get_aspect_ratio(width, height):
@@ -146,10 +146,10 @@ prompt_status_counter = {}
 
 def generate_images_from_api():
     global prompt_status_counter
-    global vertexai_model
+    #global vertexai_model
 
     try:
-        print("Starting image generation from API...")
+        print("Starting image generation from API (Remote Jobs)...")
         response = requests.get(f"{API_BASE_URL}/prompts/pending")
         if response.status_code != 200:
             print(f"Error fetching prompts: {response.json()}")
@@ -205,33 +205,56 @@ def generate_images_from_api():
                 workflow = {}
                 if generation_type == "prompt":
                     if model == "imagen3":
-                        print(f"Sending to Imagen: {prompt['generated_prompt']}...")
-                        aspect_ratio_value = get_aspect_ratio(prompt['width'], prompt['height'])
-                        print(f"Using aspect ratio: {aspect_ratio_value}")
-                        try:
-                            images = vertexai_model.generate_images(
-                                prompt=prompt['generated_prompt'],
-                                number_of_images=1,
-                                language="en",
-                                add_watermark=False,
-                                # seed=100,
-                                aspect_ratio=aspect_ratio_value,
-                                safety_filter_level="block_only_high",
-                                person_generation="allow_adult",
-                            )
+                        print(f"Sending to Fal/Imagen4: {prompt['generated_prompt']}...")
 
-                            print(images)
-                            images[0].save(location=output_file, include_generation_parameters=False)
-                        except GoogleAPIError as e:
-                            print(f"Google API Error: {e}")
-                            print(f"Error details: {e.details() if hasattr(e, 'details') else 'No details available'}")
-                            print(f"Error code: {e.code if hasattr(e, 'code') else 'No code available'}")
-                        except Exception as e:
-                            update_render_status(prompt_id, 4)
-                            print(f"Unexpected error: {e}")
-                            traceback.print_exc()
-                            continue
-                        time.sleep(20)
+                        fal_result = fal_client.subscribe(
+                            "fal-ai/imagen4/preview/ultra",
+                            arguments={
+                                "prompt": prompt['generated_prompt']
+                            },
+                            with_logs=False,
+                            # on_queue_update=on_queue_update,
+                        )
+                        print(fal_result)
+                        first_image_url = fal_result["images"][0]["url"]
+                        image_response = requests.get(first_image_url)
+                        if image_response.status_code == 200:
+                            # Save the image to file
+                            with open(output_file, 'wb') as f:
+                                f.write(image_response.content)
+                            print(f"Image saved to {output_file}")
+                        else:
+                            print(f"Failed to download image: {image_response.status_code}")
+                        time.sleep(6)
+
+
+#                         print(f"Sending to Imagen: {prompt['generated_prompt']}...")
+#                         aspect_ratio_value = get_aspect_ratio(prompt['width'], prompt['height'])
+#                         print(f"Using aspect ratio: {aspect_ratio_value}")
+#                         try:
+#                             images = vertexai_model.generate_images(
+#                                 prompt=prompt['generated_prompt'],
+#                                 number_of_images=1,
+#                                 language="en",
+#                                 add_watermark=False,
+#                                 # seed=100,
+#                                 aspect_ratio=aspect_ratio_value,
+#                                 safety_filter_level="block_only_high",
+#                                 person_generation="allow_adult",
+#                             )
+#
+#                             print(images)
+#                             images[0].save(location=output_file, include_generation_parameters=False)
+#                         except GoogleAPIError as e:
+#                             print(f"Google API Error: {e}")
+#                             print(f"Error details: {e.details() if hasattr(e, 'details') else 'No details available'}")
+#                             print(f"Error code: {e.code if hasattr(e, 'code') else 'No code available'}")
+#                         except Exception as e:
+#                             update_render_status(prompt_id, 4)
+#                             print(f"Unexpected error: {e}")
+#                             traceback.print_exc()
+#                             continue
+#                         time.sleep(20)
 
                     elif model == "aura-flow":
                         print(f"Sending to Fal/Aura-Flow: {prompt['generated_prompt']}...")
