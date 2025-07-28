@@ -74,7 +74,7 @@
 								</div>
 								<div class="mb-3">
 									<label for="introduction_text" class="form-label">Introduction / Dedication (Optional)</label>
-									<textarea class="form-control" id="introduction_text" name="introduction_text" rows="4">{{ old('introduction_text', $defaultIntro) }}</textarea>
+									<textarea class="form-control" id="introduction_text" name="introduction_text" rows="4">{{ old('introduction_text', $defaultIntroduction) }}</textarea>
 								</div>
 							</fieldset>
 							
