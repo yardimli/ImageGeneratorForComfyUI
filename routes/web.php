@@ -9,9 +9,7 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
-	// START MODIFICATION: Import the new StoryPdfController
 	use App\Http\Controllers\StoryPdfController;
-	// END MODIFICATION
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -34,11 +32,9 @@
 
 	Auth::routes(['register' => false]);
 
-	// START MODIFICATION: Make story index and show pages public.
 	// Publicly viewable story routes
 	Route::get('stories', [StoryController::class, 'index'])->name('stories.index');
 	Route::get('stories/{story}', [StoryController::class, 'show'])->name('stories.show');
-	// END MODIFICATION
 
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
@@ -101,6 +97,9 @@
 		Route::prefix('image-editor')->name('image-editor.')->group(function () {
 			Route::get('/', [ImageEditorController::class, 'index'])->name('index');
 			Route::post('/save', [ImageEditorController::class, 'save'])->name('save');
+			// START MODIFICATION: Add the new proxy route.
+			Route::post('/proxy-image', [ImageEditorController::class, 'proxyImage'])->name('proxy');
+			// END MODIFICATION
 		});
 
 		// --- Pexels Integration ---
@@ -141,7 +140,6 @@
 		});
 
 		// --- Stories ---
-		// START MODIFICATION: Group all authenticated story routes.
 		Route::prefix('stories')->name('stories.')->group(function () {
 			// Resource routes (except index and show)
 			Route::get('/create', [StoryController::class, 'create'])->name('create');
@@ -165,10 +163,7 @@
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
 
-			// START NEW MODIFICATION: Add routes for PDF generation
 			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
 			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');
-			// END NEW MODIFICATION
 		});
-		// END MODIFICATION
 	});

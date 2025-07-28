@@ -34,7 +34,6 @@
 				<h1 class="h3 mb-0">Image Editor</h1>
 			</div>
 			<div class="card-body">
-				{{-- START MODIFICATION: New initial view for selecting a background --}}
 				<div id="initial-upload-view" class="text-center p-5 border-2 border-dashed rounded-lg">
 					<h2 class="h4">Step 1: Select a Background Image</h2>
 					<p class="text-muted mb-4">The canvas will be sized to fit your screen. The final image will be saved at this image's original resolution.</p>
@@ -44,13 +43,11 @@
 					</div>
 					<input type="file" id="bg-uploader-input" class="d-none" accept="image/*">
 				</div>
-				{{-- END MODIFICATION --}}
 				
 				<!-- Step 2: Main Application View (hidden initially) -->
 				<div id="app-view" class="d-none">
 					<!-- Toolbar -->
 					<div class="d-flex flex-wrap align-items-center justify-content-center gap-2 mb-3 p-3 bg-light rounded">
-						{{-- MODIFICATION: This button now opens the history modal --}}
 						<button id="add-image-btn" class="btn btn-success">
 							Add Image
 						</button>
@@ -72,7 +69,6 @@
 		</div>
 	</div>
 	
-	{{-- START MODIFICATION: Added a comprehensive history modal for image selection --}}
 	<div class="modal fade" id="historyModal" tabindex="-1" aria-labelledby="historyModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl">
 			<div class="modal-content">
@@ -129,7 +125,6 @@
 			</div>
 		</div>
 	</div>
-	{{-- END MODIFICATION --}}
 	
 	<!-- Cropping Modal (Bootstrap 5) -->
 	<div class="modal fade" id="crop-modal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
@@ -141,14 +136,11 @@
 				</div>
 				<div class="modal-body">
 					<div class="cropper-container-wrapper">
-						{{-- MODIFICATION: Added crossorigin attribute for remote images --}}
 						<img id="image-to-crop" src="" alt="Image to crop" style="max-width: 100%;" crossorigin="anonymous">
 					</div>
 				</div>
 				<div class="modal-footer">
-					{{-- START MODIFICATION: Added "Use Full Image" button --}}
 					<button id="use-full-image-btn" type="button" class="btn btn-info me-auto">Use Full Image (No Crop)</button>
-					{{-- END MODIFICATION --}}
 					<button id="cancel-crop-btn" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
 					<button id="confirm-crop-btn" type="button" class="btn btn-primary">Confirm and Add</button>
 				</div>
@@ -161,7 +153,6 @@
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
 	
-	{{-- START MODIFICATION: The entire script has been rewritten for the new workflow --}}
 	<script>
 		document.addEventListener('DOMContentLoaded', () => {
 			// --- DOM Elements ---
@@ -204,7 +195,7 @@
 			let backgroundImageObject;
 			let originalWidth, originalHeight;
 			let currentScale = 1;
-			let isSettingBackground = false; // Critical state to determine image destination
+			let isSettingBackground = false;
 			
 			// --- Utility Functions ---
 			const debounce = (func, delay) => {
@@ -215,17 +206,34 @@
 				};
 			};
 			
-			const dataURLtoBlob = (dataurl) => {
-				const arr = dataurl.split(',');
-				const mime = arr[0].match(/:(.*?);/)[1];
-				const bstr = atob(arr[1]);
-				let n = bstr.length;
-				const u8arr = new Uint8Array(n);
-				while (n--) {
-					u8arr[n] = bstr.charCodeAt(n);
+			// START MODIFICATION: New function to proxy external images via the server.
+			const getProxiedImageUrl = async (externalUrl) => {
+				try {
+					const response = await fetch('{{ route("image-editor.proxy") }}', {
+						method: 'POST',
+						headers: {
+							'Content-Type': 'application/json',
+							'X-CSRF-TOKEN': csrfToken,
+							'Accept': 'application/json',
+						},
+						body: JSON.stringify({ url: externalUrl }),
+					});
+					
+					if (!response.ok) {
+						const errorData = await response.json();
+						throw new Error(errorData.message || 'Failed to proxy image.');
+					}
+					
+					const data = await response.json();
+					return data.local_url;
+					
+				} catch (error) {
+					console.error('Proxy error:', error);
+					alert(`Could not load image: ${error.message}`);
+					return null;
 				}
-				return new Blob([u8arr], { type: mime });
 			};
+			// END MODIFICATION
 			
 			// --- Canvas Resizing ---
 			const resizeCanvas = () => {
@@ -294,7 +302,6 @@
 				cropper = new Cropper(imageToCrop, {
 					viewMode: 1,
 					background: false,
-					// Allow free-form cropping for foreground, but no aspect ratio for background
 					aspectRatio: isSettingBackground ? NaN : 0,
 				});
 			});
@@ -306,11 +313,21 @@
 			});
 			
 			// --- Core Image Processing ---
-			const processFinalImage = (imageUrl) => {
+			const processFinalImage = async (imageUrl) => {
+				let finalUrl = imageUrl;
+				
+				// START MODIFICATION: Check if the URL is external and proxy it if needed.
+				if (imageUrl.startsWith('http')) {
+					const proxiedUrl = await getProxiedImageUrl(imageUrl);
+					if (!proxiedUrl) return; // Stop if proxying fails
+					finalUrl = proxiedUrl;
+				}
+				// END MODIFICATION
+				
 				if (isSettingBackground) {
-					initializeCanvas(imageUrl);
+					initializeCanvas(finalUrl);
 				} else {
-					addForegroundImage(imageUrl);
+					addForegroundImage(finalUrl);
 				}
 				cropModal.hide();
 			};
@@ -337,7 +354,6 @@
 						top: canvas.height / 2,
 						originX: 'center',
 						originY: 'center',
-						// Start with a reasonable scale relative to the canvas
 						scaleX: (canvas.width / 4) / fabricImage.width,
 						scaleY: (canvas.width / 4) / fabricImage.width,
 					});
@@ -408,42 +424,9 @@
 				processFinalImage(croppedDataUrl);
 			});
 			
-			useFullImageBtn.addEventListener('click', async () => {
-				if (!imageToCrop.src) return;
-				const imageUrl = imageToCrop.src;
-				
-				useFullImageBtn.disabled = true;
-				useFullImageBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Processing...';
-				
-				try {
-					// If it's a blob URL (from a new upload), we must upload it to get a persistent path.
-					if (imageUrl.startsWith('blob:') || imageUrl.startsWith('data:')) {
-						const blob = imageUrl.startsWith('blob:') ? await (await fetch(imageUrl)).blob() : dataURLtoBlob(imageUrl);
-						const formData = new FormData();
-						formData.append('image', blob, 'full-image.png');
-						formData.append('_token', csrfToken);
-						
-						const response = await fetch('/image-mix/upload', {
-							method: 'POST',
-							body: formData,
-							headers: { 'Accept': 'application/json' },
-						});
-						const data = await response.json();
-						
-						if (data.success) {
-							processFinalImage(data.path);
-						} else {
-							throw new Error(data.error || 'Full image upload failed.');
-						}
-					} else {
-						// It's already a persistent URL from history
-						processFinalImage(imageUrl);
-					}
-				} catch (error) {
-					alert('An error occurred: ' + error.message);
-				} finally {
-					useFullImageBtn.disabled = false;
-					useFullImageBtn.innerHTML = 'Use Full Image (No Crop)';
+			useFullImageBtn.addEventListener('click', () => {
+				if (imageToCrop.src) {
+					processFinalImage(imageToCrop.src);
 				}
 			});
 			
@@ -458,7 +441,7 @@
 				}
 			});
 			
-			// --- Saving the Final Image (Original logic, unchanged) ---
+			// --- Saving the Final Image ---
 			saveImageBtn.addEventListener('click', async () => {
 				if (!canvas) return;
 				
@@ -516,5 +499,4 @@
 			});
 		});
 	</script>
-	{{-- END MODIFICATION --}}
 @endsection

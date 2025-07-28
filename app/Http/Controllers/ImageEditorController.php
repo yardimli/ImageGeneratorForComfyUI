@@ -6,6 +6,9 @@
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Storage;
 	use Illuminate\Support\Str;
+	// START MODIFICATION: Import the Http facade for robust requests.
+	use Illuminate\Support\Facades\Http;
+	// END MODIFICATION
 
 	/**
 	 * Controller to handle the image editor functionality.
@@ -87,4 +90,54 @@
 				], 500);
 			}
 		}
+
+		// START MODIFICATION: Add a new method to proxy external images.
+		/**
+		 * Fetches an image from an external URL, saves it locally, and returns the local URL.
+		 * This is used to bypass browser CORS restrictions (tainted canvas).
+		 *
+		 * @param  \Illuminate\Http\Request  $request
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function proxyImage(Request $request)
+		{
+			$validated = $request->validate([
+				'url' => 'required|url',
+			]);
+
+			$imageUrl = $validated['url'];
+
+			try {
+				// Use Laravel's HTTP client to fetch the image. It's more robust than file_get_contents.
+				$response = Http::timeout(30)->get($imageUrl);
+
+				if ($response->failed()) {
+					return response()->json(['success' => false, 'message' => 'Failed to download image from the provided URL.'], 400);
+				}
+
+				// Generate a unique filename.
+				$originalExtension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
+				$extension = in_array($originalExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? $originalExtension : 'jpg';
+				$filename = 'proxied_' . uniqid() . '.' . $extension;
+
+				// Save the image to a temporary public directory.
+				$tempPath = 'temp/' . $filename;
+				Storage::disk('public')->put($tempPath, $response->body());
+
+				// Get the full public URL of the temporary local image.
+				$localUrl = Storage::disk('public')->url($tempPath);
+
+				return response()->json([
+					'success' => true,
+					'local_url' => $localUrl,
+				]);
+			} catch (\Exception $e) {
+				Log::error('Image proxy error for URL ' . $imageUrl . ': ' . $e->getMessage());
+				return response()->json([
+					'success' => false,
+					'message' => 'An error occurred while processing the image.',
+				], 500);
+			}
+		}
+		// END MODIFICATION
 	}
