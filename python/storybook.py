@@ -299,7 +299,7 @@ if __name__ == "__main__":
     parser.add_argument("--color-footer", default="#808080", help="Hex color for the footer text.")
     parser.add_argument("--color-title", default="#1E1E64", help="Hex color for the title page text.")
     parser.add_argument("--color-copyright", default="#000000", help="Hex color for the copyright page text.")
-    parser.add_-argument("--color-introduction", default="#000000", help="Hex color for the introduction page text.")
+    parser.add_argument("--color-introduction", default="#000000", help="Hex color for the introduction page text.")
 
     args = parser.parse_args()
 
