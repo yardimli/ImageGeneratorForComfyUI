@@ -94,7 +94,7 @@
 					'pages' => $story->pages->map(function ($page) {
 						return [
 							'text' => $page->story_text ?? '',
-							'image_url' => $page->image_path ? Storage::url($page->image_path) : null,
+							'image_url' => $page->image_path,
 						];
 					})->toArray(),
 				];
