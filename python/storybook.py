@@ -6,6 +6,7 @@ import shutil
 import sys
 import tempfile
 from fpdf import FPDF
+from PIL import Image # START MODIFICATION: Import the Pillow library
 
 # ==============================================================================
 # --- PDF Class (accepts config via constructor) ---
@@ -58,8 +59,9 @@ class StorybookPDF(FPDF):
 # ==============================================================================
 # --- Helper Functions ---
 # ==============================================================================
-def download_image(url, folder, page_num):
-    """Downloads an image from a URL into a specified folder."""
+# START MODIFICATION: Replaced old download function with one that also converts to JPG.
+def download_and_convert_image(url, folder, page_num):
+    """Downloads an image from a URL, converts it to JPG, and saves it."""
     if not url:
         print(f"Warning: No image URL for page {page_num}.")
         return None
@@ -67,29 +69,32 @@ def download_image(url, folder, page_num):
         response = requests.get(url, stream=True, timeout=30)
         response.raise_for_status()
 
-        # Determine file extension from URL or content type
-        content_type = response.headers.get('content-type', '').lower()
-        if 'jpeg' in content_type or 'jpg' in content_type:
-            ext = '.jpg'
-        elif 'png' in content_type:
-            ext = '.png'
-        else:
-            # Fallback to extension from URL path
-            _, url_ext = os.path.splitext(url)
-            ext = url_ext if url_ext in ['.jpg', '.jpeg', '.png'] else '.jpg'
+        # Open the downloaded content directly with Pillow
+        with Image.open(response.raw) as im:
+            jpg_path = os.path.join(folder, f"{page_num}.jpg")
 
-        filename = f"{page_num}{ext}"
-        filepath = os.path.join(folder, filename)
+            # Convert to RGB if necessary, handling transparency by pasting on a white background
+            if im.mode == 'RGBA':
+                background = Image.new("RGB", im.size, (255, 255, 255))
+                # Paste the image on the background, using the alpha channel as a mask
+                background.paste(im, mask=im.getchannel('A'))
+                im = background
+            elif im.mode != 'RGB':
+                im = im.convert('RGB')
 
-        with open(filepath, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
+            # Save the final image as a high-quality JPEG
+            im.save(jpg_path, 'JPEG', quality=95)
+            print(f"Downloaded and converted image for page {page_num} to {jpg_path}")
+            return jpg_path
 
-        print(f"Downloaded image for page {page_num} to {filepath}")
-        return filepath
     except requests.exceptions.RequestException as e:
         print(f"Error downloading image for page {page_num} from {url}: {e}", file=sys.stderr)
         return None
+    except Exception as e:
+        # Catch potential Pillow errors (e.g., corrupted image)
+        print(f"Error processing image for page {page_num} from {url}: {e}", file=sys.stderr)
+        return None
+# END MODIFICATION
 
 # ==============================================================================
 # --- Main PDF Generation Logic ---
@@ -162,7 +167,9 @@ def create_storybook_pdf(args, story_data):
 
             # --- IMAGE PAGE ---
             pdf.add_page()
-            image_path = download_image(image_url, image_temp_dir, i)
+            # START MODIFICATION: Call the new download and convert function
+            image_path = download_and_convert_image(image_url, image_temp_dir, i)
+            # END MODIFICATION
             if image_path and os.path.exists(image_path):
                 pdf.image(image_path, x=0, y=0, w=pdf.w, h=pdf.h)
             else:
