@@ -126,13 +126,13 @@
 						if (!empty($page->image_path)) {
 							// Find the prompt associated with this image to check for a successful upscale.
 							$prompt = Prompt::where('filename', $page->image_path)
-								->where('upscale_status', 'succeeded')
+								->where('upscale_status', '2')
 								->whereNotNull('upscale_url')
 								->first();
 
 							if ($prompt) {
 								// An upscaled version exists and is ready, use it.
-								$imageUrl = $prompt->upscale_url;
+								$imageUrl = asset('storage/upscaled/' . $prompt->upscale_url);
 							}
 						}
 
