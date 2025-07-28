@@ -111,7 +111,6 @@ def download_and_convert_image(url, folder, page_num):
         print(f"Error processing image for page {page_num} from {url}: {e}", file=sys.stderr)
         return None
 
-# START MODIFICATION: Update crop mark logic for bookbinding (outer edges only).
 def draw_crop_marks(pdf, page_number):
     """Draws crop marks at the outer corners of the trim box."""
     if pdf.bleed_mm <= 0:
@@ -143,7 +142,6 @@ def draw_crop_marks(pdf, page_number):
         # Bottom-left
         pdf.line(trim_x_left, pdf.h - mark_len, trim_x_left, pdf.h)
         pdf.line(0, trim_y2, mark_len, trim_y2)
-# END MODIFICATION
 
 # ==============================================================================
 # --- Main PDF Generation Logic ---
@@ -169,7 +167,6 @@ def create_storybook_pdf(args, story_data):
         pdf.font_name = "Arial"
         args.font_name = "Arial"
 
-    # START MODIFICATION: Introduce a global page counter for recto/verso logic.
     page_counter = 0
 
     # --- Title Page (Page 1 - Right) ---
@@ -216,12 +213,17 @@ def create_storybook_pdf(args, story_data):
             pdf.logical_page_number = page_counter
             pdf.show_footer = True
 
+            # START MODIFICATION: Corrected wallpaper placement to fill bleed area.
             if args.wallpaper_file and os.path.exists(args.wallpaper_file):
-                # Wallpaper needs to be placed correctly for asymmetrical bleed
                 is_odd_page = page_counter % 2 != 0
-                img_x = 0 if not is_odd_page else pdf.bleed_mm
+                # For a left-side (even) page, x starts at 0. For a right-side (odd) page, x starts at the gutter (bleed_mm).
+                img_x = pdf.bleed_mm if is_odd_page else 0
+                # The width is the trim width plus one side of bleed.
                 img_w = pdf.trim_width + pdf.bleed_mm
-                pdf.image(args.wallpaper_file, x=img_x, y=0, w=img_w, h=pdf.h)
+                # The height is the full page height (trim + 2 * bleed).
+                img_h = pdf.h
+                pdf.image(args.wallpaper_file, x=img_x, y=0, w=img_w, h=img_h)
+            # END MODIFICATION
 
             pdf.draw_rounded_dotted_border(margin=10, radius=10)
             pdf.set_font(args.font_name, '', args.font_size_main)
@@ -246,20 +248,22 @@ def create_storybook_pdf(args, story_data):
             pdf.show_footer = False
             image_path = download_and_convert_image(image_url, image_temp_dir, i)
             if image_path and os.path.exists(image_path):
+                # START MODIFICATION: Corrected image placement to fill bleed area.
                 is_odd_page = page_counter % 2 != 0
-                # On a right-side (odd) page, image starts at the gutter (bleed_mm)
-                # On a left-side (even) page, image starts at the edge (0)
+                # For a left-side (even) page, x starts at 0. For a right-side (odd) page, x starts at the gutter (bleed_mm).
                 img_x = pdf.bleed_mm if is_odd_page else 0
-                # Image width is always trim_width + one side of bleed
+                # The width is the trim width plus one side of bleed.
                 img_w = pdf.trim_width + pdf.bleed_mm
-                pdf.image(image_path, x=img_x, y=0, w=img_w, h=pdf.h)
+                # The height is the full page height (trim + 2 * bleed).
+                img_h = pdf.h
+                pdf.image(image_path, x=img_x, y=0, w=img_w, h=img_h)
+                # END MODIFICATION
             else:
                 pdf.set_font(args.font_name, '', 14)
                 pdf.set_xy(0, pdf.h / 2 - 5)
                 pdf.cell(0, 10, f"Image for page {i} could not be loaded.", align='C')
 
             if args.show_bleed_marks: draw_crop_marks(pdf, page_counter)
-    # END MODIFICATION
 
         pdf.output(args.output_file)
         print(f"\nPDF successfully created: {args.output_file}")

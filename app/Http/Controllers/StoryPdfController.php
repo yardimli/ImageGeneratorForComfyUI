@@ -55,9 +55,10 @@
 			$story->load('user');
 			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
 			$defaultTitlePage = $story->title . "\n\nBy\n" . $story->user->name;
+			$defaultIntroduction = "This is the introduction to the story. It can contain a brief overview, background information, or any other relevant details that set the stage for the narrative.\n\nFeel free to customize this text as needed.";
 			// END MODIFICATION
 
-			return view('story.pdf.setup', compact('story', 'wallpapers', 'defaultCopyright', 'defaultTitlePage'));
+			return view('story.pdf.setup', compact('story', 'wallpapers', 'defaultCopyright', 'defaultTitlePage', 'defaultIntroduction'));
 		}
 
 		/**
