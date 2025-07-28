@@ -3,7 +3,7 @@
 @section('content')
 	<div class="container py-4">
 		<div class="row justify-content-center">
-			<div class="col-md-10"> {{-- Increased width for more space --}}
+			<div class="col-md-10">
 				@if(session('error'))
 					<div class="alert alert-danger">
 						{{ session('error') }}
@@ -30,35 +30,60 @@
 						<form action="{{ route('stories.pdf.generate', $story) }}" method="POST">
 							@csrf
 							
-							{{-- START MODIFICATION: Re-structured form with new fields --}}
+							{{-- START MODIFICATION: Add margin inputs --}}
 							<fieldset class="mb-4">
 								<legend class="h5">Page Layout</legend>
 								<div class="row mb-3">
-									<div class="col-md-3">
+									<div class="col-md-4">
 										<label for="width" class="form-label">Page Width (in)</label>
 										<input type="number" class="form-control" id="width" name="width" value="{{ old('width', '8.5') }}" step="0.1" required>
 									</div>
-									<div class="col-md-3">
+									<div class="col-md-4">
 										<label for="height" class="form-label">Page Height (in)</label>
 										<input type="number" class="form-control" id="height" name="height" value="{{ old('height', '8.5') }}" step="0.1" required>
 									</div>
-									<div class="col-md-3">
+									<div class="col-md-4">
 										<label for="bleed" class="form-label">Bleed (in)</label>
 										<input type="number" class="form-control" id="bleed" name="bleed" value="{{ old('bleed', '0.125') }}" step="0.01" required>
 										<div class="form-text">Amount image extends past trim edge.</div>
 									</div>
+								</div>
+								<div class="row mb-3">
 									<div class="col-md-3">
+										<label for="margin_top" class="form-label">Margin Top (in)</label>
+										<input type="number" class="form-control" id="margin_top" name="margin_top" value="{{ old('margin_top', '0.5') }}" step="0.01" required>
+									</div>
+									<div class="col-md-3">
+										<label for="margin_bottom" class="form-label">Margin Bottom (in)</label>
+										<input type="number" class="form-control" id="margin_bottom" name="margin_bottom" value="{{ old('margin_bottom', '0.5') }}" step="0.01" required>
+									</div>
+									<div class="col-md-3">
+										<label for="margin_inside" class="form-label">Margin Inside (in)</label>
+										<input type="number" class="form-control" id="margin_inside" name="margin_inside" value="{{ old('margin_inside', '0.75') }}" step="0.01" required>
+										<div class="form-text">Gutter/binding side.</div>
+									</div>
+									<div class="col-md-3">
+										<label for="margin_outside" class="form-label">Margin Outside (in)</label>
+										<input type="number" class="form-control" id="margin_outside" name="margin_outside" value="{{ old('margin_outside', '0.5') }}" step="0.01" required>
+										<div class="form-text">Outer edge of page.</div>
+									</div>
+								</div>
+								<div class="row">
+									<div class="col-md-6">
 										<label for="dpi" class="form-label">Image DPI</label>
 										<input type="number" class="form-control" id="dpi" name="dpi" value="{{ old('dpi', '300') }}" step="1" required>
 									</div>
-								</div>
-								<div class="form-check">
-									<input class="form-check-input" type="checkbox" id="show_bleed_marks" name="show_bleed_marks" value="1" {{ old('show_bleed_marks', true) ? 'checked' : '' }}>
-									<label class="form-check-label" for="show_bleed_marks">
-										Show Bleed/Crop Marks
-									</label>
+									<div class="col-md-6 d-flex align-items-end">
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" id="show_bleed_marks" name="show_bleed_marks" value="1" {{ old('show_bleed_marks', true) ? 'checked' : '' }}>
+											<label class="form-check-label" for="show_bleed_marks">
+												Show Bleed/Crop Marks
+											</label>
+										</div>
+									</div>
 								</div>
 							</fieldset>
+							{{-- END MODIFICATION --}}
 							
 							<hr class="my-4">
 							
@@ -120,7 +145,6 @@
 									<div class="col-md col-6"><label for="color_footer" class="form-label">Footer</label><input type="color" class="form-control form-control-color" name="color_footer" id="color_footer" value="{{ old('color_footer', '#808080') }}"></div>
 								</div>
 							</fieldset>
-							{{-- END MODIFICATION --}}
 							
 							<div class="d-flex justify-content-end mt-4">
 								<a href="{{ route('stories.show', $story) }}" class="btn btn-secondary me-2">Cancel</a>

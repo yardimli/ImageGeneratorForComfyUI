@@ -51,11 +51,9 @@
 				}
 			}
 
-			// START MODIFICATION: Prepare default text for new content pages.
 			$story->load('user');
 			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
 			$defaultTitlePage = $story->title . "\n\nBy\n" . $story->user->name;
-			// END MODIFICATION
 
 			return view('story.pdf.setup', compact('story', 'wallpapers', 'defaultCopyright', 'defaultTitlePage'));
 		}
@@ -70,7 +68,7 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
-			// START MODIFICATION: Add validation for all new PDF settings.
+			// START MODIFICATION: Add validation for margin settings.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -78,6 +76,10 @@
 				'bleed' => 'required|numeric|min:0|max:5',
 				'dpi' => 'required|integer|min:72|max:1200',
 				'show_bleed_marks' => 'nullable|boolean',
+				'margin_top' => 'required|numeric|min:0|max:50',
+				'margin_bottom' => 'required|numeric|min:0|max:50',
+				'margin_inside' => 'required|numeric|min:0|max:50',
+				'margin_outside' => 'required|numeric|min:0|max:50',
 				// Content
 				'title_page_text' => 'nullable|string|max:5000',
 				'copyright_text' => 'nullable|string|max:5000',
@@ -108,10 +110,8 @@
 			File::makeDirectory($tempDir, 0755, true, true);
 
 			try {
-				// Load story with relations
 				$story->load('pages', 'user');
 
-				// 1. Prepare data JSON file
 				$storyData = [
 					'title' => $story->title,
 					'author' => $story->user->name,
@@ -125,17 +125,14 @@
 				$dataFile = $tempDir . '/data.json';
 				File::put($dataFile, json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
-				// 2. Prepare paths and arguments for the Python script
 				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
 				$pythonScriptPath = base_path('python/storybook.py');
 
-				// Font path validation
 				$fontFile = resource_path('fonts/' . $validated['font_name'] . '-Regular.ttf');
 				if (!File::exists($fontFile)) {
 					throw new \Exception("Font file not found: " . basename($fontFile));
 				}
 
-				// Wallpaper path validation
 				$wallpaperFile = null;
 				if (!empty($validated['wallpaper'])) {
 					$wallpaperPath = resource_path('wallpapers/' . $validated['wallpaper']);
@@ -144,11 +141,14 @@
 					}
 				}
 
-				// START MODIFICATION: Build the full command with all new arguments.
-				// Convert inches to mm for the script
+				// START MODIFICATION: Convert all dimensions to mm and add margin arguments.
 				$width_mm = $validated['width'] * 25.4;
 				$height_mm = $validated['height'] * 25.4;
 				$bleed_mm = $validated['bleed'] * 25.4;
+				$margin_top_mm = $validated['margin_top'] * 25.4;
+				$margin_bottom_mm = $validated['margin_bottom'] * 25.4;
+				$margin_inside_mm = $validated['margin_inside'] * 25.4;
+				$margin_outside_mm = $validated['margin_outside'] * 25.4;
 
 				$pythonExecutable = config('services.python.executable', 'python3');
 				$command = [
@@ -161,6 +161,10 @@
 					'--height-mm', $height_mm,
 					'--bleed-mm', $bleed_mm,
 					'--dpi', $validated['dpi'],
+					'--margin-top-mm', $margin_top_mm,
+					'--margin-bottom-mm', $margin_bottom_mm,
+					'--margin-inside-mm', $margin_inside_mm,
+					'--margin-outside-mm', $margin_outside_mm,
 					// Content
 					'--title-page-text', $validated['title_page_text'] ?? '',
 					'--copyright-text', $validated['copyright_text'] ?? '',
@@ -190,17 +194,14 @@
 				}
 				// END MODIFICATION
 
-				// 4. Execute the process
 				$process = new Process($command);
-				$process->setTimeout(300); // 5-minute timeout
+				$process->setTimeout(300);
 				$process->run();
 
-				// 5. Check for errors
 				if (!$process->isSuccessful()) {
 					throw new ProcessFailedException($process);
 				}
 
-				// 6. Read file content, then prepare response. Cleanup will happen in `finally`.
 				$pdfContent = File::get($outputFile);
 				$pdfFileName = basename($outputFile);
 
@@ -218,9 +219,7 @@
 				Log::error('PDF Generation Failed: ' . $e->getMessage());
 				return back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
 			} finally {
-				// 7. Clean up the temporary directory and all its contents
 				if (File::isDirectory($tempDir)) {
-					// Commenting out for debugging purposes if needed
 					// File::deleteDirectory($tempDir);
 				}
 			}
