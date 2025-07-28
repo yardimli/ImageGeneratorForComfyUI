@@ -28,7 +28,8 @@ class StorybookPDF(FPDF):
     Custom PDF class with configurable page size, rounded borders, and footers.
     Handles bleed dimensions.
     """
-    def __init__(self, width, height, dpi, font_name, bleed_mm, footer_font_size, footer_color):
+    # START MODIFICATION: Accept page_number_margin_bottom_mm in constructor
+    def __init__(self, width, height, dpi, font_name, bleed_mm, footer_font_size, footer_color, page_number_margin_bottom_mm):
         # Initialize with full bleed dimensions
         super().__init__(orientation='P', unit='mm', format=(width + bleed_mm, height + 2 * bleed_mm))
         self.dpi = dpi
@@ -38,14 +39,18 @@ class StorybookPDF(FPDF):
         self.trim_height = height
         self.footer_font_size = footer_font_size
         self.footer_color = footer_color # This is an (r,g,b) tuple
+        self.page_number_margin_bottom_mm = page_number_margin_bottom_mm
         self.set_auto_page_break(auto=False) # Disable auto page break to manage margins manually
         self.show_footer = False
         self.logical_page_number = 0
+    # END MODIFICATION
 
     def footer(self):
         if self.show_footer:
+            # START MODIFICATION: Use configurable bottom margin for footer position
             # Position footer relative to the bottom of the trim box
-            self.set_y(self.bleed_mm + self.trim_height - 15)
+            self.set_y(self.bleed_mm + self.trim_height - self.page_number_margin_bottom_mm)
+            # END MODIFICATION
             self.set_font(self.font_name, 'I', self.footer_font_size)
             self.set_text_color(*self.footer_color)
             # Center within the trim box
@@ -149,6 +154,7 @@ def draw_crop_marks(pdf, page_number):
 def create_storybook_pdf(args, story_data):
     """Generates the complete storybook PDF from arguments and story data."""
 
+    # START MODIFICATION: Pass new margin argument to PDF class constructor
     pdf = StorybookPDF(
         width=args.width_mm,
         height=args.height_mm,
@@ -156,8 +162,10 @@ def create_storybook_pdf(args, story_data):
         font_name=args.font_name,
         bleed_mm=args.bleed_mm,
         footer_font_size=args.font_size_footer,
-        footer_color=hex_to_rgb(args.color_footer)
+        footer_color=hex_to_rgb(args.color_footer),
+        page_number_margin_bottom_mm=args.page_number_margin_bottom_mm
     )
+    # END MODIFICATION
 
     try:
         pdf.add_font(args.font_name, '', args.font_file)
@@ -169,14 +177,30 @@ def create_storybook_pdf(args, story_data):
 
     page_counter = 0
 
+    # START MODIFICATION: Implement vertical alignment and horizontal margins for special pages
     # --- Title Page (Page 1 - Right) ---
     if args.title_page_text:
         page_counter += 1
         pdf.add_page()
         pdf.set_font(args.font_name, '', args.font_size_title)
         pdf.set_text_color(*hex_to_rgb(args.color_title))
-        pdf.set_xy(pdf.bleed_mm, pdf.bleed_mm)
-        pdf.multi_cell(w=pdf.trim_width, h=15, text=args.title_page_text, align='C', new_x="LMARGIN", new_y="TMARGIN")
+
+        line_height = 15 # A reasonable default for titles
+        cell_width = pdf.trim_width - (2 * args.margin_horizontal_title_mm)
+        lines = pdf.multi_cell(w=cell_width, h=line_height, text=args.title_page_text, align='C', split_only=True)
+        text_block_height = len(lines) * line_height
+
+        y_start = 0
+        if args.valign_title == 'top':
+            y_start = pdf.bleed_mm + args.margin_horizontal_title_mm
+        elif args.valign_title == 'bottom':
+            y_start = pdf.bleed_mm + pdf.trim_height - args.margin_horizontal_title_mm - text_block_height
+        else: # middle
+            y_start = pdf.bleed_mm + (pdf.trim_height - text_block_height) / 2
+
+        pdf.set_xy(pdf.bleed_mm + args.margin_horizontal_title_mm, y_start)
+        pdf.multi_cell(w=cell_width, h=line_height, text=args.title_page_text, align='C')
+
         if args.show_bleed_marks: draw_crop_marks(pdf, page_counter)
 
     # --- Copyright Page (Page 2 - Left) ---
@@ -185,8 +209,23 @@ def create_storybook_pdf(args, story_data):
         pdf.add_page()
         pdf.set_font(args.font_name, '', args.font_size_copyright)
         pdf.set_text_color(*hex_to_rgb(args.color_copyright))
-        pdf.set_xy(pdf.bleed_mm, pdf.h - pdf.bleed_mm - 30)
-        pdf.multi_cell(w=pdf.trim_width, h=5, text=args.copyright_text, align='C', new_x="LMARGIN", new_y="TMARGIN")
+
+        line_height = 5
+        cell_width = pdf.trim_width - (2 * args.margin_horizontal_copyright_mm)
+        lines = pdf.multi_cell(w=cell_width, h=line_height, text=args.copyright_text, align='C', split_only=True)
+        text_block_height = len(lines) * line_height
+
+        y_start = 0
+        if args.valign_copyright == 'top':
+            y_start = pdf.bleed_mm + args.margin_horizontal_copyright_mm
+        elif args.valign_copyright == 'bottom':
+            y_start = pdf.bleed_mm + pdf.trim_height - args.margin_horizontal_copyright_mm - text_block_height
+        else: # middle
+            y_start = pdf.bleed_mm + (pdf.trim_height - text_block_height) / 2
+
+        pdf.set_xy(pdf.bleed_mm + args.margin_horizontal_copyright_mm, y_start)
+        pdf.multi_cell(w=cell_width, h=line_height, text=args.copyright_text, align='C')
+
         if args.show_bleed_marks: draw_crop_marks(pdf, page_counter)
 
     # --- Introduction Page (Page 3 - Right) ---
@@ -195,9 +234,25 @@ def create_storybook_pdf(args, story_data):
         pdf.add_page()
         pdf.set_font(args.font_name, '', args.font_size_introduction)
         pdf.set_text_color(*hex_to_rgb(args.color_introduction))
-        pdf.set_xy(pdf.bleed_mm + 10, pdf.bleed_mm + 10)
-        pdf.multi_cell(w=pdf.trim_width - 20, h=7, text=args.introduction_text, align='J', new_x="LMARGIN", new_y="TMARGIN")
+
+        line_height = 7
+        cell_width = pdf.trim_width - (2 * args.margin_horizontal_introduction_mm)
+        lines = pdf.multi_cell(w=cell_width, h=line_height, text=args.introduction_text, align='J', split_only=True)
+        text_block_height = len(lines) * line_height
+
+        y_start = 0
+        if args.valign_introduction == 'top':
+            y_start = pdf.bleed_mm + args.margin_horizontal_introduction_mm
+        elif args.valign_introduction == 'bottom':
+            y_start = pdf.bleed_mm + pdf.trim_height - args.margin_horizontal_introduction_mm - text_block_height
+        else: # middle
+            y_start = pdf.bleed_mm + (pdf.trim_height - text_block_height) / 2
+
+        pdf.set_xy(pdf.bleed_mm + args.margin_horizontal_introduction_mm, y_start)
+        pdf.multi_cell(w=cell_width, h=line_height, text=args.introduction_text, align='J')
+
         if args.show_bleed_marks: draw_crop_marks(pdf, page_counter)
+    # END MODIFICATION
 
     image_temp_dir = tempfile.mkdtemp(prefix="storybook_images_")
     print(f"Created temporary image directory: {image_temp_dir}")
@@ -223,20 +278,22 @@ def create_storybook_pdf(args, story_data):
                 img_h = pdf.h
                 pdf.image(args.wallpaper_file, x=img_x, y=0, w=img_w, h=img_h)
 
-            pdf.draw_rounded_dotted_border(margin=10, radius=10)
+            # START MODIFICATION: Use configurable horizontal margin for main text
+            pdf.draw_rounded_dotted_border(margin=args.margin_horizontal_main_mm, radius=10)
             pdf.set_font(args.font_name, '', args.font_size_main)
             pdf.set_text_color(*hex_to_rgb(args.color_main))
 
-            border_margin = 10
-            text_area_height = pdf.trim_height - (2 * border_margin)
-            cell_width = pdf.trim_width - (2 * border_margin) - 20
+            h_margin = args.margin_horizontal_main_mm
+            text_area_height = pdf.trim_height - (2 * h_margin)
+            cell_width = pdf.trim_width - (2 * h_margin) - 20 # -20 for padding inside the border
             line_height = 8 * (args.font_size_main / 14)
 
             lines = pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C', split_only=True)
             text_block_height = len(lines) * line_height
-            y_start = pdf.bleed_mm + (text_area_height - text_block_height) / 2 + border_margin
+            y_start = pdf.bleed_mm + (text_area_height - text_block_height) / 2 + h_margin
             pdf.set_xy(pdf.bleed_mm + (pdf.trim_width - cell_width) / 2, y_start)
             pdf.multi_cell(w=cell_width, h=line_height, text=text, align='C')
+            # END MODIFICATION
 
             if args.show_bleed_marks: draw_crop_marks(pdf, page_counter)
 
@@ -246,16 +303,11 @@ def create_storybook_pdf(args, story_data):
             pdf.show_footer = False
             image_path = download_and_convert_image(image_url, image_temp_dir, i)
             if image_path and os.path.exists(image_path):
-                # START MODIFICATION: Corrected image placement to fill bleed area.
                 is_odd_page = page_counter % 2 != 0
-                # For a left-side (even) page, x starts at 0. For a right-side (odd) page, x starts at the gutter (bleed_mm).
                 img_x = 0
-                # The width is the trim width plus one side of bleed.
                 img_w = pdf.trim_width + pdf.bleed_mm
-                # The height is the full page height (trim + 2 * bleed).
                 img_h = pdf.h
                 pdf.image(image_path, x=img_x, y=0, w=img_w, h=img_h)
-                # END MODIFICATION
             else:
                 pdf.set_font(args.font_name, '', 14)
                 pdf.set_xy(0, pdf.h / 2 - 5)
@@ -274,6 +326,7 @@ def create_storybook_pdf(args, story_data):
 # --- Script Entry Point ---
 # ==============================================================================
 if __name__ == "__main__":
+    # START MODIFICATION: Add new arguments for margins and alignment
     parser = argparse.ArgumentParser(description="Generate a storybook PDF from JSON data.")
     # Files
     parser.add_argument("--data-file", required=True, help="Path to the JSON file containing story data.")
@@ -302,6 +355,16 @@ if __name__ == "__main__":
     parser.add_argument("--color-title", default="#1E1E64", help="Hex color for the title page text.")
     parser.add_argument("--color-copyright", default="#000000", help="Hex color for the copyright page text.")
     parser.add_argument("--color-introduction", default="#000000", help="Hex color for the introduction page text.")
+    # New Margin and Alignment Arguments
+    parser.add_argument("--valign-title", choices=['top', 'middle', 'bottom'], default='middle', help="Vertical alignment for the title page.")
+    parser.add_argument("--margin-horizontal-title-mm", type=float, default=25.4, help="Horizontal margin for the title page in mm.")
+    parser.add_argument("--valign-copyright", choices=['top', 'middle', 'bottom'], default='bottom', help="Vertical alignment for the copyright page.")
+    parser.add_argument("--margin-horizontal-copyright-mm", type=float, default=25.4, help="Horizontal margin for the copyright page in mm.")
+    parser.add_argument("--valign-introduction", choices=['top', 'middle', 'bottom'], default='top', help="Vertical alignment for the introduction page.")
+    parser.add_argument("--margin-horizontal-introduction-mm", type=float, default=25.4, help="Horizontal margin for the introduction page in mm.")
+    parser.add_argument("--margin-horizontal-main-mm", type=float, default=19, help="Horizontal margin for main story text pages in mm.")
+    parser.add_argument("--page-number-margin-bottom-mm", type=float, default=12.7, help="Bottom margin for page numbers in mm.")
+    # END MODIFICATION
 
     args = parser.parse_args()
 

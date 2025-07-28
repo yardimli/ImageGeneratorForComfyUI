@@ -4,7 +4,7 @@
 
 	// START MODIFICATION: Import the Prompt model to check for upscaled images.
 	use App\Models\Prompt;
-	// END MODIFICATION
+// END MODIFICATION
 	use App\Models\Story;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\File;
@@ -99,6 +99,15 @@
 				'color_title' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_copyright' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_introduction' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
+				// New Margin and Alignment fields
+				'valign_title' => 'required|string|in:top,middle,bottom',
+				'margin_horizontal_title' => 'required|numeric|min:0',
+				'valign_copyright' => 'required|string|in:top,middle,bottom',
+				'margin_horizontal_copyright' => 'required|numeric|min:0',
+				'valign_introduction' => 'required|string|in:top,middle,bottom',
+				'margin_horizontal_introduction' => 'required|numeric|min:0',
+				'margin_horizontal_main' => 'required|numeric|min:0',
+				'page_number_margin_bottom' => 'required|numeric|min:0',
 			]);
 			// END MODIFICATION
 
@@ -167,9 +176,15 @@
 
 				// START MODIFICATION: Build the full command with all new arguments.
 				// Convert inches to mm for the script
-				$width_mm = $validated['width'] * 25.4;
-				$height_mm = $validated['height'] * 25.4;
-				$bleed_mm = $validated['bleed'] * 25.4;
+				$inch_to_mm = 25.4;
+				$width_mm = $validated['width'] * $inch_to_mm;
+				$height_mm = $validated['height'] * $inch_to_mm;
+				$bleed_mm = $validated['bleed'] * $inch_to_mm;
+				$margin_h_title_mm = $validated['margin_horizontal_title'] * $inch_to_mm;
+				$margin_h_copyright_mm = $validated['margin_horizontal_copyright'] * $inch_to_mm;
+				$margin_h_introduction_mm = $validated['margin_horizontal_introduction'] * $inch_to_mm;
+				$margin_h_main_mm = $validated['margin_horizontal_main'] * $inch_to_mm;
+				$page_number_margin_bottom_mm = $validated['page_number_margin_bottom'] * $inch_to_mm;
 
 				$pythonExecutable = config('services.python.executable', 'python3');
 				$command = [
@@ -199,6 +214,15 @@
 					'--color-title', $validated['color_title'],
 					'--color-copyright', $validated['color_copyright'],
 					'--color-introduction', $validated['color_introduction'],
+					// New Margin and Alignment arguments
+					'--valign-title', $validated['valign_title'],
+					'--margin-horizontal-title-mm', $margin_h_title_mm,
+					'--valign-copyright', $validated['valign_copyright'],
+					'--margin-horizontal-copyright-mm', $margin_h_copyright_mm,
+					'--valign-introduction', $validated['valign_introduction'],
+					'--margin-horizontal-introduction-mm', $margin_h_introduction_mm,
+					'--margin-horizontal-main-mm', $margin_h_main_mm,
+					'--page-number-margin-bottom-mm', $page_number_margin_bottom_mm,
 				];
 
 				if ($validated['show_bleed_marks'] ?? false) {

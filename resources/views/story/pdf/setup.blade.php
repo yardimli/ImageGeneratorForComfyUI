@@ -30,7 +30,7 @@
 						<form action="{{ route('stories.pdf.generate', $story) }}" method="POST">
 							@csrf
 							
-							{{-- START MODIFICATION: Re-structured form with new fields --}}
+							{{-- START MODIFICATION: Re-structured form with new fields and added margin/alignment settings --}}
 							<fieldset class="mb-4">
 								<legend class="h5">Page Layout</legend>
 								<div class="row mb-3">
@@ -64,17 +64,65 @@
 							
 							<fieldset class="mb-4">
 								<legend class="h5">Content Pages</legend>
-								<div class="mb-3">
-									<label for="title_page_text" class="form-label">Title Page Content</label>
+								
+								{{-- Title Page --}}
+								<div class="mb-3 p-3 border rounded">
+									<label for="title_page_text" class="form-label fw-bold">Title Page Content</label>
 									<textarea class="form-control" id="title_page_text" name="title_page_text" rows="4">{{ old('title_page_text', $defaultTitlePage) }}</textarea>
+									<div class="row mt-2">
+										<div class="col-md-4">
+											<label for="valign_title" class="form-label small text-muted">Vertical Alignment</label>
+											<select class="form-select form-select-sm" id="valign_title" name="valign_title">
+												<option value="top" {{ old('valign_title') == 'top' ? 'selected' : '' }}>Top</option>
+												<option value="middle" {{ old('valign_title', 'middle') == 'middle' ? 'selected' : '' }}>Middle</option>
+												<option value="bottom" {{ old('valign_title') == 'bottom' ? 'selected' : '' }}>Bottom</option>
+											</select>
+										</div>
+										<div class="col-md-4">
+											<label for="margin_horizontal_title" class="form-label small text-muted">Horiz. Margin (in)</label>
+											<input type="number" class="form-control form-control-sm" id="margin_horizontal_title" name="margin_horizontal_title" value="{{ old('margin_horizontal_title', '1.0') }}" step="0.1" required>
+										</div>
+									</div>
 								</div>
-								<div class="mb-3">
-									<label for="copyright_text" class="form-label">Copyright Page Content</label>
+								
+								{{-- Copyright Page --}}
+								<div class="mb-3 p-3 border rounded">
+									<label for="copyright_text" class="form-label fw-bold">Copyright Page Content</label>
 									<textarea class="form-control" id="copyright_text" name="copyright_text" rows="4">{{ old('copyright_text', $defaultCopyright) }}</textarea>
+									<div class="row mt-2">
+										<div class="col-md-4">
+											<label for="valign_copyright" class="form-label small text-muted">Vertical Alignment</label>
+											<select class="form-select form-select-sm" id="valign_copyright" name="valign_copyright">
+												<option value="top" {{ old('valign_copyright') == 'top' ? 'selected' : '' }}>Top</option>
+												<option value="middle" {{ old('valign_copyright') == 'middle' ? 'selected' : '' }}>Middle</option>
+												<option value="bottom" {{ old('valign_copyright', 'bottom') == 'bottom' ? 'selected' : '' }}>Bottom</option>
+											</select>
+										</div>
+										<div class="col-md-4">
+											<label for="margin_horizontal_copyright" class="form-label small text-muted">Horiz. Margin (in)</label>
+											<input type="number" class="form-control form-control-sm" id="margin_horizontal_copyright" name="margin_horizontal_copyright" value="{{ old('margin_horizontal_copyright', '1.0') }}" step="0.1" required>
+										</div>
+									</div>
 								</div>
-								<div class="mb-3">
-									<label for="introduction_text" class="form-label">Introduction / Dedication (Optional)</label>
+								
+								{{-- Introduction Page --}}
+								<div class="mb-3 p-3 border rounded">
+									<label for="introduction_text" class="form-label fw-bold">Introduction / Dedication (Optional)</label>
 									<textarea class="form-control" id="introduction_text" name="introduction_text" rows="4">{{ old('introduction_text', $defaultIntroduction) }}</textarea>
+									<div class="row mt-2">
+										<div class="col-md-4">
+											<label for="valign_introduction" class="form-label small text-muted">Vertical Alignment</label>
+											<select class="form-select form-select-sm" id="valign_introduction" name="valign_introduction">
+												<option value="top" {{ old('valign_introduction', 'top') == 'top' ? 'selected' : '' }}>Top</option>
+												<option value="middle" {{ old('valign_introduction') == 'middle' ? 'selected' : '' }}>Middle</option>
+												<option value="bottom" {{ old('valign_introduction') == 'bottom' ? 'selected' : '' }}>Bottom</option>
+											</select>
+										</div>
+										<div class="col-md-4">
+											<label for="margin_horizontal_introduction" class="form-label small text-muted">Horiz. Margin (in)</label>
+											<input type="number" class="form-control form-control-sm" id="margin_horizontal_introduction" name="margin_horizontal_introduction" value="{{ old('margin_horizontal_introduction', '1.0') }}" step="0.1" required>
+										</div>
+									</div>
 								</div>
 							</fieldset>
 							
@@ -109,6 +157,18 @@
 									<div class="col-md col-6"><label for="font_size_introduction" class="form-label">Intro</label><input type="number" class="form-control" name="font_size_introduction" id="font_size_introduction" value="{{ old('font_size_introduction', 12) }}"></div>
 									<div class="col-md col-6"><label for="font_size_main" class="form-label">Main Text</label><input type="number" class="form-control" name="font_size_main" id="font_size_main" value="{{ old('font_size_main', 14) }}"></div>
 									<div class="col-md col-6"><label for="font_size_footer" class="form-label">Footer</label><input type="number" class="form-control" name="font_size_footer" id="font_size_footer" value="{{ old('font_size_footer', 10) }}"></div>
+								</div>
+								
+								<h6 class="mt-4">Margins (in)</h6>
+								<div class="row mb-3">
+									<div class="col-md-4">
+										<label for="margin_horizontal_main" class="form-label">Main Text H. Margin</label>
+										<input type="number" class="form-control" name="margin_horizontal_main" value="{{ old('margin_horizontal_main', '0.75') }}" step="0.1" required>
+									</div>
+									<div class="col-md-4">
+										<label for="page_number_margin_bottom" class="form-label">Footer Bottom Margin</label>
+										<input type="number" class="form-control" name="page_number_margin_bottom" value="{{ old('page_number_margin_bottom', '0.5') }}" step="0.1" required>
+									</div>
 								</div>
 								
 								<h6 class="mt-4">Colors</h6>
