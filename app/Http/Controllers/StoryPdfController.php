@@ -19,17 +19,15 @@
 	 * Note: This controller requires the 'tecnickcom/tc-lib-pdf' package.
 	 * Please run `composer require tecnickcom/tc-lib-pdf tecnickcom/tc-lib-pdf-font tecnickcom/tc-lib-pdf-image`.
 	 *
-	 * START MODIFICATION: Add instructions for configuring the Python executable path.
 	 * IMPORTANT: This controller executes a Python script. Ensure Python 3 is installed.
 	 * On some systems (like Windows), the Python executable might be 'python' instead of 'python3'.
 	 * You can configure this in your .env file:
-	 * PYTHON_EXECUTABLE=python
+	 * PYTHON_EXECUTABLE_PATH=python
 	 *
 	 * And reference it in config/services.php:
 	 * 'python' => [
-	 *     'executable' => env('PYTHON_EXECUTABLE', 'python3'),
+	 *     'executable' => env('PYTHON_EXECUTABLE_PATH', 'python3'),
 	 * ],
-	 * END MODIFICATION
 	 */
 	class StoryPdfController extends Controller
 	{
@@ -53,7 +51,13 @@
 				}
 			}
 
-			return view('story.pdf.setup', compact('story', 'wallpapers'));
+			// START MODIFICATION: Prepare default text for new content pages.
+			$story->load('user');
+			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
+			$defaultTitlePage = $story->title . "\n\nBy\n" . $story->user->name;
+			// END MODIFICATION
+
+			return view('story.pdf.setup', compact('story', 'wallpapers', 'defaultCopyright', 'defaultTitlePage'));
 		}
 
 		/**
@@ -66,13 +70,33 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
+			// START MODIFICATION: Add validation for all new PDF settings.
 			$validator = Validator::make($request->all(), [
+				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
 				'height' => 'required|numeric|min:1|max:50',
+				'bleed' => 'required|numeric|min:0|max:5',
 				'dpi' => 'required|integer|min:72|max:1200',
-				'font_name' => 'required|string|max:100',
+				'show_bleed_marks' => 'nullable|boolean',
+				// Content
+				'title_page_text' => 'nullable|string|max:5000',
+				'copyright_text' => 'nullable|string|max:5000',
+				'introduction_text' => 'nullable|string|max:10000',
 				'wallpaper' => 'nullable|string',
+				// Styling
+				'font_name' => 'required|string|max:100',
+				'font_size_main' => 'required|numeric|min:6|max:72',
+				'font_size_footer' => 'required|numeric|min:6|max:72',
+				'font_size_title' => 'required|numeric|min:6|max:72',
+				'font_size_copyright' => 'required|numeric|min:6|max:72',
+				'font_size_introduction' => 'required|numeric|min:6|max:72',
+				'color_main' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
+				'color_footer' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
+				'color_title' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
+				'color_copyright' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
+				'color_introduction' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 			]);
+			// END MODIFICATION
 
 			if ($validator->fails()) {
 				return back()->withErrors($validator)->withInput();
@@ -90,7 +114,7 @@
 				// 1. Prepare data JSON file
 				$storyData = [
 					'title' => $story->title,
-					'subtitle' => 'By ' . $story->user->name,
+					'author' => $story->user->name,
 					'pages' => $story->pages->map(function ($page) {
 						return [
 							'text' => $page->story_text ?? '',
@@ -113,35 +137,58 @@
 
 				// Wallpaper path validation
 				$wallpaperFile = null;
-				if ($validated['wallpaper']) {
+				if (!empty($validated['wallpaper'])) {
 					$wallpaperPath = resource_path('wallpapers/' . $validated['wallpaper']);
 					if (File::exists($wallpaperPath)) {
 						$wallpaperFile = $wallpaperPath;
 					}
 				}
 
+				// START MODIFICATION: Build the full command with all new arguments.
 				// Convert inches to mm for the script
 				$width_mm = $validated['width'] * 25.4;
 				$height_mm = $validated['height'] * 25.4;
+				$bleed_mm = $validated['bleed'] * 25.4;
 
-				$pythonExecutable = env('PYTHON_EXECUTABLE_PATH', 'python3');
+				$pythonExecutable = config('services.python.executable', 'python3');
 				$command = [
 					$pythonExecutable,
 					$pythonScriptPath,
 					'--data-file', $dataFile,
 					'--output-file', $outputFile,
+					// Page Layout
 					'--width-mm', $width_mm,
 					'--height-mm', $height_mm,
+					'--bleed-mm', $bleed_mm,
 					'--dpi', $validated['dpi'],
+					// Content
+					'--title-page-text', $validated['title_page_text'] ?? '',
+					'--copyright-text', $validated['copyright_text'] ?? '',
+					'--introduction-text', $validated['introduction_text'] ?? '',
+					// Styling
 					'--font-name', $validated['font_name'],
 					'--font-file', $fontFile,
+					'--font-size-main', $validated['font_size_main'],
+					'--font-size-footer', $validated['font_size_footer'],
+					'--font-size-title', $validated['font_size_title'],
+					'--font-size-copyright', $validated['font_size_copyright'],
+					'--font-size-introduction', $validated['font_size_introduction'],
+					'--color-main', $validated['color_main'],
+					'--color-footer', $validated['color_footer'],
+					'--color-title', $validated['color_title'],
+					'--color-copyright', $validated['color_copyright'],
+					'--color-introduction', $validated['color_introduction'],
 				];
-				// END MODIFICATION
+
+				if ($validated['show_bleed_marks'] ?? false) {
+					$command[] = '--show-bleed-marks';
+				}
 
 				if ($wallpaperFile) {
 					$command[] = '--wallpaper-file';
 					$command[] = $wallpaperFile;
 				}
+				// END MODIFICATION
 
 				// 4. Execute the process
 				$process = new Process($command);
@@ -173,7 +220,8 @@
 			} finally {
 				// 7. Clean up the temporary directory and all its contents
 				if (File::isDirectory($tempDir)) {
-//					File::deleteDirectory($tempDir);
+					// Commenting out for debugging purposes if needed
+					// File::deleteDirectory($tempDir);
 				}
 			}
 		}
