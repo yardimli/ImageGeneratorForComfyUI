@@ -2,6 +2,9 @@
 
 	namespace App\Http\Controllers;
 
+	// START MODIFICATION: Import the Prompt model to check for upscaled images.
+	use App\Models\Prompt;
+	// END MODIFICATION
 	use App\Models\Story;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\File;
@@ -113,16 +116,33 @@
 				$story->load('pages', 'user');
 
 				// 1. Prepare data JSON file
+				// START MODIFICATION: Check for upscaled images when preparing data.
 				$storyData = [
 					'title' => $story->title,
 					'author' => $story->user->name,
 					'pages' => $story->pages->map(function ($page) {
+						$imageUrl = $page->image_path; // Default to the original image
+
+						if (!empty($page->image_path)) {
+							// Find the prompt associated with this image to check for a successful upscale.
+							$prompt = Prompt::where('filename', $page->image_path)
+								->where('upscale_status', 'succeeded')
+								->whereNotNull('upscale_url')
+								->first();
+
+							if ($prompt) {
+								// An upscaled version exists and is ready, use it.
+								$imageUrl = $prompt->upscale_url;
+							}
+						}
+
 						return [
 							'text' => $page->story_text ?? '',
-							'image_url' => $page->image_path,
+							'image_url' => $imageUrl,
 						];
 					})->toArray(),
 				];
+				// END MODIFICATION
 				$dataFile = $tempDir . '/data.json';
 				File::put($dataFile, json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 

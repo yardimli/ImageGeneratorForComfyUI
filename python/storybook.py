@@ -213,16 +213,39 @@ def create_storybook_pdf(args, story_data):
             pdf.logical_page_number = page_counter
             pdf.show_footer = True
 
+            # --- TEXT PAGE (Even pages: 4, 6, 8...) ---
             # START MODIFICATION: Corrected wallpaper placement to fill bleed area.
             if args.wallpaper_file and os.path.exists(args.wallpaper_file):
                 is_odd_page = page_counter % 2 != 0
-                # For a left-side (even) page, x starts at 0. For a right-side (odd) page, x starts at the gutter (bleed_mm).
-                img_x = pdf.bleed_mm if is_odd_page else 0
-                # The width is the trim width plus one side of bleed.
-                img_w = pdf.trim_width + pdf.bleed_mm
+                # Always start at x=0 to fill from the left edge
+                img_x = 0
+                # For even (left) pages: extend into left bleed. For odd (right) pages: extend into right bleed
+                if is_odd_page:
+                    # Right page: full trim width + right bleed
+                    img_w = pdf.bleed_mm + pdf.trim_width + pdf.bleed_mm
+                else:
+                    # Left page: left bleed + full trim width + inner margin (which is bleed_mm)
+                    img_w = pdf.bleed_mm + pdf.trim_width + pdf.bleed_mm
                 # The height is the full page height (trim + 2 * bleed).
                 img_h = pdf.h
                 pdf.image(args.wallpaper_file, x=img_x, y=0, w=img_w, h=img_h)
+            # END MODIFICATION
+
+            # --- IMAGE PAGE (Odd pages: 5, 7, 9...) ---
+            # START MODIFICATION: Corrected image placement to fill bleed area.
+            is_odd_page = page_counter % 2 != 0
+            # Always start at x=0 to fill from the left edge
+            img_x = 0
+            # For even (left) pages: extend into left bleed. For odd (right) pages: extend into right bleed
+            if is_odd_page:
+                # Right page: full trim width + right bleed + inner margin
+                img_w = pdf.bleed_mm + pdf.trim_width + pdf.bleed_mm
+            else:
+                # Left page: left bleed + full trim width + inner margin
+                img_w = pdf.bleed_mm + pdf.trim_width + pdf.bleed_mm
+            # The height is the full page height (trim + 2 * bleed).
+            img_h = pdf.h
+            pdf.image(image_path, x=img_x, y=0, w=img_w, h=img_h)
             # END MODIFICATION
 
             pdf.draw_rounded_dotted_border(margin=10, radius=10)
