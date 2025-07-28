@@ -173,7 +173,7 @@
 			} finally {
 				// 7. Clean up the temporary directory and all its contents
 				if (File::isDirectory($tempDir)) {
-					File::deleteDirectory($tempDir);
+//					File::deleteDirectory($tempDir);
 				}
 			}
 		}
