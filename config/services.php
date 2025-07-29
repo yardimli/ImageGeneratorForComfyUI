@@ -35,4 +35,8 @@
 			'key' => env('OPEN_ROUTER_API_KEY'),
 		],
 
+		'python' => [
+			'executable' => env('PYTHON_EXECUTABLE_PATH', 'python3'),
+		]
+
 	];
