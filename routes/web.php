@@ -152,11 +152,27 @@
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
+			// START MODIFICATION: Add routes for character and place prompt generation.
+			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
+			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');
+			// END MODIFICATION
 
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
 			});
+
+			// START MODIFICATION: Add routes for character and place image generation.
+			Route::prefix('characters/{character}')->name('characters.')->group(function () {
+				Route::post('/generate-image', [StoryImageController::class, 'generateForCharacter'])->name('generate-image');
+				Route::get('/image-status', [StoryImageController::class, 'checkCharacterStatus'])->name('image-status');
+			});
+
+			Route::prefix('places/{place}')->name('places.')->group(function () {
+				Route::post('/generate-image', [StoryImageController::class, 'generateForPlace'])->name('generate-image');
+				Route::get('/image-status', [StoryImageController::class, 'checkPlaceStatus'])->name('image-status');
+			});
+			// END MODIFICATION
 
 			Route::get('/{story}/characters', [StoryController::class, 'characters'])->name('characters');
 			Route::post('/{story}/characters', [StoryController::class, 'updateCharacters'])->name('characters.update');

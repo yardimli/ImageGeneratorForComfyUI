@@ -287,21 +287,8 @@ PROMPT;
 			// START MODIFICATION: Check for generated images and load prompt data for upscaling.
 			foreach ($story->pages as $page) {
 				$page->prompt_data = null; // Initialize
-				if (empty($page->image_path) && $page->id) {
-					// Find the latest successfully generated image for this page from the prompts table.
-					$generatedImage = Prompt::where('story_page_id', $page->id)
-						->whereNotNull('filename')
-						->latest('updated_at')
-						->first();
-
-					if ($generatedImage) {
-						// This will pre-fill the image path in the view.
-						$page->image_path = $generatedImage->filename;
-						// Also attach the prompt data so the new image can be upscaled immediately.
-						$page->prompt_data = $generatedImage;
-					}
-				} elseif (!empty($page->image_path)) {
-					// If an image path already exists, find its prompt data for the modal.
+				if ($page->id) {
+					// Find the prompt data for the current image path.
 					$page->prompt_data = Prompt::where('filename', $page->image_path)
 						->select('id', 'upscale_status', 'upscale_url', 'filename')
 						->first();
@@ -521,17 +508,167 @@ PROMPT;
 		}
 		// END MODIFICATION
 
+		// START NEW MODIFICATION: Add methods for Character/Place AI image prompt generation.
+		/**
+		 * Generate an image prompt for a story character using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generateCharacterImagePrompt(Request $request, LlmController $llmController)
+		{
+			return $this->generateAssetImagePrompt($request, $llmController, 'character');
+		}
+
+		/**
+		 * Generate an image prompt for a story place using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generatePlaceImagePrompt(Request $request, LlmController $llmController)
+		{
+			return $this->generateAssetImagePrompt($request, $llmController, 'place');
+		}
+
+		/**
+		 * Generic handler for generating asset (character/place) image prompts.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @param string $assetType
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		private function generateAssetImagePrompt(Request $request, LlmController $llmController, string $assetType)
+		{
+			$validated = $request->validate([
+				'description' => 'required|string',
+				'instructions' => 'nullable|string|max:1000',
+				'model' => 'required|string',
+			]);
+
+			$prompt = $this->buildAssetImageGenerationPrompt(
+				$validated['description'],
+				$assetType,
+				$validated['instructions'] ?? ''
+			);
+
+			try {
+				$response = $llmController->callLlmSync(
+					$prompt,
+					$validated['model'],
+					'AI Asset Image Prompt Generation',
+					0.7,
+					'json_object'
+				);
+
+				$generatedPrompt = $response['prompt'] ?? null;
+
+				if (!$generatedPrompt) {
+					Log::error("AI {$assetType} Image Prompt Generation failed to return a valid prompt.", ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'prompt' => trim($generatedPrompt)
+				]);
+
+			} catch (\Exception $e) {
+				Log::error("AI {$assetType} Image Prompt Generation Failed: " . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
+			}
+		}
+
+		/**
+		 * Builds the prompt for the LLM to generate an image prompt for an asset.
+		 *
+		 * @param string $assetDescription
+		 * @param string $assetType
+		 * @param string $userInstructions
+		 * @return string
+		 */
+		private function buildAssetImageGenerationPrompt(string $assetDescription, string $assetType, string $userInstructions): string
+		{
+			$instructionsText = !empty($userInstructions) ? "User's specific instructions: \"{$userInstructions}\"" : "No specific instructions from the user.";
+
+			$jsonStructure = <<<'JSON'
+{
+  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
+}
+JSON;
+
+			return <<<PROMPT
+You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
+Your task is to create a single, concise, and descriptive image prompt for a story {$assetType}.
+
+**Context:**
+1.  **{$assetType} Description:**
+    "{$assetDescription}"
+
+2.  **User Guidance:**
+    {$instructionsText}
+
+**Instructions:**
+- Synthesize all the information to create a vivid image prompt for a portrait or scene featuring this {$assetType}.
+- The prompt should be a single paragraph of comma-separated descriptive phrases.
+- Focus on visual details: appearance, key features, mood, and lighting.
+- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+- The JSON object must follow this exact structure:
+{$jsonStructure}
+
+Now, generate the image prompt for the provided context in the specified JSON format.
+PROMPT;
+		}
+		// END NEW MODIFICATION
+
 		/**
 		 * Show the character management page for a story.
 		 */
-		public function characters(Story $story)
+		public function characters(Story $story, LlmController $llmController)
 		{
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
 
 			$story->load('characters');
-			return view('story.characters', compact('story'));
+
+			// START MODIFICATION: Load prompt data for images and AI models for modals.
+			foreach ($story->characters as $character) {
+				$character->prompt_data = null;
+				if ($character->id && !empty($character->image_path)) {
+					$character->prompt_data = Prompt::where('filename', $character->image_path)
+						->select('id', 'upscale_status', 'upscale_url', 'filename')
+						->first();
+				}
+			}
+
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for Story Characters: ' . $e->getMessage());
+				$models = [];
+				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
+			}
+
+			$imageModels = [
+				['id' => 'schnell', 'name' => 'Schnell'],
+				['id' => 'dev', 'name' => 'Dev'],
+				['id' => 'outpaint', 'name' => 'Outpaint'],
+				['id' => 'minimax', 'name' => 'MiniMax'],
+				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
+				['id' => 'imagen3', 'name' => 'Imagen 3'],
+				['id' => 'aura-flow', 'name' => 'Aura Flow'],
+				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
+				['id' => 'luma-photon', 'name' => 'Luma Photon'],
+				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+			];
+			// END MODIFICATION
+
+			return view('story.characters', compact('story', 'models', 'imageModels'));
 		}
 
 		/**
@@ -543,25 +680,31 @@ PROMPT;
 				abort(403, 'Unauthorized action.');
 			}
 
+			// START MODIFICATION: Add validation for image_prompt.
 			$validated = $request->validate([
 				'characters' => 'nullable|array',
 				'characters.*.id' => 'nullable|integer|exists:story_characters,id',
 				'characters.*.name' => 'required|string|max:255',
 				'characters.*.description' => 'nullable|string',
+				'characters.*.image_prompt' => 'nullable|string',
 				'characters.*.image_path' => 'nullable|string|max:2048',
 			]);
+			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated) {
 				$incomingIds = [];
 				if (isset($validated['characters'])) {
 					foreach ($validated['characters'] as $charData) {
+						// START MODIFICATION: Add image_prompt to values.
 						$values = [
 							'story_id' => $story->id,
 							'name' => $charData['name'],
 							'description' => $charData['description'] ?? null,
+							'image_prompt' => $charData['image_prompt'] ?? null,
 							'image_path' => $charData['image_path'] ?? null,
 						];
-						$character = StoryCharacter::updateOrCreate(['id' => $charData['id'] ?? null], $values);
+						// END MODIFICATION
+						$character = StoryCharacter::updateOrCreate(['id' => $charData['id'] ?? null, 'story_id' => $story->id], $values);
 						$incomingIds[] = $character->id;
 					}
 				}
@@ -575,14 +718,48 @@ PROMPT;
 		/**
 		 * Show the place management page for a story.
 		 */
-		public function places(Story $story)
+		public function places(Story $story, LlmController $llmController)
 		{
 			if ($story->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
 
 			$story->load('places');
-			return view('story.places', compact('story'));
+
+			// START MODIFICATION: Load prompt data for images and AI models for modals.
+			foreach ($story->places as $place) {
+				$place->prompt_data = null;
+				if ($place->id && !empty($place->image_path)) {
+					$place->prompt_data = Prompt::where('filename', $place->image_path)
+						->select('id', 'upscale_status', 'upscale_url', 'filename')
+						->first();
+				}
+			}
+
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for Story Places: ' . $e->getMessage());
+				$models = [];
+				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
+			}
+
+			$imageModels = [
+				['id' => 'schnell', 'name' => 'Schnell'],
+				['id' => 'dev', 'name' => 'Dev'],
+				['id' => 'outpaint', 'name' => 'Outpaint'],
+				['id' => 'minimax', 'name' => 'MiniMax'],
+				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
+				['id' => 'imagen3', 'name' => 'Imagen 3'],
+				['id' => 'aura-flow', 'name' => 'Aura Flow'],
+				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
+				['id' => 'luma-photon', 'name' => 'Luma Photon'],
+				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+			];
+			// END MODIFICATION
+
+			return view('story.places', compact('story', 'models', 'imageModels'));
 		}
 
 		/**
@@ -594,25 +771,31 @@ PROMPT;
 				abort(403, 'Unauthorized action.');
 			}
 
+			// START MODIFICATION: Add validation for image_prompt.
 			$validated = $request->validate([
 				'places' => 'nullable|array',
 				'places.*.id' => 'nullable|integer|exists:story_places,id',
 				'places.*.name' => 'required|string|max:255',
 				'places.*.description' => 'nullable|string',
+				'places.*.image_prompt' => 'nullable|string',
 				'places.*.image_path' => 'nullable|string|max:2048',
 			]);
+			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated) {
 				$incomingIds = [];
 				if (isset($validated['places'])) {
 					foreach ($validated['places'] as $placeData) {
+						// START MODIFICATION: Add image_prompt to values.
 						$values = [
 							'story_id' => $story->id,
 							'name' => $placeData['name'],
 							'description' => $placeData['description'] ?? null,
+							'image_prompt' => $placeData['image_prompt'] ?? null,
 							'image_path' => $placeData['image_path'] ?? null,
 						];
-						$place = StoryPlace::updateOrCreate(['id' => $placeData['id'] ?? null], $values);
+						// END MODIFICATION
+						$place = StoryPlace::updateOrCreate(['id' => $placeData['id'] ?? null, 'story_id' => $story->id], $values);
 						$incomingIds[] = $place->id;
 					}
 				}

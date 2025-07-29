@@ -10,14 +10,16 @@ document.addEventListener('DOMContentLoaded', function () {
 		templateId: 'character-template',
 		cardSelector: '.character-card',
 		removeBtnSelector: '.remove-character-btn',
-		namePrefix: 'characters'
+		namePrefix: 'characters',
+		assetType: 'character'
 	} : {
 		containerId: 'places-container',
 		addBtnId: 'add-place-btn',
 		templateId: 'place-template',
 		cardSelector: '.place-card',
 		removeBtnSelector: '.remove-place-btn',
-		namePrefix: 'places'
+		namePrefix: 'places',
+		assetType: 'place'
 	};
 	
 	const container = document.getElementById(config.containerId);
@@ -28,7 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	const cropperModalEl = document.getElementById('cropperModal');
 	const cropperModal = new bootstrap.Modal(cropperModalEl);
 	const imageToCrop = document.getElementById('imageToCrop');
-	const historyModal = new bootstrap.Modal(document.getElementById('historyModal'));
+	const historyModalEl = document.getElementById('historyModal');
+	const historyModal = new bootstrap.Modal(historyModalEl);
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let cropper;
 	let activeImageUploadContainer = null;
@@ -158,20 +161,20 @@ document.addEventListener('DOMContentLoaded', function () {
 		const source = document.getElementById('historySource').value;
 		const sort = document.getElementById('historySort').value;
 		const perPage = document.getElementById('historyPerPage').value;
-		const container = document.getElementById('historyImagesContainer');
-		container.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
+		const historyContainer = document.getElementById('historyImagesContainer');
+		historyContainer.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 		
 		const endpoint = source === 'uploads' ? `/image-mix/uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
 		const response = await fetch(endpoint);
 		const data = await response.json();
 		
-		container.innerHTML = '';
+		historyContainer.innerHTML = '';
 		const images = source === 'uploads' ? data.images : data.data;
 		images.forEach(img => {
 			const imageUrl = source === 'uploads' ? img.path : img.image_url;
 			const thumbUrl = source === 'uploads' ? img.path : img.thumbnail_url;
 			const name = source === 'uploads' ? img.name : img.generated_prompt;
-			container.innerHTML += `
+			historyContainer.innerHTML += `
                 <div class="col-lg-2 col-md-3 col-sm-4 mb-3">
                     <div class="card history-image-card" data-path="${imageUrl}">
                         <img src="${thumbUrl}" class="card-img-top" alt="${name}">
@@ -183,23 +186,25 @@ document.addEventListener('DOMContentLoaded', function () {
 		renderPagination(document.getElementById('historyPagination'), paginationData);
 	}
 	
-	function renderPagination(container, data) {
-		container.innerHTML = '';
+	function renderPagination(paginationContainer, data) {
+		paginationContainer.innerHTML = '';
 		if (!data || data.total_pages <= 1) return;
 		for (let i = 1; i <= data.total_pages; i++) {
-			container.innerHTML += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+			paginationContainer.innerHTML += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
 		}
 	}
 	
-	document.getElementById('historyModal').addEventListener('click', e => {
-		if (e.target.closest('.page-link')) {
-			e.preventDefault();
-			loadHistory(parseInt(e.target.dataset.page));
-		} else if (e.target.closest('.history-image-card')) {
-			document.querySelectorAll('.history-image-card.selected').forEach(c => c.classList.remove('selected'));
-			e.target.closest('.history-image-card').classList.add('selected');
-		}
-	});
+	if (historyModalEl) {
+		historyModalEl.addEventListener('click', e => {
+			if (e.target.closest('.page-link')) {
+				e.preventDefault();
+				loadHistory(parseInt(e.target.dataset.page));
+			} else if (e.target.closest('.history-image-card')) {
+				document.querySelectorAll('.history-image-card.selected').forEach(c => c.classList.remove('selected'));
+				e.target.closest('.history-image-card').classList.add('selected');
+			}
+		});
+	}
 	
 	// START MODIFICATION: Add handlers for new image upload from history modal.
 	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
@@ -235,7 +240,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
-	['historySource', 'historySort', 'historyPerPage'].forEach(id => document.getElementById(id).addEventListener('change', () => loadHistory(1)));
+	['historySource', 'historySort', 'historyPerPage'].forEach(id => {
+		const el = document.getElementById(id);
+		if (el) el.addEventListener('change', () => loadHistory(1));
+	});
 	
 	// --- Main Logic ---
 	function reindexAssetNames() {
@@ -272,4 +280,303 @@ document.addEventListener('DOMContentLoaded', function () {
 			historyModal.show();
 		}
 	});
+	
+	// START NEW MODIFICATION: Logic for AI Image Prompt and Image Generation
+	function decodeHtmlEntities(str) {
+		return str
+			.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
+			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
+	}
+	
+	// -- AI Prompt Generation Modal Logic --
+	const generatePromptModalEl = document.getElementById('generatePromptModal');
+	if (generatePromptModalEl) {
+		const generatePromptModal = new bootstrap.Modal(generatePromptModalEl);
+		const writePromptBtn = document.getElementById('write-prompt-btn');
+		const updatePromptBtn = document.getElementById('update-prompt-btn');
+		const promptResultArea = document.getElementById('prompt-result-area');
+		const generatedPromptText = document.getElementById('generated-prompt-text');
+		let activeImagePromptTextarea = null;
+		
+		const promptModelKey = 'storyAsset_promptModel';
+		const promptInstructionsKey = 'storyAsset_promptInstructions';
+		
+		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
+			const savedModel = localStorage.getItem(promptModelKey);
+			if (savedModel) document.getElementById('prompt-model').value = savedModel;
+			const savedInstructions = localStorage.getItem(promptInstructionsKey);
+			if (savedInstructions) document.getElementById('prompt-instructions').value = savedInstructions;
+		});
+		
+		document.getElementById('prompt-model').addEventListener('change', (e) => localStorage.setItem(promptModelKey, e.target.value));
+		document.getElementById('prompt-instructions').addEventListener('input', (e) => localStorage.setItem(promptInstructionsKey, e.target.value));
+		
+		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
+			activeImagePromptTextarea = null;
+			promptResultArea.classList.add('d-none');
+			updatePromptBtn.classList.add('d-none');
+			generatedPromptText.value = '';
+			writePromptBtn.disabled = false;
+			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
+		});
+		
+		container.addEventListener('click', (e) => {
+			if (e.target.matches('.generate-prompt-btn')) {
+				const card = e.target.closest(config.cardSelector);
+				activeImagePromptTextarea = card.querySelector('.image-prompt-textarea');
+			}
+		});
+		
+		writePromptBtn.addEventListener('click', async () => {
+			if (!activeImagePromptTextarea) return;
+			
+			const card = activeImagePromptTextarea.closest(config.cardSelector);
+			const description = card.querySelector('.asset-description').value;
+			const instructions = document.getElementById('prompt-instructions').value;
+			const model = document.getElementById('prompt-model').value;
+			
+			if (!model) {
+				alert('Please select an AI model.');
+				return;
+			}
+			
+			writePromptBtn.disabled = true;
+			writePromptBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			const endpoint = `/stories/generate-${config.assetType}-image-prompt`;
+			
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+					body: JSON.stringify({ description, instructions, model }),
+				});
+				const data = await response.json();
+				if (response.ok && data.success) {
+					generatedPromptText.value = data.prompt;
+					promptResultArea.classList.remove('d-none');
+					updatePromptBtn.classList.remove('d-none');
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				alert('A network error occurred.');
+			} finally {
+				writePromptBtn.disabled = false;
+				writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+		
+		updatePromptBtn.addEventListener('click', () => {
+			if (activeImagePromptTextarea) {
+				activeImagePromptTextarea.value = generatedPromptText.value;
+				generatePromptModal.hide();
+			}
+		});
+	}
+	
+	// -- "Draw with AI" Modal Logic --
+	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
+	if (drawWithAiModalEl) {
+		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
+		const generateImageBtn = document.getElementById('generate-image-btn');
+		const drawAssetIdInput = document.getElementById('draw-asset-id');
+		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
+		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
+		const drawWidthInput = document.getElementById('draw-width');
+		const drawHeightInput = document.getElementById('draw-height');
+		
+		const drawModelKey = 'storyAsset_drawModel';
+		drawWithAiModalEl.addEventListener('shown.bs.modal', () => {
+			const savedModel = localStorage.getItem(drawModelKey);
+			if (savedModel) document.getElementById('draw-model').value = savedModel;
+		});
+		document.getElementById('draw-model').addEventListener('change', (e) => localStorage.setItem(drawModelKey, e.target.value));
+		
+		function setDrawDimensions(width, height) {
+			drawWidthInput.value = width;
+			drawHeightInput.value = height;
+		}
+		
+		if (drawAspectRatioSelect) {
+			drawAspectRatioSelect.addEventListener('change', function () {
+				const [ratio, baseSize] = this.value.split('-');
+				const [w, h] = ratio.split(':');
+				const sizes = {
+					'1024': { '1:1': [1024, 1024], '3:2': [1216, 832], '4:3': [1152, 896], '16:9': [1344, 768], '21:9': [1536, 640], '2:3': [832, 1216], '3:4': [896, 1152], '9:16': [768, 1344], '9:21': [640, 1536] },
+					'1408': { '1:1': [1408, 1408], '3:2': [1728, 1152], '4:3': [1664, 1216], '16:9': [1920, 1088], '21:9': [2176, 960], '2:3': [1152, 1728], '3:4': [1216, 1664], '9:16': [1088, 1920], '9:21': [960, 2176] }
+				};
+				const [width, height] = sizes[baseSize][ratio];
+				setDrawDimensions(width, height);
+			});
+		}
+		
+		container.addEventListener('click', (e) => {
+			const drawButton = e.target.closest('.draw-with-ai-btn');
+			if (drawButton) {
+				const card = drawButton.closest(config.cardSelector);
+				const assetId = drawButton.dataset.assetId;
+				const imagePromptTextarea = card.querySelector('.image-prompt-textarea');
+				const decodedInitialPrompt = decodeHtmlEntities(imagePromptTextarea.dataset.initialValue || '');
+				
+				if (imagePromptTextarea.value !== decodedInitialPrompt) {
+					alert('Your image prompt has unsaved changes. Please save all changes before generating an image.');
+					e.preventDefault(); e.stopPropagation(); return;
+				}
+				if (!assetId) {
+					alert('This item has not been saved yet. Please save all changes first.');
+					e.preventDefault(); e.stopPropagation(); return;
+				}
+				
+				drawAssetIdInput.value = assetId;
+				drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this item yet)';
+				drawWithAiModal.show();
+			}
+		});
+		
+		generateImageBtn.addEventListener('click', async () => {
+			const assetId = drawAssetIdInput.value;
+			if (!assetId) return;
+			
+			generateImageBtn.disabled = true;
+			generateImageBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			const body = {
+				model: document.getElementById('draw-model').value,
+				width: drawWidthInput.value,
+				height: drawHeightInput.value,
+				upload_to_s3: document.getElementById('draw-upload-to-s3').checked,
+				aspect_ratio: drawAspectRatioSelect.value,
+			};
+			
+			const endpoint = `/stories/${config.namePrefix}/${assetId}/generate-image`;
+			
+			try {
+				const response = await fetch(endpoint, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+					body: JSON.stringify(body),
+				});
+				const data = await response.json();
+				if (response.ok && data.success) {
+					alert(data.message);
+					drawWithAiModal.hide();
+					startPolling(assetId);
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				alert('A network error occurred.');
+			} finally {
+				generateImageBtn.disabled = false;
+				generateImageBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+		
+		function startPolling(assetId) {
+			const card = document.querySelector(`.draw-with-ai-btn[data-asset-id="${assetId}"]`).closest(config.cardSelector);
+			const imageContainer = card.querySelector('.image-upload-container');
+			const spinner = imageContainer.querySelector('.spinner-overlay');
+			const imagePreview = imageContainer.querySelector('.asset-image-preview');
+			const imagePathInput = card.querySelector('.image-path-input');
+			
+			spinner.classList.remove('d-none');
+			
+			let pollAttempts = 0;
+			const pollInterval = setInterval(async () => {
+				if (++pollAttempts > 60) {
+					clearInterval(pollInterval);
+					spinner.classList.add('d-none');
+					alert('Image generation is taking longer than expected.');
+					return;
+				}
+				
+				const statusEndpoint = `/stories/${config.namePrefix}/${assetId}/image-status`;
+				try {
+					const statusResponse = await fetch(statusEndpoint);
+					const statusData = await statusResponse.json();
+					
+					if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
+						clearInterval(pollInterval);
+						spinner.classList.add('d-none');
+						
+						imagePreview.src = statusData.filename;
+						imagePathInput.value = statusData.filename;
+						
+						const promptTextarea = card.querySelector('.image-prompt-textarea');
+						promptTextarea.dataset.initialValue = promptTextarea.value;
+						
+						imagePreview.style.cursor = 'pointer';
+						imagePreview.dataset.bsToggle = 'modal';
+						imagePreview.dataset.bsTarget = '#imageDetailModal';
+						imagePreview.dataset.imageUrl = statusData.filename;
+						imagePreview.dataset.promptId = statusData.prompt_id;
+						imagePreview.dataset.upscaleStatus = statusData.upscale_status;
+						imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+					}
+				} catch (pollError) {
+					clearInterval(pollInterval);
+					spinner.classList.add('d-none');
+				}
+			}, 5000);
+		}
+	}
+	
+	// -- Image Detail Modal (Upscaling) Logic --
+	const imageDetailModalEl = document.getElementById('imageDetailModal');
+	if (imageDetailModalEl) {
+		const modalImage = document.getElementById('modalDetailImage');
+		const upscaleBtnContainer = document.getElementById('upscale-button-container');
+		const upscaleStatusContainer = document.getElementById('upscale-status-container');
+		
+		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
+			const trigger = event.relatedTarget;
+			if (!trigger || !trigger.dataset.imageUrl) {
+				event.preventDefault();
+				return;
+			}
+			
+			modalImage.src = trigger.dataset.imageUrl;
+			upscaleStatusContainer.innerHTML = '';
+			
+			const upscaleStatus = parseInt(trigger.dataset.upscaleStatus, 10);
+			if (upscaleStatus === 2 && trigger.dataset.upscaleUrl) {
+				upscaleBtnContainer.innerHTML = `<a href="${trigger.dataset.upscaleUrl}" target="_blank" class="btn btn-info">View Upscaled</a>`;
+			} else if (upscaleStatus === 1) {
+				upscaleBtnContainer.innerHTML = `<button class="btn btn-warning" disabled>Upscaling...</button>`;
+			} else if (trigger.dataset.promptId) {
+				upscaleBtnContainer.innerHTML = `<button class="btn btn-success upscale-story-image-btn" data-prompt-id="${trigger.dataset.promptId}" data-filename="${trigger.dataset.imageUrl}">Upscale Image</button>`;
+			} else {
+				upscaleBtnContainer.innerHTML = '';
+			}
+		});
+		
+		document.body.addEventListener('click', async function (e) {
+			if (e.target.classList.contains('upscale-story-image-btn')) {
+				const button = e.target;
+				button.disabled = true;
+				button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Upscaling...';
+				upscaleStatusContainer.innerHTML = 'Sending request...';
+				
+				try {
+					const response = await fetch(`/images/${button.dataset.promptId}/upscale`, {
+						method: 'POST',
+						headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+						body: JSON.stringify({ filename: button.dataset.filename })
+					});
+					const data = await response.json();
+					if (data.prediction_id) {
+						upscaleStatusContainer.innerHTML = 'Upscale in progress...';
+					} else {
+						throw new Error(data.message || 'Failed to start upscale.');
+					}
+				} catch (error) {
+					upscaleStatusContainer.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+					button.disabled = false;
+					button.textContent = 'Upscale Image';
+				}
+			}
+		});
+	}
+	// END NEW MODIFICATION
 });

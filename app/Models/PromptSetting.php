@@ -21,6 +21,10 @@
 			'strength_model',
 			'guidance',
 			'story_page_id',
+			// START MODIFICATION
+			'story_character_id',
+			'story_place_id',
+			// END MODIFICATION
 			'upload_to_s3',
 			'create_minimax',
 			'create_imagen',
