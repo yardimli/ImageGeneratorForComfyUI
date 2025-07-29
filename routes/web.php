@@ -33,9 +33,6 @@
 	Auth::routes(['register' => false]);
 
 	// Publicly viewable story routes
-	Route::get('stories', [StoryController::class, 'index'])->name('stories.index');
-	Route::get('stories/{story}', [StoryController::class, 'show'])->name('stories.show');
-
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
@@ -142,11 +139,14 @@
 		// --- Stories ---
 		Route::prefix('stories')->name('stories.')->group(function () {
 			// Resource routes (except index and show)
+			Route::get('/', [StoryController::class, 'index'])->name('stories.index');
 			Route::get('/create', [StoryController::class, 'create'])->name('create');
 			Route::post('/', [StoryController::class, 'store'])->name('store');
 			Route::get('/{story}/edit', [StoryController::class, 'edit'])->name('edit');
 			Route::put('/{story}', [StoryController::class, 'update'])->name('update');
 			Route::delete('/{story}', [StoryController::class, 'destroy'])->name('destroy');
+
+			Route::get('read/{story}', [StoryController::class, 'show'])->name('stories.show');
 
 			// Custom routes
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
