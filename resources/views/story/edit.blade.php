@@ -36,31 +36,31 @@
 							<div class="mb-3">
 								<label for="level" class="form-label">English Proficiency Level (CEFR)</label>
 								<select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
-									<option value="" disabled {{ old('level') ? '' : 'selected' }}>Select a level...</option>
+									<option value="" disabled {{ old('level', $story->level) ? '' : 'selected' }}>Select a level...</option>
 									
 									<optgroup label="A - Basic User">
-										<option value="A1" {{ old('level') == 'A1' ? 'selected' : '' }}>
+										<option value="A1" {{ old('level', $story->level) == 'A1' ? 'selected' : '' }}>
 											A1 - Beginner: Can understand and use familiar everyday expressions.
 										</option>
-										<option value="A2" {{ old('level') == 'A2' ? 'selected' : '' }}>
+										<option value="A2" {{ old('level', $story->level) == 'A2' ? 'selected' : '' }}>
 											A2 - Elementary: Can understand sentences and frequently used expressions on familiar topics.
 										</option>
 									</optgroup>
 									
 									<optgroup label="B - Independent User">
-										<option value="B1" {{ old('level') == 'B1' ? 'selected' : '' }}>
+										<option value="B1" {{ old('level', $story->level) == 'B1' ? 'selected' : '' }}>
 											B1 - Intermediate: Can understand the main points of clear text on familiar matters.
 										</option>
-										<option value="B2" {{ old('level') == 'B2' ? 'selected' : '' }}>
+										<option value="B2" {{ old('level', $story->level) == 'B2' ? 'selected' : '' }}>
 											B2 - Upper-Intermediate: Can understand the main ideas of complex text on both concrete and abstract topics.
 										</option>
 									</optgroup>
 									
 									<optgroup label="C - Proficient User">
-										<option value="C1" {{ old('level') == 'C1' ? 'selected' : '' }}>
+										<option value="C1" {{ old('level', $story->level) == 'C1' ? 'selected' : '' }}>
 											C1 - Advanced: Can understand a wide range of demanding, longer texts, and recognize implicit meaning.
 										</option>
-										<option value="C2" {{ old('level') == 'C2' ? 'selected' : '' }}>
+										<option value="C2" {{ old('level', $story->level) == 'C2' ? 'selected' : '' }}>
 											C2 - Mastery: Can understand with ease virtually everything heard or read. Can express self fluently and precisely.
 										</option>
 									</optgroup>
