@@ -157,7 +157,9 @@
 
 				// 2. Prepare paths and arguments for the Python script
 				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
-				$pythonScriptPath = base_path('python/storybook.py');
+				// START MODIFICATION: Use the new html2pdf Python script.
+				$pythonScriptPath = base_path('python/storybook-html2pdf.py');
+				// END MODIFICATION
 
 				// Font path validation
 				$fontFile = resource_path('fonts/' . $validated['font_name'] . '-Regular.ttf');
@@ -253,7 +255,6 @@
 					'Content-Type' => 'application/pdf',
 					'Content-Disposition' => 'attachment; filename="' . $pdfFileName . '"',
 				]);
-
 			} catch (ProcessFailedException $e) {
 				Log::error("PDF Generation Failed: " . $e->getMessage());
 				Log::error("Python stderr: " . $e->getProcess()->getErrorOutput());
@@ -270,5 +271,4 @@
 				}
 			}
 		}
-
 	}
