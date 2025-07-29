@@ -61,7 +61,7 @@
 									<label class="form-label">Image</label>
 									{{-- START MODIFICATION: Add spinner overlay and data attributes for modal --}}
 									<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
-										<img src="{{ $place->image_path ?: 'https://via.placeholder.com/200' }}"
+										<img src="{{ $place->image_path ?: 'https://picsum.photos/200' }}"
 										     class="asset-image-preview"
 										     style="max-width: 100%; max-height: 200px; object-fit: contain; {{ $place->image_path ? 'cursor: pointer;' : '' }}"
 										     @if($place->image_path && isset($place->prompt_data))
@@ -144,7 +144,7 @@
 						<label class="form-label">Image</label>
 						{{-- START MODIFICATION: Add spinner overlay to template --}}
 						<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
-							<img src="https://via.placeholder.com/200" class="asset-image-preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
+							<img src="https://picsum.photos/200" class="asset-image-preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
 							<div class="spinner-overlay d-none position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(var(--bs-body-color-rgb), 0.5);">
 								<div class="spinner-border text-light" role="status"><span class="visually-hidden">Loading...</span></div>
 								<div class="mt-2 text-light">Generating...</div>
