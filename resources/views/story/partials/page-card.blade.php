@@ -50,7 +50,7 @@
 								<div class="form-check">
 									{{-- START MODIFICATION: Added class and data-description attribute --}}
 									<input class="form-check-input place-checkbox" type="checkbox" name="pages[{{ $index }}][places][]" value="{{ $place->id }}" id="place_{{ $index }}_{{ $place->id }}"
-									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }} data-description="{{ e($place->description) }}">
+									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }} data-description="{{ e($place->name . ": " .$place->description) }}">
 									{{-- END MODIFICATION --}}
 									<label class="form-check-label" for="place_{{ $index }}_{{ $place->id }}">{{ $place->name }}</label>
 								</div>
