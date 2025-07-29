@@ -93,6 +93,8 @@
 					->timeout(180) // 3-minute timeout for long generations
 					->post($this->apiBaseUrl . '/chat/completions', $requestBody);
 
+				Log::info('LLM API response body: ' . $response->body());
+
 				if ($response->failed()) {
 					$this->logLlmInteraction($prompt, $response->body(), true);
 					$response->throw();
@@ -111,7 +113,7 @@
 					return json_decode($llmContent, true);
 				}
 
-				throw new \Exception('Invalid response structure from LLM.');
+				throw new \Exception('Invalid response structure from LLM. ');
 
 			} catch (Throwable $e) {
 				$this->logLlmInteraction($prompt, $e->getMessage(), true);
