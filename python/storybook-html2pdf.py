@@ -37,6 +37,12 @@ def generate_css(args):
     font_file_uri = Path(args.font_file).as_uri()
     wallpaper_uri = Path(args.wallpaper_file).as_uri() if args.wallpaper_file and os.path.exists(args.wallpaper_file) else None
 
+    # --- New Layout Model Calculations ---
+    # The page itself will be the full bleed size.
+    # Content is then inset using padding.
+    bleed_width_mm = args.width_mm + (2 * args.bleed_mm)
+    bleed_height_mm = args.height_mm + (2 * args.bleed_mm)
+
     # Note: We use white-space: pre-wrap to respect newlines from the web form's textareas.
     return f"""
     /* --- Base Setup & Font Configuration --- */
@@ -46,10 +52,11 @@ def generate_css(args):
     }}
 
     @page {{
-        size: {args.width_mm}mm {args.height_mm}mm;
+        /* In this model, the page size IS the full bleed size. */
+        size: {bleed_width_mm}mm {bleed_height_mm}mm;
         margin: 0;
-        bleed: {args.bleed_mm}mm;
-        {'marks: crop;' if args.show_bleed_marks else ''}
+        /* Note: 'marks: crop' is not used here because it requires a separate
+           bleed definition. We are defining the page as the bleed box itself. */
     }}
 
     /* Named page for story content that needs a page number */
@@ -59,7 +66,8 @@ def generate_css(args):
             font-family: '{args.font_name}';
             font-size: {args.font_size_footer}pt;
             color: {args.color_footer};
-            margin-bottom: {args.page_number_margin_bottom_mm}mm;
+            /* Position the page number relative to the bottom of the full bleed page */
+            margin-bottom: calc({args.bleed_mm}mm + {args.page_number_margin_bottom_mm}mm);
             vertical-align: top;
         }}
     }}
@@ -72,8 +80,9 @@ def generate_css(args):
 
     /* --- Page Structure & Layout --- */
     .page {{
-        width: {args.width_mm}mm;
-        height: {args.height_mm}mm;
+        /* The page container fills the entire bleed area */
+        width: {bleed_width_mm}mm;
+        height: {bleed_height_mm}mm;
         position: relative;
         overflow: hidden;
         box-sizing: border-box;
@@ -100,6 +109,7 @@ def generate_css(args):
 
     /* --- Special Pages (Title, Copyright, Intro) --- */
     .title-page, .copyright-page, .introduction-page {{
+        /* Use padding to create the trim box area */
         padding: {args.bleed_mm}mm;
     }}
 
@@ -126,28 +136,20 @@ def generate_css(args):
 
     /* --- Story Content Pages --- */
     .story-image-page {{
-        /* This page is for full-bleed images, so it has zero padding or margin. */
+        /* This page is for full-bleed images, so it has zero padding. */
         padding: 0;
-        margin: 0;
     }}
 
     .story-image-page img {{
-        /* Make the image fill 100% of the page width and height, including the bleed area. */
-        position: absolute;
-        /* Stretch the image outwards from the trim box to the bleed box.
-           The width and height are automatically calculated to fill this space. */
-        top: -{args.bleed_mm}mm;
-        left: -{args.bleed_mm}mm;
-        right: -{args.bleed_mm}mm;
-        bottom: -{args.bleed_mm}mm;
+        /* The image simply fills its parent, which is already the full bleed size. */
         width: 100%;
         height: 100%;
-        /* 'cover' ensures the image content fills the area, maintaining aspect ratio. */
         object-fit: cover;
     }}
 
     .story-text-page {{
         page: main-content; /* Apply the page style with the footer */
+        /* Use padding to create the trim box. The wallpaper will fill the whole page. */
         padding: {args.bleed_mm}mm;
         display: flex;
         justify-content: center;
@@ -161,6 +163,8 @@ def generate_css(args):
     .story-text-page .text-container {{
         color: {args.color_main};
         font-size: {args.font_size_main}pt;
+        /* The container's width is now calculated based on the trim width,
+           and it will be centered within the padded area of the page. */
         width: calc({args.width_mm}mm - 2 * {args.margin_horizontal_main_mm}mm);
         height: calc({args.height_mm}mm - 2 * {args.margin_horizontal_main_mm}mm);
         border: 1px dotted #999;
