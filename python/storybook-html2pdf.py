@@ -9,26 +9,7 @@ import requests
 import sys
 from pathlib import Path
 
-# START MODIFICATION: Handle WeasyPrint version differences
-try:
-    from weasyprint import HTML, CSS
-    # Try to import FontConfiguration for older versions
-    try:
-        from weasyprint import FontConfiguration
-        WEASYPRINT_VERSION = "old"
-    except ImportError:
-        try:
-            from weasyprint.fonts import FontConfiguration
-            WEASYPRINT_VERSION = "old"
-        except (ImportError, ModuleNotFoundError):
-            # Modern WeasyPrint (v53+) doesn't have FontConfiguration
-            FontConfiguration = None
-            WEASYPRINT_VERSION = "modern"
-except ImportError:
-    print("FATAL ERROR: WeasyPrint is not installed. Please install it with: pip install weasyprint", file=sys.stderr)
-    sys.exit(1)
-# END MODIFICATION
-
+from weasyprint import HTML, CSS
 
 def download_image_as_data_uri(url, page_num):
     """Downloads an image and returns it as a base64 data URI."""
@@ -295,14 +276,7 @@ def main():
     print("Rendering PDF with WeasyPrint...")
     html_doc = HTML(string=full_html)
 
-    # MODIFICATION: Handle different WeasyPrint versions
-    if WEASYPRINT_VERSION == "old" and FontConfiguration is not None:
-        # Old versions require FontConfiguration
-        font_config = FontConfiguration()
-        html_doc.write_pdf(args.output_file, font_config=font_config)
-    else:
-        # Modern versions (v53+) don't use FontConfiguration
-        html_doc.write_pdf(args.output_file)
+    html_doc.write_pdf(args.output_file)
 
     print(f"\nPDF successfully created: {args.output_file}")
 
