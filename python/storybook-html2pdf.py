@@ -8,10 +8,18 @@ import os
 import requests
 import sys
 from pathlib import Path
-# START MODIFICATION: Correct the import for FontConfiguration.
-# In WeasyPrint v53+, FontConfiguration was moved from weasyprint.fonts to the top-level package.
-from weasyprint import HTML, CSS, FontConfiguration
+
+# START MODIFICATION: Add a try-except block to handle different WeasyPrint versions.
+# This makes the script compatible with both older and newer installations.
+try:
+    # For modern WeasyPrint versions (v53+)
+    from weasyprint import HTML, CSS, FontConfiguration
+except ImportError:
+    # Fallback for older WeasyPrint versions
+    from weasyprint import HTML, CSS
+    from weasyprint.fonts import FontConfiguration
 # END MODIFICATION
+
 
 def download_image_as_data_uri(url, page_num):
     """Downloads an image and returns it as a base64 data URI."""
