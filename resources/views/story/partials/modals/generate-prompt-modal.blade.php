@@ -23,6 +23,12 @@
 							@endif
 						</select>
 					</div>
+					{{-- START MODIFICATION: Add a textarea for the full, editable prompt. --}}
+					<div class="mb-3">
+						<label for="full-prompt-text" class="form-label">Full Prompt Sent to AI (Live Preview, Editable)</label>
+						<textarea class="form-control" id="full-prompt-text" rows="12" style="font-family: monospace; font-size: 0.8rem;"></textarea>
+					</div>
+					{{-- END MODIFICATION --}}
 					<button type="button" class="btn btn-primary" id="write-prompt-btn">
 						<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 						Write with AI

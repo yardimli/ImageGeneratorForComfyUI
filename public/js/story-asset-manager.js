@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
-	// START MODIFICATION: Add handler for "Use Full Image" button and its helper function.
 	/**
 	 * Converts a data URL string to a Blob object.
 	 * @param {string} dataurl - The data URL to convert.
@@ -120,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			button.innerHTML = 'Use Full Image (No Crop)';
 		}
 	});
-	// END MODIFICATION
 	
 	document.getElementById('confirmCropBtn').addEventListener('click', () => {
 		if (!cropper || !activeImageUploadContainer) return;
@@ -206,7 +204,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// START MODIFICATION: Add handlers for new image upload from history modal.
 	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
 	const newImageUploadInput = document.getElementById('newImageUploadInput');
 	
@@ -228,7 +225,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
 	
 	document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
 		const selected = document.querySelector('#historyModal .history-image-card.selected');
@@ -281,12 +277,49 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
-	// START NEW MODIFICATION: Logic for AI Image Prompt and Image Generation
+	// Logic for AI Image Prompt and Image Generation
 	function decodeHtmlEntities(str) {
 		return str
 			.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
+	
+	// START MODIFICATION: Add client-side function to build the asset image prompt.
+	/**
+	 * Builds the full prompt for generating an asset image.
+	 * @param {string} assetDescription - The description of the asset.
+	 * @param {string} assetType - The type of asset ('character' or 'place').
+	 * @param {string} userInstructions - Additional user instructions.
+	 * @returns {string} The full prompt string.
+	 */
+	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
+		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
+		
+		const jsonStructure = `{
+  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
+}`;
+		
+		return `You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
+Your task is to create a single, concise, and descriptive image prompt for a story ${assetType}.
+
+**Context:**
+1.  **${assetType} Description:**
+    "${assetDescription}"
+
+2.  **User Guidance:**
+    ${instructionsText}
+
+**Instructions:**
+- Synthesize all the information to create a vivid image prompt for a portrait or scene featuring this ${assetType}.
+- The prompt should be a single paragraph of comma-separated descriptive phrases.
+- Focus on visual details: appearance, key features, mood, and lighting.
+- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+- The JSON object must follow this exact structure:
+${jsonStructure}
+
+Now, generate the image prompt for the provided context in the specified JSON format.`;
+	}
+	// END MODIFICATION
 	
 	// -- AI Prompt Generation Modal Logic --
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
@@ -296,26 +329,59 @@ document.addEventListener('DOMContentLoaded', function () {
 		const updatePromptBtn = document.getElementById('update-prompt-btn');
 		const promptResultArea = document.getElementById('prompt-result-area');
 		const generatedPromptText = document.getElementById('generated-prompt-text');
+		// START MODIFICATION: Get the new full prompt textarea.
+		const fullPromptTextarea = document.getElementById('full-prompt-text');
+		// END MODIFICATION
 		let activeImagePromptTextarea = null;
 		
 		const promptModelKey = 'storyCreateAi_model';
 		const promptInstructionsKey = 'storyEditor_promptInstructions';
+		
+		// START MODIFICATION: Add function to update the live prompt preview.
+		function updateFullPromptPreview() {
+			if (!activeImagePromptTextarea || !fullPromptTextarea) return;
+			
+			const card = activeImagePromptTextarea.closest(config.cardSelector);
+			const description = card.querySelector('.asset-description').value;
+			const instructions = document.getElementById('prompt-instructions').value;
+			
+			const fullPrompt = buildAssetImageGenerationPrompt(description, config.assetType, instructions);
+			fullPromptTextarea.value = fullPrompt;
+		}
+		// END MODIFICATION
 		
 		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
 			const savedModel = localStorage.getItem(promptModelKey);
 			if (savedModel) document.getElementById('prompt-model').value = savedModel;
 			const savedInstructions = localStorage.getItem(promptInstructionsKey);
 			if (savedInstructions) document.getElementById('prompt-instructions').value = savedInstructions;
+			// START MODIFICATION: Update the preview when the modal is shown.
+			updateFullPromptPreview();
+			// END MODIFICATION
 		});
 		
+		// START MODIFICATION: Update preview when instructions or description change.
+		document.getElementById('prompt-instructions').addEventListener('input', updateFullPromptPreview);
+		
+		container.addEventListener('input', (e) => {
+			if (e.target.matches('.asset-description') && generatePromptModalEl.classList.contains('show')) {
+				if (activeImagePromptTextarea && e.target.closest(config.cardSelector) === activeImagePromptTextarea.closest(config.cardSelector)) {
+					updateFullPromptPreview();
+				}
+			}
+		});
+		// END MODIFICATION
+		
 		document.getElementById('prompt-model').addEventListener('change', (e) => localStorage.setItem(promptModelKey, e.target.value));
-		document.getElementById('prompt-instructions').addEventListener('input', (e) => localStorage.setItem(promptInstructionsKey, e.target.value));
 		
 		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
 			activeImagePromptTextarea = null;
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
 			generatedPromptText.value = '';
+			// START MODIFICATION: Clear the full prompt preview on close.
+			if (fullPromptTextarea) fullPromptTextarea.value = '';
+			// END MODIFICATION
 			writePromptBtn.disabled = false;
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
@@ -330,9 +396,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		writePromptBtn.addEventListener('click', async () => {
 			if (!activeImagePromptTextarea) return;
 			
-			const card = activeImagePromptTextarea.closest(config.cardSelector);
-			const description = card.querySelector('.asset-description').value;
-			const instructions = document.getElementById('prompt-instructions').value;
+			// START MODIFICATION: Get the prompt from the new full prompt textarea.
+			const prompt = fullPromptTextarea.value;
+			// END MODIFICATION
 			const model = document.getElementById('prompt-model').value;
 			
 			if (!model) {
@@ -349,7 +415,9 @@ document.addEventListener('DOMContentLoaded', function () {
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-					body: JSON.stringify({ description, instructions, model }),
+					// START MODIFICATION: Send the full prompt to the backend.
+					body: JSON.stringify({ prompt, model }),
+					// END MODIFICATION
 				});
 				const data = await response.json();
 				if (response.ok && data.success) {
@@ -578,5 +646,4 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END NEW MODIFICATION
 });

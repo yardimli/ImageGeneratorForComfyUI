@@ -20,9 +20,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	function decodeHtmlEntities(str) {
 		return str
-			// Decode decimal entities: &#12345;
+			// Decode decimal entities: 〹
 			.replace(/&#(\d+);/g, (_, dec) => String.fromCharCode(dec))
-			// Decode hex entities: &#x1F600;
+			// Decode hex entities: 
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
 	
@@ -42,7 +42,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
-	// START MODIFICATION: Add handler for "Use Full Image" button and its helper function.
 	/**
 	 * Converts a data URL string to a Blob object.
 	 * @param {string} dataurl - The data URL to convert.
@@ -105,7 +104,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			button.innerHTML = 'Use Full Image (No Crop)';
 		}
 	});
-	// END MODIFICATION
 	
 	document.getElementById('confirmCropBtn').addEventListener('click', () => {
 		if (!cropper || !activeImageUploadContainer) return;
@@ -191,7 +189,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// START MODIFICATION: Add handlers for new image upload from history modal.
 	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
 	const newImageUploadInput = document.getElementById('newImageUploadInput');
 	
@@ -213,7 +210,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
 	
 	const addSelectedHistoryImageBtn = document.getElementById('addSelectedHistoryImageBtn');
 	if (addSelectedHistoryImageBtn) {
@@ -290,7 +286,50 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// START MODIFICATION: Logic for AI Image Prompt Generation
+	// Logic for AI Image Prompt Generation
+	/**
+	 * Builds the full prompt for generating a page image.
+	 * @param {string} pageText - The text content of the page.
+	 * @param {string[]} characterDescriptions - An array of character descriptions.
+	 * @param {string[]} placeDescriptions - An array of place descriptions.
+	 * @param {string} userInstructions - Additional user instructions.
+	 * @returns {string} The full prompt string.
+	 */
+	function buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, userInstructions) {
+		const characterText = characterDescriptions.length > 0 ? "Characters in this scene:\n- " + characterDescriptions.join("\n- ") : "No specific characters are described for this scene.";
+		const placeText = placeDescriptions.length > 0 ? "Places in this scene:\n- " + placeDescriptions.join("\n- ") : "No specific places are described for this scene.";
+		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
+		
+		const jsonStructure = `{
+  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
+}`;
+		
+		return `You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
+Your task is to create a single, concise, and descriptive image prompt based on the provided context of a story page.
+
+**Context:**
+1.  **Page Content:**
+    "${pageText}"
+
+2.  **Scene Details:**
+    ${characterText}
+    ${placeText}
+
+3.  **User Guidance:**
+    ${instructionsText}
+
+**Instructions:**
+- Synthesize all the information to create a vivid image prompt.
+- The prompt should be a single paragraph of comma-separated descriptive phrases.
+- Focus on visual details: the setting, character appearance, actions, mood, and lighting.
+- Include all details when describing characters and places.
+- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+- The JSON object must follow this exact structure:
+${jsonStructure}
+
+Now, generate the image prompt for the provided context in the specified JSON format.`;
+	}
+	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {
 		const generatePromptModal = new bootstrap.Modal(generatePromptModalEl);
@@ -298,11 +337,24 @@ document.addEventListener('DOMContentLoaded', function () {
 		const updatePromptBtn = document.getElementById('update-prompt-btn');
 		const promptResultArea = document.getElementById('prompt-result-area');
 		const generatedPromptText = document.getElementById('generated-prompt-text');
+		const fullPromptTextarea = document.getElementById('full-prompt-text');
 		let activeImagePromptTextarea = null;
 		
-		// START NEW MODIFICATION: Remember and pre-fill AI prompt generator settings from localStorage.
 		const promptModelKey = 'storyCreateAi_model';
 		const promptInstructionsKey = 'storyEditor_promptInstructions';
+		
+		function updateFullPromptPreview() {
+			if (!activeImagePromptTextarea || !fullPromptTextarea) return;
+			
+			const pageCard = activeImagePromptTextarea.closest('.page-card');
+			const pageText = pageCard.querySelector('textarea[name*="[story_text]"]').value;
+			const characterDescriptions = Array.from(pageCard.querySelectorAll('.character-checkbox:checked')).map(cb => cb.dataset.description);
+			const placeDescriptions = Array.from(pageCard.querySelectorAll('.place-checkbox:checked')).map(cb => cb.dataset.description);
+			const instructions = document.getElementById('prompt-instructions').value;
+			
+			const fullPrompt = buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, instructions);
+			fullPromptTextarea.value = fullPrompt;
+		}
 		
 		// Load saved settings when modal is shown
 		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
@@ -314,7 +366,27 @@ document.addEventListener('DOMContentLoaded', function () {
 			if (savedInstructions) {
 				document.getElementById('prompt-instructions').value = savedInstructions;
 			}
+			updateFullPromptPreview(); // Populate preview on open
 		});
+		
+		// Add listeners to update the preview in real-time
+		document.getElementById('prompt-instructions').addEventListener('input', updateFullPromptPreview);
+		
+		if (pagesContainer) {
+			pagesContainer.addEventListener('change', (e) => {
+				if ((e.target.matches('.character-checkbox') || e.target.matches('.place-checkbox')) && generatePromptModalEl.classList.contains('show')) {
+					updateFullPromptPreview();
+				}
+			});
+			
+			pagesContainer.addEventListener('input', (e) => {
+				if (e.target.matches('textarea[name*="[story_text]"]') && generatePromptModalEl.classList.contains('show')) {
+					if (activeImagePromptTextarea && e.target.closest('.page-card') === activeImagePromptTextarea.closest('.page-card')) {
+						updateFullPromptPreview();
+					}
+				}
+			});
+		}
 		
 		// Save settings on change
 		document.getElementById('prompt-model').addEventListener('change', (e) => {
@@ -323,7 +395,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		document.getElementById('prompt-instructions').addEventListener('input', (e) => {
 			localStorage.setItem(promptInstructionsKey, e.target.value);
 		});
-		// END NEW MODIFICATION
 		
 		// Reset modal on close
 		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
@@ -331,19 +402,20 @@ document.addEventListener('DOMContentLoaded', function () {
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
 			generatedPromptText.value = '';
-			// MODIFICATION: The line that cleared instructions is removed to allow them to persist.
+			if (fullPromptTextarea) fullPromptTextarea.value = '';
 			writePromptBtn.disabled = false;
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
 		
 		// Listener for all "Fill with AI" buttons
-		pagesContainer.addEventListener('click', (e) => {
-			if (e.target.matches('.generate-prompt-btn')) {
-				const pageCard = e.target.closest('.page-card');
-				activeImagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
-				// The button's data-bs-toggle attribute handles showing the modal
-			}
-		});
+		if (pagesContainer) {
+			pagesContainer.addEventListener('click', (e) => {
+				if (e.target.matches('.generate-prompt-btn')) {
+					const pageCard = e.target.closest('.page-card');
+					activeImagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
+				}
+			});
+		}
 		
 		// Listener for "Write with AI" button inside the modal
 		writePromptBtn.addEventListener('click', async () => {
@@ -352,12 +424,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			const pageCard = activeImagePromptTextarea.closest('.page-card');
-			
-			const pageText = pageCard.querySelector('textarea[name*="[story_text]"]').value;
-			const characterDescriptions = Array.from(pageCard.querySelectorAll('.character-checkbox:checked')).map(cb => cb.dataset.description);
-			const placeDescriptions = Array.from(pageCard.querySelectorAll('.place-checkbox:checked')).map(cb => cb.dataset.description);
-			const instructions = document.getElementById('prompt-instructions').value;
+			const prompt = fullPromptTextarea.value;
 			const model = document.getElementById('prompt-model').value;
 			
 			if (!model) {
@@ -377,10 +444,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						'Accept': 'application/json',
 					},
 					body: JSON.stringify({
-						page_text: pageText,
-						character_descriptions: characterDescriptions,
-						place_descriptions: placeDescriptions,
-						instructions: instructions,
+						prompt: prompt,
 						model: model,
 					}),
 				});
@@ -412,20 +476,20 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
 	
-	// START NEW MODIFICATION: Logic for "Draw with AI" Modal
+	// Logic for "Draw with AI" Modal
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {
 		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
 		const generateImageBtn = document.getElementById('generate-image-btn');
-		const drawStoryPageIdInput = document.getElementById('draw-story-page-id');
+		// START MODIFICATION: Corrected the element ID from 'draw-story-page-id' to 'draw-asset-id' and renamed the variable.
+		const drawAssetIdInput = document.getElementById('draw-asset-id');
+		// END MODIFICATION
 		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
 		const drawHeightInput = document.getElementById('draw-height');
 		
-		// START NEW MODIFICATION: Remember and pre-fill AI draw model from localStorage.
 		const drawModelKey = 'storyEditor_drawModel';
 		
 		// Load saved settings when modal is shown
@@ -440,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		document.getElementById('draw-model').addEventListener('change', (e) => {
 			localStorage.setItem(drawModelKey, e.target.value);
 		});
-		// END NEW MODIFICATION
 		
 		function setDrawDimensions(width, height) {
 			drawWidthInput.value = width;
@@ -482,43 +545,45 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		
 		// Listener for all "Draw with AI" buttons
-		pagesContainer.addEventListener('click', (e) => {
-			const drawButton = e.target.closest('.draw-with-ai-btn');
-			if (drawButton) {
-				const pageCard = drawButton.closest('.page-card');
-				const storyPageId = drawButton.dataset.storyPageId;
-				const imagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
-				
-				// START MODIFICATION: Check for unsaved changes to the prompt.
-				const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
-				// decode initialPrompt to handle any HTML entities
-				const decodedInitialPrompt = initialPrompt ? decodeHtmlEntities(initialPrompt) : '';
-				// console.log('Decoded initial prompt:', decodedInitialPrompt);
-				if (imagePromptTextarea.value !== decodedInitialPrompt) {
-					alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
-					e.preventDefault();
-					e.stopPropagation();
-					return;
+		if (pagesContainer) {
+			pagesContainer.addEventListener('click', (e) => {
+				const drawButton = e.target.closest('.draw-with-ai-btn');
+				if (drawButton) {
+					const pageCard = drawButton.closest('.page-card');
+					const storyPageId = drawButton.dataset.storyPageId;
+					const imagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
+					
+					const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
+					const decodedInitialPrompt = initialPrompt ? decodeHtmlEntities(initialPrompt) : '';
+					if (imagePromptTextarea.value !== decodedInitialPrompt) {
+						alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
+						e.preventDefault();
+						e.stopPropagation();
+						return;
+					}
+					
+					if (!storyPageId) {
+						alert('This page has not been saved yet. Please save the story first.');
+						e.preventDefault();
+						e.stopPropagation();
+						return;
+					}
+					
+					// START MODIFICATION: Use the corrected variable name.
+					drawAssetIdInput.value = storyPageId;
+					// END MODIFICATION
+					drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
+					drawWithAiModal.show();
+					
 				}
-				// END MODIFICATION
-				
-				if (!storyPageId) {
-					alert('This page has not been saved yet. Please save the story first.');
-					e.preventDefault();
-					e.stopPropagation();
-					return;
-				}
-				
-				drawStoryPageIdInput.value = storyPageId;
-				drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
-				drawWithAiModal.show();
-				
-			}
-		});
+			});
+		}
 		
 		// Listener for "Generate Image Only" button inside the modal
 		generateImageBtn.addEventListener('click', async () => {
-			const storyPageId = drawStoryPageIdInput.value;
+			// START MODIFICATION: Use the corrected variable name.
+			const storyPageId = drawAssetIdInput.value;
+			// END MODIFICATION
 			const imagePrompt = drawImagePromptText.textContent;
 			
 			if (!storyPageId) {
@@ -562,7 +627,6 @@ document.addEventListener('DOMContentLoaded', function () {
 					alert(data.message); // A simple alert for now.
 					drawWithAiModal.hide();
 					
-					// START MODIFICATION: Show spinner and start polling for the new image.
 					const pageCard = document.querySelector(`.draw-with-ai-btn[data-story-page-id="${storyPageId}"]`).closest('.page-card');
 					const imageContainer = pageCard.querySelector('.image-upload-container');
 					const spinner = imageContainer.querySelector('.spinner-overlay');
@@ -614,7 +678,6 @@ document.addEventListener('DOMContentLoaded', function () {
 							spinner.classList.add('d-none');
 						}
 					}, 5000); // Poll every 5 seconds
-					// END MODIFICATION
 					
 				} else {
 					alert('An error occurred: ' + (data.message || 'Unknown error'));
@@ -629,9 +692,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END NEW MODIFICATION
 	
-	// START MODIFICATION: Logic for Image Detail Modal with Upscaling
+	// Logic for Image Detail Modal with Upscaling
 	const imageDetailModalEl = document.getElementById('imageDetailModal');
 	if (imageDetailModalEl) {
 		const imageDetailModal = new bootstrap.Modal(imageDetailModalEl);
@@ -723,5 +785,4 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
 });

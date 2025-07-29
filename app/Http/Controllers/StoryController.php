@@ -2,7 +2,6 @@
 
 	namespace App\Http\Controllers;
 
-	// START MODIFICATION: Import new classes needed for AI story generation.
 	use App\Http\Controllers\LlmController;
 	use App\Models\Prompt;
 	use App\Models\Story;
@@ -14,9 +13,6 @@
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Validator;
 	use Illuminate\Validation\ValidationException;
-// END MODIFICATION
-
-// use Illuminate\Support\Facades\Gate;
 
 	class StoryController extends Controller
 	{
@@ -25,13 +21,10 @@
 		 */
 		public function index()
 		{
-			// START MODIFICATION: Fetch all stories for public view, with author info and pagination.
 			$stories = Story::with('user')->latest('updated_at')->paginate(15);
 			return view('story.index', compact('stories'));
-			// END MODIFICATION
 		}
 
-		// START MODIFICATION: Add a new method to publicly display a single story.
 		/**
 		 * Display the specified story publicly.
 		 *
@@ -43,7 +36,6 @@
 			$story->load(['user', 'pages.characters', 'pages.places', 'characters', 'places']);
 			return view('story.show', compact('story'));
 		}
-		// END MODIFICATION
 
 		/**
 		 * Show the form for creating a new story.
@@ -53,7 +45,6 @@
 			return view('story.create');
 		}
 
-// START MODIFICATION: Add method to show the AI story creation form.
 		/**
 		 * Show the form for creating a new story with AI.
 		 *
@@ -74,7 +65,6 @@
 				return redirect()->route('stories.index')->with('error', 'Could not fetch AI models at this time. Please try again later.');
 			}
 		}
-// END MODIFICATION
 
 		/**
 		 * Store a newly created story in storage.
@@ -95,7 +85,6 @@
 			return redirect()->route('stories.edit', $story)->with('success', 'Story created successfully. Now add some pages!');
 		}
 
-// START MODIFICATION: Add method to generate and store a story using AI.
 		/**
 		 * Generate and store a new story using AI.
 		 *
@@ -118,11 +107,10 @@
 					$prompt,
 					$validated['model'],
 					'AI Story Generation',
-					0.7, // A reasonable temperature for creative tasks
+					0.7,
 					'json_object'
 				);
 
-				// Validate the structure of the JSON returned by the LLM
 				$this->validateStoryData($storyData);
 
 				$story = $this->saveStoryFromAiData($storyData);
@@ -270,12 +258,10 @@ PROMPT;
 				return $story;
 			});
 		}
-// END MODIFICATION
 
 		/**
 		 * Show the form for editing the specified story.
 		 */
-		// START MODIFICATION: Inject LlmController and fetch models for the view.
 		public function edit(Story $story, LlmController $llmController)
 		{
 			if ($story->user_id !== auth()->id()) {
@@ -284,7 +270,6 @@ PROMPT;
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
 
-			// START MODIFICATION: Check for generated images and load prompt data for upscaling.
 			foreach ($story->pages as $page) {
 				$page->prompt_data = null; // Initialize
 				if ($page->id) {
@@ -294,7 +279,6 @@ PROMPT;
 						->first();
 				}
 			}
-			// END MODIFICATION
 
 			// Fetch models for the AI prompt generator modal
 			try {
@@ -304,11 +288,10 @@ PROMPT;
 					->all();
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Editor: ' . $e->getMessage());
-				$models = []; // Pass an empty array on failure
+				$models = [];
 				session()->flash('error', 'Could not fetch AI models for the prompt generator. The feature will be unavailable.');
 			}
 
-			// START NEW MODIFICATION: Define models for the "Draw with AI" feature.
 			$imageModels = [
 				['id' => 'schnell', 'name' => 'Schnell'],
 				['id' => 'dev', 'name' => 'Dev'],
@@ -321,11 +304,9 @@ PROMPT;
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
 			];
-			// END NEW MODIFICATION
 
 			return view('story.edit', compact('story', 'models', 'imageModels'));
 		}
-		// END MODIFICATION
 
 		/**
 		 * Update the specified story in storage.
@@ -384,7 +365,6 @@ PROMPT;
 						$page->places()->sync($pageData['places'] ?? []);
 					}
 				}
-				// Delete pages that were not in the submission
 				$story->pages()->whereNotIn('id', $incomingPageIds)->delete();
 			});
 
@@ -405,7 +385,6 @@ PROMPT;
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
 
-		// START MODIFICATION: Add methods for AI image prompt generation.
 		/**
 		 * Generate an image prompt for a story page using AI.
 		 *
@@ -415,31 +394,23 @@ PROMPT;
 		 */
 		public function generateImagePrompt(Request $request, LlmController $llmController)
 		{
+			// START MODIFICATION: Update validation to accept the full prompt.
 			$validated = $request->validate([
-				'page_text' => 'required|string',
-				'character_descriptions' => 'present|array',
-				'character_descriptions.*' => 'string',
-				'place_descriptions' => 'present|array',
-				'place_descriptions.*' => 'string',
-				'instructions' => 'nullable|string|max:1000',
+				'prompt' => 'required|string',
 				'model' => 'required|string',
 			]);
-
-			$prompt = $this->buildImageGenerationPrompt(
-				$validated['page_text'],
-				$validated['character_descriptions'],
-				$validated['place_descriptions'],
-				$validated['instructions'] ?? ''
-			);
+			// END MODIFICATION
 
 			try {
+				// START MODIFICATION: Use the full prompt from the request directly.
 				$response = $llmController->callLlmSync(
-					$prompt,
+					$validated['prompt'],
 					$validated['model'],
 					'AI Image Prompt Generation',
 					0.7,
 					'json_object'
 				);
+				// END MODIFICATION
 
 				$generatedPrompt = $response['prompt'] ?? null;
 
@@ -459,56 +430,10 @@ PROMPT;
 			}
 		}
 
-		/**
-		 * Builds the prompt for the LLM to generate an image prompt.
-		 *
-		 * @param string $pageText
-		 * @param array $characterDescriptions
-		 * @param array $placeDescriptions
-		 * @param string $userInstructions
-		 * @return string
-		 */
-		private function buildImageGenerationPrompt(string $pageText, array $characterDescriptions, array $placeDescriptions, string $userInstructions): string
-		{
-			$characterText = !empty($characterDescriptions) ? "Characters in this scene:\n- " . implode("\n- ", $characterDescriptions) : "No specific characters are described for this scene.";
-			$placeText = !empty($placeDescriptions) ? "Places in this scene:\n- " . implode("\n- ", $placeDescriptions) : "No specific places are described for this scene.";
-			$instructionsText = !empty($userInstructions) ? "User's specific instructions: \"{$userInstructions}\"" : "No specific instructions from the user.";
-
-			$jsonStructure = <<<'JSON'
-{
-  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
-}
-JSON;
-
-			return <<<PROMPT
-You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
-Your task is to create a single, concise, and descriptive image prompt based on the provided context of a story page.
-
-**Context:**
-1.  **Page Content:**
-    "{$pageText}"
-
-2.  **Scene Details:**
-    {$characterText}
-    {$placeText}
-
-3.  **User Guidance:**
-    {$instructionsText}
-
-**Instructions:**
-- Synthesize all the information to create a vivid image prompt.
-- The prompt should be a single paragraph of comma-separated descriptive phrases.
-- Focus on visual details: the setting, character appearance, actions, mood, and lighting.
-- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-- The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the image prompt for the provided context in the specified JSON format.
-PROMPT;
-		}
+		// START MODIFICATION: This method is no longer needed on the backend as its logic is moved to JavaScript.
+		// private function buildImageGenerationPrompt(...)
 		// END MODIFICATION
 
-		// START NEW MODIFICATION: Add methods for Character/Place AI image prompt generation.
 		/**
 		 * Generate an image prompt for a story character using AI.
 		 *
@@ -543,26 +468,23 @@ PROMPT;
 		 */
 		private function generateAssetImagePrompt(Request $request, LlmController $llmController, string $assetType)
 		{
+			// START MODIFICATION: Update validation to accept the full prompt.
 			$validated = $request->validate([
-				'description' => 'required|string',
-				'instructions' => 'nullable|string|max:1000',
+				'prompt' => 'required|string',
 				'model' => 'required|string',
 			]);
-
-			$prompt = $this->buildAssetImageGenerationPrompt(
-				$validated['description'],
-				$assetType,
-				$validated['instructions'] ?? ''
-			);
+			// END MODIFICATION
 
 			try {
+				// START MODIFICATION: Use the full prompt from the request directly.
 				$response = $llmController->callLlmSync(
-					$prompt,
+					$validated['prompt'],
 					$validated['model'],
 					'AI Asset Image Prompt Generation',
 					0.7,
 					'json_object'
 				);
+				// END MODIFICATION
 
 				$generatedPrompt = $response['prompt'] ?? null;
 
@@ -582,47 +504,9 @@ PROMPT;
 			}
 		}
 
-		/**
-		 * Builds the prompt for the LLM to generate an image prompt for an asset.
-		 *
-		 * @param string $assetDescription
-		 * @param string $assetType
-		 * @param string $userInstructions
-		 * @return string
-		 */
-		private function buildAssetImageGenerationPrompt(string $assetDescription, string $assetType, string $userInstructions): string
-		{
-			$instructionsText = !empty($userInstructions) ? "User's specific instructions: \"{$userInstructions}\"" : "No specific instructions from the user.";
-
-			$jsonStructure = <<<'JSON'
-{
-  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
-}
-JSON;
-
-			return <<<PROMPT
-You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
-Your task is to create a single, concise, and descriptive image prompt for a story {$assetType}.
-
-**Context:**
-1.  **{$assetType} Description:**
-    "{$assetDescription}"
-
-2.  **User Guidance:**
-    {$instructionsText}
-
-**Instructions:**
-- Synthesize all the information to create a vivid image prompt for a portrait or scene featuring this {$assetType}.
-- The prompt should be a single paragraph of comma-separated descriptive phrases.
-- Focus on visual details: appearance, key features, mood, and lighting.
-- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-- The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the image prompt for the provided context in the specified JSON format.
-PROMPT;
-		}
-		// END NEW MODIFICATION
+		// START MODIFICATION: This method is no longer needed on the backend as its logic is moved to JavaScript.
+		// private function buildAssetImageGenerationPrompt(...)
+		// END MODIFICATION
 
 		/**
 		 * Show the character management page for a story.
@@ -635,7 +519,6 @@ PROMPT;
 
 			$story->load('characters');
 
-			// START MODIFICATION: Load prompt data for images and AI models for modals.
 			foreach ($story->characters as $character) {
 				$character->prompt_data = null;
 				if ($character->id && !empty($character->image_path)) {
@@ -666,7 +549,6 @@ PROMPT;
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
 			];
-			// END MODIFICATION
 
 			return view('story.characters', compact('story', 'models', 'imageModels'));
 		}
@@ -680,7 +562,6 @@ PROMPT;
 				abort(403, 'Unauthorized action.');
 			}
 
-			// START MODIFICATION: Add validation for image_prompt.
 			$validated = $request->validate([
 				'characters' => 'nullable|array',
 				'characters.*.id' => 'nullable|integer|exists:story_characters,id',
@@ -689,13 +570,11 @@ PROMPT;
 				'characters.*.image_prompt' => 'nullable|string',
 				'characters.*.image_path' => 'nullable|string|max:2048',
 			]);
-			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated) {
 				$incomingIds = [];
 				if (isset($validated['characters'])) {
 					foreach ($validated['characters'] as $charData) {
-						// START MODIFICATION: Add image_prompt to values.
 						$values = [
 							'story_id' => $story->id,
 							'name' => $charData['name'],
@@ -703,12 +582,10 @@ PROMPT;
 							'image_prompt' => $charData['image_prompt'] ?? null,
 							'image_path' => $charData['image_path'] ?? null,
 						];
-						// END MODIFICATION
 						$character = StoryCharacter::updateOrCreate(['id' => $charData['id'] ?? null, 'story_id' => $story->id], $values);
 						$incomingIds[] = $character->id;
 					}
 				}
-				// Delete any characters that were not submitted
 				$story->characters()->whereNotIn('id', $incomingIds)->delete();
 			});
 
@@ -726,7 +603,6 @@ PROMPT;
 
 			$story->load('places');
 
-			// START MODIFICATION: Load prompt data for images and AI models for modals.
 			foreach ($story->places as $place) {
 				$place->prompt_data = null;
 				if ($place->id && !empty($place->image_path)) {
@@ -757,7 +633,6 @@ PROMPT;
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
 			];
-			// END MODIFICATION
 
 			return view('story.places', compact('story', 'models', 'imageModels'));
 		}
@@ -771,7 +646,6 @@ PROMPT;
 				abort(403, 'Unauthorized action.');
 			}
 
-			// START MODIFICATION: Add validation for image_prompt.
 			$validated = $request->validate([
 				'places' => 'nullable|array',
 				'places.*.id' => 'nullable|integer|exists:story_places,id',
@@ -780,13 +654,11 @@ PROMPT;
 				'places.*.image_prompt' => 'nullable|string',
 				'places.*.image_path' => 'nullable|string|max:2048',
 			]);
-			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated) {
 				$incomingIds = [];
 				if (isset($validated['places'])) {
 					foreach ($validated['places'] as $placeData) {
-						// START MODIFICATION: Add image_prompt to values.
 						$values = [
 							'story_id' => $story->id,
 							'name' => $placeData['name'],
@@ -794,12 +666,10 @@ PROMPT;
 							'image_prompt' => $placeData['image_prompt'] ?? null,
 							'image_path' => $placeData['image_path'] ?? null,
 						];
-						// END MODIFICATION
 						$place = StoryPlace::updateOrCreate(['id' => $placeData['id'] ?? null, 'story_id' => $story->id], $values);
 						$incomingIds[] = $place->id;
 					}
 				}
-				// Delete any places that were not submitted
 				$story->places()->whereNotIn('id', $incomingIds)->delete();
 			});
 
