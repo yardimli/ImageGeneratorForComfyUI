@@ -38,7 +38,9 @@
 										<h5 class="mb-1">{{ $story->title }}</h5>
 									</a>
 									<p class="mb-1">{{ $story->short_description }}</p>
-									<small>By: {{ $story->user->name ?? 'Unknown Author' }} | Last updated: {{ $story->updated_at->format('M d, Y') }}</small>
+									{{-- START MODIFICATION: Display the story level. --}}
+									<small>By: {{ $story->user->name ?? 'Unknown Author' }} | Level: {{ $story->level ?? 'N/A' }} | Last updated: {{ $story->updated_at->format('M d, Y') }}</small>
+									{{-- END MODIFICATION --}}
 								</div>
 								{{-- START MODIFICATION: Show edit/delete buttons to any authenticated user. --}}
 								@auth

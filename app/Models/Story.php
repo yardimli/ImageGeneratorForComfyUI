@@ -9,11 +9,16 @@
 	{
 		use HasFactory;
 
+		// START MODIFICATION: Add new fields to the fillable array.
 		protected $fillable = [
 			'user_id',
 			'title',
 			'short_description',
+			'level',
+			'initial_prompt',
+			'model',
 		];
+		// END MODIFICATION
 
 		public function user()
 		{

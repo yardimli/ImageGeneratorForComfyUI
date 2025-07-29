@@ -16,6 +16,20 @@
 						@enderror
 					</div>
 					
+					{{-- START MODIFICATION: Add a select input for the story level. --}}
+					<div class="mb-3">
+						<label for="level" class="form-label">Level</label>
+						<select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
+							<option value="Beginner" {{ old('level') == 'Beginner' ? 'selected' : '' }}>Beginner</option>
+							<option value="Intermediate" {{ old('level', 'Intermediate') == 'Intermediate' ? 'selected' : '' }}>Intermediate</option>
+							<option value="Advanced" {{ old('level') == 'Advanced' ? 'selected' : '' }}>Advanced</option>
+						</select>
+						@error('level')
+						<div class="invalid-feedback">{{ $message }}</div>
+						@enderror
+					</div>
+					{{-- END MODIFICATION --}}
+					
 					<div class="mb-3">
 						<label for="short_description" class="form-label">Short Description</label>
 						<textarea class="form-control @error('short_description') is-invalid @enderror" id="short_description" name="short_description" rows="3">{{ old('short_description') }}</textarea>

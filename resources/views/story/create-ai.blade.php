@@ -1,4 +1,3 @@
-resources/views/story/create-ai.blade.php:
 @extends('layouts.bootstrap-app')
 
 @section('content')
@@ -36,8 +35,9 @@ resources/views/story/create-ai.blade.php:
 						@enderror
 					</div>
 					
+					{{-- START MODIFICATION: Restructure row to include Level and use 3 columns. --}}
 					<div class="row">
-						<div class="col-md-6 mb-3">
+						<div class="col-md-4 mb-3">
 							<label for="num_pages" class="form-label">Number of Pages</label>
 							<select class="form-select @error('num_pages') is-invalid @enderror" id="num_pages" name="num_pages" required>
 								@for ($i = 1; $i <= 20; $i++)
@@ -48,7 +48,18 @@ resources/views/story/create-ai.blade.php:
 							<div class="invalid-feedback">{{ $message }}</div>
 							@enderror
 						</div>
-						<div class="col-md-6 mb-3">
+						<div class="col-md-4 mb-3">
+							<label for="level" class="form-label">Level</label>
+							<select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
+								<option value="Beginner" {{ old('level') == 'Beginner' ? 'selected' : '' }}>Beginner</option>
+								<option value="Intermediate" {{ old('level', 'Intermediate') == 'Intermediate' ? 'selected' : '' }}>Intermediate</option>
+								<option value="Advanced" {{ old('level') == 'Advanced' ? 'selected' : '' }}>Advanced</option>
+							</select>
+							@error('level')
+							<div class="invalid-feedback">{{ $message }}</div>
+							@enderror
+						</div>
+						<div class="col-md-4 mb-3">
 							<label for="model" class="form-label">AI Model</label>
 							<select class="form-select @error('model') is-invalid @enderror" id="model" name="model" required>
 								<option value="">-- Select a Model --</option>
@@ -66,6 +77,7 @@ resources/views/story/create-ai.blade.php:
 							@enderror
 						</div>
 					</div>
+					{{-- END MODIFICATION --}}
 					
 					<div class="d-flex justify-content-end align-items-center gap-3">
 						<a href="{{ route('stories.index') }}" class="btn btn-secondary">Cancel</a>

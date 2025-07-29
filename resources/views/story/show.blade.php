@@ -43,7 +43,36 @@
 			</div>
 			<div class="card-body">
 				<p class="lead">{{ $story->short_description }}</p>
-				<p class="text-muted">By: {{ $story->user->name ?? 'Unknown Author' }}</p>
+				{{-- START MODIFICATION: Display story level. --}}
+				<p class="text-muted">By: {{ $story->user->name ?? 'Unknown Author' }} | Level: {{ $story->level ?? 'N/A' }}</p>
+				{{-- END MODIFICATION --}}
+				
+				{{-- START MODIFICATION: Add collapsible section for AI generation details. --}}
+				@if($story->initial_prompt)
+					<div class="card bg-body-tertiary mb-4">
+						<div class="card-header">
+							<h5 class="mb-0">
+								<a class="text-decoration-none" data-bs-toggle="collapse" href="#ai-details" role="button" aria-expanded="false" aria-controls="ai-details">
+									AI Generation Details
+								</a>
+							</h5>
+						</div>
+						<div class="collapse" id="ai-details">
+							<div class="card-body">
+								<div class="mb-3">
+									<strong>Model Used:</strong>
+									<p class="font-monospace mb-0">{{ $story->model }}</p>
+								</div>
+								<div>
+									<strong>Initial Prompt:</strong>
+									<p class="font-monospace" style="white-space: pre-wrap;">{{ $story->initial_prompt }}</p>
+								</div>
+							</div>
+						</div>
+					</div>
+				@endif
+				{{-- END MODIFICATION --}}
+				
 				<hr>
 				
 				{{-- Story Pages --}}

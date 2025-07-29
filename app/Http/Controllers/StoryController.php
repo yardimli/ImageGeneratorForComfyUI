@@ -71,16 +71,22 @@
 		 */
 		public function store(Request $request)
 		{
+			// START MODIFICATION: Add level to validation.
 			$validated = $request->validate([
 				'title' => 'required|string|max:255',
 				'short_description' => 'nullable|string',
+				'level' => 'required|string|max:50',
 			]);
+			// END MODIFICATION
 
+			// START MODIFICATION: Add level to the created story.
 			$story = Story::create([
 				'user_id' => auth()->id(),
 				'title' => $validated['title'],
 				'short_description' => $validated['short_description'],
+				'level' => $validated['level'],
 			]);
+			// END MODIFICATION
 
 			return redirect()->route('stories.edit', $story)->with('success', 'Story created successfully. Now add some pages!');
 		}
@@ -94,11 +100,14 @@
 		 */
 		public function storeWithAi(Request $request, LlmController $llmController)
 		{
+			// START MODIFICATION: Add level to validation.
 			$validated = $request->validate([
 				'instructions' => 'required|string|max:4000',
 				'num_pages' => 'required|integer|min:1|max:99',
 				'model' => 'required|string',
+				'level' => 'required|string|max:50',
 			]);
+			// END MODIFICATION
 
 			$prompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
 
@@ -113,7 +122,9 @@
 
 				$this->validateStoryData($storyData);
 
-				$story = $this->saveStoryFromAiData($storyData);
+				// START MODIFICATION: Pass all validated data to the save method.
+				$story = $this->saveStoryFromAiData($storyData, $validated);
+				// END MODIFICATION
 
 				return redirect()->route('stories.edit', $story)->with('success', 'Your AI-generated story has been created successfully!');
 			} catch (ValidationException $e) {
@@ -208,16 +219,23 @@ PROMPT;
 		 * Saves the story and its components from the validated AI data.
 		 *
 		 * @param array $data
+		 * @param array $validatedRequestData
 		 * @return Story
 		 */
-		private function saveStoryFromAiData(array $data): Story
+		// START MODIFICATION: Update method signature to accept validated request data.
+		private function saveStoryFromAiData(array $data, array $validatedRequestData): Story
 		{
-			return DB::transaction(function () use ($data) {
+			return DB::transaction(function () use ($data, $validatedRequestData) {
+				// START MODIFICATION: Save AI generation details along with the story.
 				$story = Story::create([
 					'user_id' => auth()->id(),
 					'title' => $data['title'],
 					'short_description' => $data['description'],
+					'level' => $validatedRequestData['level'],
+					'initial_prompt' => $validatedRequestData['instructions'],
+					'model' => $validatedRequestData['model'],
 				]);
+				// END MODIFICATION
 
 				$characterMap = [];
 				foreach ($data['characters'] as $charData) {
@@ -257,6 +275,7 @@ PROMPT;
 				return $story;
 			});
 		}
+		// END MODIFICATION
 
 		/**
 		 * Show the form for editing the specified story.
@@ -314,9 +333,11 @@ PROMPT;
 			// START MODIFICATION: Removed authorization check to allow any authenticated user to update.
 			// END MODIFICATION
 
+			// START MODIFICATION: Add level to validation.
 			$validated = $request->validate([
 				'title' => 'required|string|max:255',
 				'short_description' => 'nullable|string',
+				'level' => 'required|string|max:50',
 				'pages' => 'nullable|array',
 				'pages.*.id' => 'nullable|integer|exists:story_pages,id',
 				'pages.*.story_text' => 'nullable|string',
@@ -327,12 +348,16 @@ PROMPT;
 				'pages.*.places' => 'nullable|array',
 				'pages.*.places.*' => 'integer|exists:story_places,id',
 			]);
+			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated, $request) {
+				// START MODIFICATION: Update the level field.
 				$story->update([
 					'title' => $validated['title'],
 					'short_description' => $validated['short_description'],
+					'level' => $validated['level'],
 				]);
+				// END MODIFICATION
 
 				$pageNumber = 1;
 				$incomingPageIds = [];

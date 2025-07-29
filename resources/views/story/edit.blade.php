@@ -24,10 +24,26 @@
 					<a href="{{ route('stories.index') }}" class="btn btn-sm btn-secondary">Back to List</a>
 				</div>
 				<div class="card-body">
-					<div class="mb-3">
-						<label for="title" class="form-label">Title</label>
-						<input type="text" class="form-control" id="title" name="title" value="{{ old('title', $story->title) }}" required>
+					{{-- START MODIFICATION: Restructure top fields to include Level. --}}
+					<div class="row">
+						<div class="col-md-8">
+							<div class="mb-3">
+								<label for="title" class="form-label">Title</label>
+								<input type="text" class="form-control" id="title" name="title" value="{{ old('title', $story->title) }}" required>
+							</div>
+						</div>
+						<div class="col-md-4">
+							<div class="mb-3">
+								<label for="level" class="form-label">Level</label>
+								<select class="form-select" id="level" name="level" required>
+									<option value="Beginner" {{ old('level', $story->level) == 'Beginner' ? 'selected' : '' }}>Beginner</option>
+									<option value="Intermediate" {{ old('level', $story->level) == 'Intermediate' ? 'selected' : '' }}>Intermediate</option>
+									<option value="Advanced" {{ old('level', $story->level) == 'Advanced' ? 'selected' : '' }}>Advanced</option>
+								</select>
+							</div>
+						</div>
 					</div>
+					{{-- END MODIFICATION --}}
 					<div class="mb-3">
 						<label for="short_description" class="form-label">Short Description</label>
 						<textarea class="form-control" id="short_description" name="short_description" rows="3">{{ old('short_description', $story->short_description) }}</textarea>
