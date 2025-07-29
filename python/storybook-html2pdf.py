@@ -228,7 +228,7 @@ def main():
     # Page Layout
     parser.add_argument("--width-mm", required=True, type=float, help="Page trim width in millimeters.")
     parser.add_argument("--height-mm", required=True, type=float, help="Page trim height in millimeters.")
-    parser.add_-argument("--bleed-mm", default=0.0, type=float, help="Bleed in millimeters for each outer edge.")
+    parser.add_argument("--bleed-mm", default=0.0, type=float, help="Bleed in millimeters for each outer edge.")
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing (Note: Not directly used by WeasyPrint, but kept for interface compatibility).")
     parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF.")
     # Content
