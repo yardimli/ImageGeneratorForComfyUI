@@ -125,12 +125,24 @@ def generate_css(args):
     }}
 
     /* --- Story Content Pages --- */
+    .story-image-page {{
+        /* This page is for full-bleed images, so it has zero padding or margin. */
+        padding: 0;
+        margin: 0;
+    }}
+
     .story-image-page img {{
-        width: calc({args.width_mm}mm + 2 * {args.bleed_mm}mm);
-        height: calc({args.height_mm}mm + 2 * {args.bleed_mm}mm);
+        /* Make the image fill 100% of the page width and height, including the bleed area. */
         position: absolute;
+        /* Stretch the image outwards from the trim box to the bleed box.
+           The width and height are automatically calculated to fill this space. */
         top: -{args.bleed_mm}mm;
         left: -{args.bleed_mm}mm;
+        right: -{args.bleed_mm}mm;
+        bottom: -{args.bleed_mm}mm;
+        width: 100%;
+        height: 100%;
+        /* 'cover' ensures the image content fills the area, maintaining aspect ratio. */
         object-fit: cover;
     }}
 
@@ -216,7 +228,7 @@ def main():
     # Page Layout
     parser.add_argument("--width-mm", required=True, type=float, help="Page trim width in millimeters.")
     parser.add_argument("--height-mm", required=True, type=float, help="Page trim height in millimeters.")
-    parser.add_argument("--bleed-mm", default=0.0, type=float, help="Bleed in millimeters for each outer edge.")
+    parser.add_-argument("--bleed-mm", default=0.0, type=float, help="Bleed in millimeters for each outer edge.")
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing (Note: Not directly used by WeasyPrint, but kept for interface compatibility).")
     parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF.")
     # Content
