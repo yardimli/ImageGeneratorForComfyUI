@@ -11,14 +11,10 @@
 	
 	<title>{{ config('app.name', 'Laravel') }}</title>
 	
-	<!-- Fonts -->
-	<link rel="dns-prefetch" href="//fonts.bunny.net">
-	<link href="https://fonts.bunny.net/css?family=Nunito" rel="stylesheet">
-	
-	<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png">
-	<link rel="manifest" href="/site.webmanifest">
+	<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+	<link rel="manifest" href="/images/site.webmanifest">
 	<script>
 		// Set theme on page load to prevent flickering
 		(function () {
@@ -162,8 +158,8 @@
 	</main>
 </div>
 
-<script src="{{ asset('js/popper.min.js') }}"></script>
-<script src="{{ asset('js/bootstrap.min.js') }}"></script>
+<script src="{{ asset('vendor/popper.min.js') }}"></script>
+<script src="{{ asset('vendor/bootstrap.min.js') }}"></script>
 
 @yield('scripts')
 </body>

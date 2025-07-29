@@ -24,7 +24,7 @@
 		{
 			// START MODIFICATION: Load Lora data from JSON file.
 			$storagePath = 'public/kontext-loras.json';
-			$publicPath = public_path('kontext-loras.json');
+			$publicPath = resource_path('lora/kontext-loras.json');
 			$loras = [];
 
 			// Check if the file exists in storage, if not, copy it from the public directory.
