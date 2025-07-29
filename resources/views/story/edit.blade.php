@@ -233,7 +233,7 @@
 @endsection
 
 @section('styles')
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"/>
+	<link rel="stylesheet" href="{{asset('vendor/cropperjs/1.6.1/cropper.min.css')}}"/>
 	<style>
       .history-image-card { cursor: pointer; border: 2px solid transparent; }
       .history-image-card.selected { border-color: var(--bs-primary); }
@@ -257,6 +257,6 @@
 @endsection
 
 @section('scripts')
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	<script src="{{ asset('js/story-editor.js') }}"></script>
 @endsection

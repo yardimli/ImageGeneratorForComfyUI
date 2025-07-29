@@ -1,7 +1,7 @@
 @extends('layouts.bootstrap-app')
 
 @section('styles')
-	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css"/>
+	<link rel="stylesheet" href="{{asset('vendor/cropperjs/1.6.1/cropper.min.css')}}"/>
 	<style>
       #canvas-container {
           box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -151,7 +151,7 @@
 
 @section('scripts')
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-	<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
+	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	
 	<script>
 		document.addEventListener('DOMContentLoaded', () => {

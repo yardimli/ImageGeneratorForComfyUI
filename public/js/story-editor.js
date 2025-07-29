@@ -301,7 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		let activeImagePromptTextarea = null;
 		
 		// START NEW MODIFICATION: Remember and pre-fill AI prompt generator settings from localStorage.
-		const promptModelKey = 'storyEditor_promptModel';
+		const promptModelKey = 'storyCreateAi_model';
 		const promptInstructionsKey = 'storyEditor_promptInstructions';
 		
 		// Load saved settings when modal is shown

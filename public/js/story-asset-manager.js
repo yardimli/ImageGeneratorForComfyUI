@@ -298,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		const generatedPromptText = document.getElementById('generated-prompt-text');
 		let activeImagePromptTextarea = null;
 		
-		const promptModelKey = 'storyAsset_promptModel';
-		const promptInstructionsKey = 'storyAsset_promptInstructions';
+		const promptModelKey = 'storyCreateAi_model';
+		const promptInstructionsKey = 'storyEditor_promptInstructions';
 		
 		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
 			const savedModel = localStorage.getItem(promptModelKey);
