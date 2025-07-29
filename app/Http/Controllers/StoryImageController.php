@@ -5,10 +5,8 @@
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
 	use App\Models\StoryPage;
-	// START MODIFICATION: Import Character and Place models.
 	use App\Models\StoryCharacter;
 	use App\Models\StoryPlace;
-	// END MODIFICATION
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Log;
 	use Throwable;
@@ -27,10 +25,8 @@
 		 */
 		public function generate(Request $request, StoryPage $storyPage)
 		{
-			// Authorization check
-			if ($storyPage->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 
 			$validated = $request->validate([
 				'model' => 'required|string|max:255',
@@ -89,14 +85,12 @@
 				]);
 
 				return response()->json(['success' => true, 'message' => 'Image generation has been queued successfully.']);
-
 			} catch (Throwable $e) {
 				Log::error('Failed to queue story image generation: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while queueing the image.'], 500);
 			}
 		}
 
-		// START MODIFICATION: Add method to check image generation status.
 		/**
 		 * Checks the status of the latest image generation for a story page.
 		 *
@@ -105,10 +99,8 @@
 		 */
 		public function checkStatus(StoryPage $storyPage)
 		{
-			// Authorization check
-			if ($storyPage->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 
 			try {
 				// Find the latest queued prompt for this page.
@@ -133,15 +125,12 @@
 
 				// Image not ready yet
 				return response()->json(['success' => true, 'status' => 'pending']);
-
 			} catch (Throwable $e) {
 				Log::error('Failed to check story image status: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while checking status.'], 500);
 			}
 		}
-		// END MODIFICATION
 
-		// START NEW MODIFICATION: Add methods for character image generation.
 		/**
 		 * Creates a prompt to queue an image for a character.
 		 *
@@ -151,9 +140,8 @@
 		 */
 		public function generateForCharacter(Request $request, StoryCharacter $character)
 		{
-			if ($character->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 			return $this->doGenerate($request, $character, 'character');
 		}
 
@@ -165,14 +153,11 @@
 		 */
 		public function checkCharacterStatus(StoryCharacter $character)
 		{
-			if ($character->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 			return $this->doCheckStatus('story_character_id', $character->id);
 		}
-		// END NEW MODIFICATION
 
-		// START NEW MODIFICATION: Add methods for place image generation.
 		/**
 		 * Creates a prompt to queue an image for a place.
 		 *
@@ -182,9 +167,8 @@
 		 */
 		public function generateForPlace(Request $request, StoryPlace $place)
 		{
-			if ($place->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 			return $this->doGenerate($request, $place, 'place');
 		}
 
@@ -196,14 +180,11 @@
 		 */
 		public function checkPlaceStatus(StoryPlace $place)
 		{
-			if ($place->story->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
-			}
+			// START MODIFICATION: Removed authorization check.
+			// END MODIFICATION
 			return $this->doCheckStatus('story_place_id', $place->id);
 		}
-		// END NEW MODIFICATION
 
-		// START NEW MODIFICATION: Private helper methods for generation and status checks.
 		/**
 		 * Private helper to handle image generation logic for any asset type.
 		 *
@@ -271,7 +252,6 @@
 				]);
 
 				return response()->json(['success' => true, 'message' => 'Image generation has been queued successfully.']);
-
 			} catch (Throwable $e) {
 				Log::error("Failed to queue story {$assetType} image generation: " . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while queueing the image.'], 500);
@@ -306,11 +286,9 @@
 				}
 
 				return response()->json(['success' => true, 'status' => 'pending']);
-
 			} catch (Throwable $e) {
 				Log::error('Failed to check story asset image status: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while checking status.'], 500);
 			}
 		}
-		// END NEW MODIFICATION
 	}

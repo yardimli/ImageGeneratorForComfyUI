@@ -32,11 +32,12 @@
 			<div class="card-header d-flex justify-content-between align-items-center flex-wrap">
 				<h1 class="mb-0 me-3">{{ $story->title }}</h1>
 				<div class="d-flex gap-2 mt-2 mt-md-0">
-					{{-- START NEW MODIFICATION: Add PDF download button --}}
+					{{-- START MODIFICATION: Added an "Edit Story" button for authenticated users. --}}
 					@auth
+						<a href="{{ route('stories.edit', $story) }}" class="btn btn-primary">Edit Story</a>
 						<a href="{{ route('stories.pdf.setup', $story) }}" class="btn btn-info">Download as PDF</a>
 					@endauth
-					{{-- END NEW MODIFICATION --}}
+					{{-- END MODIFICATION --}}
 					<a href="{{ route('stories.index') }}" class="btn btn-secondary">Back to All Stories</a>
 				</div>
 			</div>

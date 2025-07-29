@@ -116,7 +116,6 @@
 				$story = $this->saveStoryFromAiData($storyData);
 
 				return redirect()->route('stories.edit', $story)->with('success', 'Your AI-generated story has been created successfully!');
-
 			} catch (ValidationException $e) {
 				return back()->withInput()->withErrors($e->errors())->with('error', 'The AI returned data in an invalid format. Please try again.');
 			} catch (\Exception $e) {
@@ -244,8 +243,8 @@ PROMPT;
 						'story_text' => $pageData['content'],
 					]);
 
-					$charIds = collect($pageData['characters'])->map(fn($name) => $characterMap[$name] ?? null)->filter()->all();
-					$placeIds = collect($pageData['places'])->map(fn($name) => $placeMap[$name] ?? null)->filter()->all();
+					$charIds = collect($pageData['characters'])->map(fn ($name) => $characterMap[$name] ?? null)->filter()->all();
+					$placeIds = collect($pageData['places'])->map(fn ($name) => $placeMap[$name] ?? null)->filter()->all();
 
 					if (!empty($charIds)) {
 						$page->characters()->sync($charIds);
@@ -264,9 +263,8 @@ PROMPT;
 		 */
 		public function edit(Story $story, LlmController $llmController)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to edit.
+			// END MODIFICATION
 
 			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
 
@@ -313,9 +311,8 @@ PROMPT;
 		 */
 		public function update(Request $request, Story $story)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to update.
+			// END MODIFICATION
 
 			$validated = $request->validate([
 				'title' => 'required|string|max:255',
@@ -377,9 +374,8 @@ PROMPT;
 		 */
 		public function destroy(Story $story)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to delete.
+			// END MODIFICATION
 
 			$story->delete();
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
@@ -394,15 +390,12 @@ PROMPT;
 		 */
 		public function generateImagePrompt(Request $request, LlmController $llmController)
 		{
-			// START MODIFICATION: Update validation to accept the full prompt.
 			$validated = $request->validate([
 				'prompt' => 'required|string',
 				'model' => 'required|string',
 			]);
-			// END MODIFICATION
 
 			try {
-				// START MODIFICATION: Use the full prompt from the request directly.
 				$response = $llmController->callLlmSync(
 					$validated['prompt'],
 					$validated['model'],
@@ -410,7 +403,6 @@ PROMPT;
 					0.7,
 					'json_object'
 				);
-				// END MODIFICATION
 
 				$generatedPrompt = $response['prompt'] ?? null;
 
@@ -423,16 +415,11 @@ PROMPT;
 					'success' => true,
 					'prompt' => trim($generatedPrompt)
 				]);
-
 			} catch (\Exception $e) {
 				Log::error('AI Image Prompt Generation Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
 		}
-
-		// START MODIFICATION: This method is no longer needed on the backend as its logic is moved to JavaScript.
-		// private function buildImageGenerationPrompt(...)
-		// END MODIFICATION
 
 		/**
 		 * Generate an image prompt for a story character using AI.
@@ -468,15 +455,12 @@ PROMPT;
 		 */
 		private function generateAssetImagePrompt(Request $request, LlmController $llmController, string $assetType)
 		{
-			// START MODIFICATION: Update validation to accept the full prompt.
 			$validated = $request->validate([
 				'prompt' => 'required|string',
 				'model' => 'required|string',
 			]);
-			// END MODIFICATION
 
 			try {
-				// START MODIFICATION: Use the full prompt from the request directly.
 				$response = $llmController->callLlmSync(
 					$validated['prompt'],
 					$validated['model'],
@@ -484,7 +468,6 @@ PROMPT;
 					0.7,
 					'json_object'
 				);
-				// END MODIFICATION
 
 				$generatedPrompt = $response['prompt'] ?? null;
 
@@ -497,25 +480,19 @@ PROMPT;
 					'success' => true,
 					'prompt' => trim($generatedPrompt)
 				]);
-
 			} catch (\Exception $e) {
 				Log::error("AI {$assetType} Image Prompt Generation Failed: " . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
 		}
 
-		// START MODIFICATION: This method is no longer needed on the backend as its logic is moved to JavaScript.
-		// private function buildAssetImageGenerationPrompt(...)
-		// END MODIFICATION
-
 		/**
 		 * Show the character management page for a story.
 		 */
 		public function characters(Story $story, LlmController $llmController)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to manage characters.
+			// END MODIFICATION
 
 			$story->load('characters');
 
@@ -558,9 +535,8 @@ PROMPT;
 		 */
 		public function updateCharacters(Request $request, Story $story)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to update characters.
+			// END MODIFICATION
 
 			$validated = $request->validate([
 				'characters' => 'nullable|array',
@@ -597,9 +573,8 @@ PROMPT;
 		 */
 		public function places(Story $story, LlmController $llmController)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to manage places.
+			// END MODIFICATION
 
 			$story->load('places');
 
@@ -642,9 +617,8 @@ PROMPT;
 		 */
 		public function updatePlaces(Request $request, Story $story)
 		{
-			if ($story->user_id !== auth()->id()) {
-				abort(403, 'Unauthorized action.');
-			}
+			// START MODIFICATION: Removed authorization check to allow any authenticated user to update places.
+			// END MODIFICATION
 
 			$validated = $request->validate([
 				'places' => 'nullable|array',
