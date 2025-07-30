@@ -38,8 +38,17 @@
 										<h5 class="mb-1">{{ $story->title }}</h5>
 									</a>
 									<p class="mb-1">{{ $story->short_description }}</p>
-									{{-- START MODIFICATION: Display the story level. --}}
-									<small>By: {{ $story->user->name ?? 'Unknown Author' }} | Level: {{ $story->level ?? 'N/A' }} | Last updated: {{ $story->updated_at->format('M d, Y') }}</small>
+									{{-- START MODIFICATION: Display the story level, image count, and cost. --}}
+									<small>
+										By: {{ $story->user->name ?? 'Unknown Author' }} |
+										Level: {{ $story->level ?? 'N/A' }} |
+										@php
+											$imageCount = $story->image_count;
+											$cost = $imageCount * 0.07;
+										@endphp
+										Images: {{ $imageCount }} (${{ number_format($cost, 2) }}) |
+										Last updated: {{ $story->updated_at->format('M d, Y') }}
+									</small>
 									{{-- END MODIFICATION --}}
 								</div>
 								{{-- START MODIFICATION: Show edit/delete buttons to any authenticated user. --}}

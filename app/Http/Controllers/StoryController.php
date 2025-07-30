@@ -21,7 +21,12 @@
 		 */
 		public function index()
 		{
-			$stories = Story::with('user')->latest('updated_at')->paginate(15);
+			// START MODIFICATION: Eager load prompt counts for each story.
+			$stories = Story::with('user')
+				->withCount(['pagePrompts', 'characterPrompts', 'placePrompts'])
+				->latest('updated_at')
+				->paginate(15);
+			// END MODIFICATION
 			return view('story.index', compact('stories'));
 		}
 
