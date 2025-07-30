@@ -21,9 +21,32 @@
 		 */
 		public function index()
 		{
-			// START MODIFICATION: Eager load prompt counts for each story.
+			// START MODIFICATION: Eager load prompt counts and calculate cost via subquery.
 			$stories = Story::with('user')
 				->withCount(['pagePrompts', 'characterPrompts', 'placePrompts'])
+				->addSelect([
+					'image_cost' => Prompt::selectRaw('COALESCE(SUM(
+                        CASE
+                            WHEN model = "dev" THEN 0.00
+                            WHEN model LIKE "%imagen%" THEN 0.07
+                            ELSE 0.04
+                        END
+                    ), 0)')
+						->where(function ($query) {
+							// Link prompts to the story through its pages
+							$query->whereIn('story_page_id', function ($subQuery) {
+								$subQuery->select('id')->from('story_pages')->whereColumn('story_pages.story_id', 'stories.id');
+							})
+								// Link prompts to the story through its characters
+								->orWhereIn('story_character_id', function ($subQuery) {
+									$subQuery->select('id')->from('story_characters')->whereColumn('story_characters.story_id', 'stories.id');
+								})
+								// Link prompts to the story through its places
+								->orWhereIn('story_place_id', function ($subQuery) {
+									$subQuery->select('id')->from('story_places')->whereColumn('story_places.story_id', 'stories.id');
+								});
+						})
+				])
 				->latest('updated_at')
 				->paginate(15);
 			// END MODIFICATION

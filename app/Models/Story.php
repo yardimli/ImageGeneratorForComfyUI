@@ -2,9 +2,7 @@
 
 	namespace App\Models;
 
-	// START MODIFICATION: Import Attribute for accessor.
 	use Illuminate\Database\Eloquent\Casts\Attribute;
-	// END MODIFICATION
 	use Illuminate\Database\Eloquent\Factories\HasFactory;
 	use Illuminate\Database\Eloquent\Model;
 
@@ -12,7 +10,11 @@
 	{
 		use HasFactory;
 
-		// START MODIFICATION: Add new fields to the fillable array.
+		/**
+		 * The attributes that are mass assignable.
+		 *
+		 * @var array
+		 */
 		protected $fillable = [
 			'user_id',
 			'title',
@@ -21,9 +23,18 @@
 			'initial_prompt',
 			'model',
 		];
+
+		// START MODIFICATION: Add cast for the calculated image_cost attribute.
+		/**
+		 * The attributes that should be cast.
+		 *
+		 * @var array
+		 */
+		protected $casts = [
+			'image_cost' => 'float',
+		];
 		// END MODIFICATION
 
-		// START MODIFICATION: Add an accessor for the total image count.
 		/**
 		 * Get the total number of images generated for the story.
 		 *
@@ -39,29 +50,39 @@
 					($this->place_prompts_count ?? 0),
 			);
 		}
-		// END MODIFICATION
 
+		/**
+		 * Get the user that owns the story.
+		 */
 		public function user()
 		{
 			return $this->belongsTo(User::class);
 		}
 
+		/**
+		 * Get the characters for the story.
+		 */
 		public function characters()
 		{
 			return $this->hasMany(StoryCharacter::class);
 		}
 
+		/**
+		 * Get the places for the story.
+		 */
 		public function places()
 		{
 			return $this->hasMany(StoryPlace::class);
 		}
 
+		/**
+		 * Get the pages for the story.
+		 */
 		public function pages()
 		{
 			return $this->hasMany(StoryPage::class)->orderBy('page_number');
 		}
 
-		// START MODIFICATION: Add relationships to count prompts.
 		/**
 		 * Get all of the prompts for the story's pages.
 		 */
@@ -85,5 +106,4 @@
 		{
 			return $this->hasManyThrough(Prompt::class, StoryPlace::class);
 		}
-		// END MODIFICATION
 	}
