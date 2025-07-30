@@ -32,7 +32,6 @@
 
 	Auth::routes(['register' => false]);
 
-	// Publicly viewable story routes
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
@@ -162,7 +161,6 @@
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
 			});
 
-			// START MODIFICATION: Add routes for character and place image generation.
 			Route::prefix('characters/{character}')->name('characters.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generateForCharacter'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkCharacterStatus'])->name('image-status');
@@ -172,7 +170,6 @@
 				Route::post('/generate-image', [StoryImageController::class, 'generateForPlace'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkPlaceStatus'])->name('image-status');
 			});
-			// END MODIFICATION
 
 			Route::get('/{story}/characters', [StoryController::class, 'characters'])->name('characters');
 			Route::post('/{story}/characters', [StoryController::class, 'updateCharacters'])->name('characters.update');

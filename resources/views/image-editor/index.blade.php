@@ -291,11 +291,21 @@
 			};
 			
 			// --- Cropper Modal Logic ---
-			const openCropper = (imageUrl) => {
-				imageToCrop.src = imageUrl;
+			// START MODIFICATION: Make openCropper async and proxy cloudfront URLs before loading into cropper.
+			const openCropper = async (imageUrl) => {
+				let finalUrl = imageUrl;
+				// Proxy if the URL is from cloudfront to avoid tainting the canvas for the cropper.
+				if (typeof imageUrl === 'string' && imageUrl.includes('cloudfront.net')) {
+					const proxiedUrl = await getProxiedImageUrl(imageUrl);
+					if (!proxiedUrl) return; // Stop if proxying failed.
+					finalUrl = proxiedUrl;
+				}
+				
+				imageToCrop.src = finalUrl;
 				historyModal.hide();
 				cropModal.show();
 			};
+			// END MODIFICATION
 			
 			cropModalEl.addEventListener('shown.bs.modal', () => {
 				if (cropper) cropper.destroy();
@@ -316,8 +326,9 @@
 			const processFinalImage = async (imageUrl) => {
 				let finalUrl = imageUrl;
 				
-				// START MODIFICATION: Check if the URL is external and proxy it if needed.
-				if (imageUrl.startsWith('http')) {
+				// START MODIFICATION: Check if the URL is from cloudfront and proxy it if needed.
+				// This handles the "Use Full Image" case where the original URL is passed.
+				if (typeof imageUrl === 'string' && imageUrl.includes('cloudfront.net')) {
 					const proxiedUrl = await getProxiedImageUrl(imageUrl);
 					if (!proxiedUrl) return; // Stop if proxying fails
 					finalUrl = proxiedUrl;
@@ -405,11 +416,18 @@
 					card.classList.add('selected');
 				}
 			});
-			addSelectedHistoryImageBtn.addEventListener('click', () => {
+			
+			// START MODIFICATION: Make listener async and await openCropper.
+			addSelectedHistoryImageBtn.addEventListener('click', async () => {
 				const selected = historyImagesContainer.querySelector('.history-image-card.selected');
-				if (selected) openCropper(selected.dataset.path);
-				else alert('Please select an image.');
+				if (selected) {
+					await openCropper(selected.dataset.path);
+				} else {
+					alert('Please select an image.');
+				}
 			});
+			// END MODIFICATION
+			
 			uploadNewImageBtn.addEventListener('click', () => newImageUploadInput.click());
 			newImageUploadInput.addEventListener('change', (e) => {
 				const file = e.target.files[0];
@@ -424,11 +442,13 @@
 				processFinalImage(croppedDataUrl);
 			});
 			
-			useFullImageBtn.addEventListener('click', () => {
+			// START MODIFICATION: Make listener async and await processFinalImage.
+			useFullImageBtn.addEventListener('click', async () => {
 				if (imageToCrop.src) {
-					processFinalImage(imageToCrop.src);
+					await processFinalImage(imageToCrop.src);
 				}
 			});
+			// END MODIFICATION
 			
 			// Canvas Object Deletion
 			window.addEventListener('keydown', (e) => {

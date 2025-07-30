@@ -6,9 +6,7 @@
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Storage;
 	use Illuminate\Support\Str;
-	// START MODIFICATION: Import the Http facade for robust requests.
 	use Illuminate\Support\Facades\Http;
-	// END MODIFICATION
 
 	/**
 	 * Controller to handle the image editor functionality.
@@ -91,7 +89,6 @@
 			}
 		}
 
-		// START MODIFICATION: Add a new method to proxy external images.
 		/**
 		 * Fetches an image from an external URL, saves it locally, and returns the local URL.
 		 * This is used to bypass browser CORS restrictions (tainted canvas).
@@ -139,5 +136,4 @@
 				], 500);
 			}
 		}
-		// END MODIFICATION
 	}
