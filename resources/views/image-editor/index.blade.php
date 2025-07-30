@@ -1,3 +1,5 @@
+resources/views/image-editor/index.blade.php:
+
 @extends('layouts.bootstrap-app')
 
 @section('styles')
@@ -206,7 +208,6 @@
 				};
 			};
 			
-			// START MODIFICATION: New function to proxy external images via the server.
 			const getProxiedImageUrl = async (externalUrl) => {
 				try {
 					const response = await fetch('{{ route("image-editor.proxy") }}', {
@@ -233,7 +234,6 @@
 					return null;
 				}
 			};
-			// END MODIFICATION
 			
 			// --- Canvas Resizing ---
 			const resizeCanvas = () => {
@@ -282,16 +282,55 @@
 				renderPagination(paginationData);
 			};
 			
+			// START MODIFICATION: Rework pagination to handle many pages gracefully using ellipses.
 			const renderPagination = (data) => {
 				historyPagination.innerHTML = '';
-				if (!data || data.total_pages <= 1) return;
-				for (let i = 1; i <= data.total_pages; i++) {
-					historyPagination.innerHTML += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+				const currentPage = data.current_page;
+				const totalPages = data.total_pages;
+				
+				if (!data || totalPages <= 1) {
+					return;
 				}
+				
+				let html = '';
+				const window = 1; // Pages on each side of the current page.
+				const range = [];
+				
+				// Previous button
+				html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">«</a>
+                         </li>`;
+				
+				// Determine which page numbers to display.
+				for (let i = 1; i <= totalPages; i++) {
+					// Always show first and last page, and pages within the window of the current page.
+					if (i === 1 || i === totalPages || (i >= currentPage - window && i <= currentPage + window)) {
+						range.push(i);
+					}
+				}
+				
+				let last = 0;
+				// Create the page items, adding ellipses where there are gaps.
+				for (const i of range) {
+					if (last + 1 !== i) {
+						html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+					}
+					html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
+                             </li>`;
+					last = i;
+				}
+				
+				// Next button
+				html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">»</a>
+                         </li>`;
+				
+				historyPagination.innerHTML = html;
 			};
+			// END MODIFICATION
 			
 			// --- Cropper Modal Logic ---
-			// START MODIFICATION: Make openCropper async and proxy cloudfront URLs before loading into cropper.
 			const openCropper = async (imageUrl) => {
 				let finalUrl = imageUrl;
 				// Proxy if the URL is from cloudfront to avoid tainting the canvas for the cropper.
@@ -305,7 +344,6 @@
 				historyModal.hide();
 				cropModal.show();
 			};
-			// END MODIFICATION
 			
 			cropModalEl.addEventListener('shown.bs.modal', () => {
 				if (cropper) cropper.destroy();
@@ -326,14 +364,12 @@
 			const processFinalImage = async (imageUrl) => {
 				let finalUrl = imageUrl;
 				
-				// START MODIFICATION: Check if the URL is from cloudfront and proxy it if needed.
 				// This handles the "Use Full Image" case where the original URL is passed.
 				if (typeof imageUrl === 'string' && imageUrl.includes('cloudfront.net')) {
 					const proxiedUrl = await getProxiedImageUrl(imageUrl);
 					if (!proxiedUrl) return; // Stop if proxying fails
 					finalUrl = proxiedUrl;
 				}
-				// END MODIFICATION
 				
 				if (isSettingBackground) {
 					initializeCanvas(finalUrl);
@@ -406,7 +442,10 @@
 			historyPagination.addEventListener('click', (e) => {
 				if (e.target.matches('.page-link')) {
 					e.preventDefault();
-					loadHistory(parseInt(e.target.dataset.page));
+					const page = parseInt(e.target.dataset.page);
+					if (page) { // Ensure page is a valid number before loading
+						loadHistory(page);
+					}
 				}
 			});
 			historyImagesContainer.addEventListener('click', (e) => {
@@ -417,7 +456,6 @@
 				}
 			});
 			
-			// START MODIFICATION: Make listener async and await openCropper.
 			addSelectedHistoryImageBtn.addEventListener('click', async () => {
 				const selected = historyImagesContainer.querySelector('.history-image-card.selected');
 				if (selected) {
@@ -426,7 +464,6 @@
 					alert('Please select an image.');
 				}
 			});
-			// END MODIFICATION
 			
 			uploadNewImageBtn.addEventListener('click', () => newImageUploadInput.click());
 			newImageUploadInput.addEventListener('change', (e) => {
@@ -442,13 +479,11 @@
 				processFinalImage(croppedDataUrl);
 			});
 			
-			// START MODIFICATION: Make listener async and await processFinalImage.
 			useFullImageBtn.addEventListener('click', async () => {
 				if (imageToCrop.src) {
 					await processFinalImage(imageToCrop.src);
 				}
 			});
-			// END MODIFICATION
 			
 			// Canvas Object Deletion
 			window.addEventListener('keydown', (e) => {

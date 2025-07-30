@@ -93,9 +93,7 @@
 		Route::prefix('image-editor')->name('image-editor.')->group(function () {
 			Route::get('/', [ImageEditorController::class, 'index'])->name('index');
 			Route::post('/save', [ImageEditorController::class, 'save'])->name('save');
-			// START MODIFICATION: Add the new proxy route.
 			Route::post('/proxy-image', [ImageEditorController::class, 'proxyImage'])->name('proxy');
-			// END MODIFICATION
 		});
 
 		// --- Pexels Integration ---
@@ -151,10 +149,8 @@
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
-			// START MODIFICATION: Add routes for character and place prompt generation.
 			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
 			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');
-			// END MODIFICATION
 
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
