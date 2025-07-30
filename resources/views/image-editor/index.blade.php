@@ -1,5 +1,3 @@
-resources/views/image-editor/index.blade.php:
-
 @extends('layouts.bootstrap-app')
 
 @section('styles')
