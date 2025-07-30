@@ -67,7 +67,7 @@
 				<div class="image-upload-container mb-2 position-relative" style="min-height: 400px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 					<img src="{{ $page->image_path ?? 'https://picsum.photos/200' }}"
 					     class="page-image-preview"
-					     style="max-width: 100%; max-height: 200px; object-fit: contain; {{ $page && $page->image_path ? 'cursor: pointer;' : '' }}"
+					     style="max-width: 100%; object-fit: contain; {{ $page && $page->image_path ? 'cursor: pointer;' : '' }}"
 					     @if($page && $page->image_path && isset($page->prompt_data))
 						     data-bs-toggle="modal"
 					     data-bs-target="#imageDetailModal"

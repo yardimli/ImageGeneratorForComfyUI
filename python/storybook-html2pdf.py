@@ -162,6 +162,7 @@ def generate_css(args):
 
     .story-text-page .text-container {{
         color: {args.color_main};
+        background-color: rgb(255, 255, 255);
         font-size: {args.font_size_main}pt;
         /* The container's width is now calculated based on the trim width,
            and it will be centered within the padded area of the page. */
