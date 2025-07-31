@@ -12,7 +12,6 @@
 
 		public function __construct()
 		{
-			// Store this in your .env file
 			$this->apiKey = env('PEXELS_API_KEY');
 		}
 

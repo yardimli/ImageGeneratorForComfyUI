@@ -295,6 +295,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
+		let assetInstructions = "Output should be a high-quality image that captures the essence of the asset.";
+		
+		if (assetType === "character") {
+			assetInstructions = "Output should be a portrait with clear background, focusing on the character's face and upper body.";
+		}
+		else if (assetType === "place") {
+			assetInstructions = "Output should be a scene with clear background, focusing on the place's key features and atmosphere. No people should be included in the image.";
+		}
+		
 		const jsonStructure = `{
   "prompt": "A detailed, comma-separated list of visual descriptors for the image."
 }`;
@@ -310,7 +319,7 @@ Your task is to create a single, concise, and descriptive image prompt for a sto
     ${instructionsText}
 
 **Instructions:**
-- Synthesize all the information to create a vivid image prompt for a portrait or scene featuring this ${assetType}.
+- ${assetInstructions}
 - The prompt should be a single paragraph of comma-separated descriptive phrases.
 - Focus on visual details: appearance, key features, mood, and lighting.
 - Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.

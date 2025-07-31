@@ -99,9 +99,6 @@
 		 */
 		public function checkStatus(StoryPage $storyPage)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
-
 			try {
 				// Find the latest queued prompt for this page.
 				// We check for prompts created in the last hour to avoid picking up old, stuck jobs.
@@ -140,8 +137,6 @@
 		 */
 		public function generateForCharacter(Request $request, StoryCharacter $character)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
 			return $this->doGenerate($request, $character, 'character');
 		}
 
@@ -167,8 +162,6 @@
 		 */
 		public function generateForPlace(Request $request, StoryPlace $place)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
 			return $this->doGenerate($request, $place, 'place');
 		}
 

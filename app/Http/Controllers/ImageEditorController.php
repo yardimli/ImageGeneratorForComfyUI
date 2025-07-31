@@ -24,18 +24,14 @@
 			// Pass the return URL to the view, so it can be submitted back.
 			$returnUrl = $request->query('return_url', url('/'));
 
-			// START MODIFICATION: Get background and overlay images from query params.
 			$backgroundUrl = $request->query('bg_url');
 			$overlayUrls = $request->query('overlay_urls', []);
-			// END MODIFICATION
 
-			// START MODIFICATION: Pass new variables to the view.
 			return view('image-editor.index', [
 				'return_url' => $returnUrl,
 				'background_url' => $backgroundUrl,
 				'overlay_urls' => $overlayUrls,
 			]);
-			// END MODIFICATION
 		}
 
 		/**
@@ -117,7 +113,6 @@
 			$imageUrl = $validated['url'];
 
 			try {
-				// Use Laravel's HTTP client to fetch the image. It's more robust than file_get_contents.
 				$response = Http::timeout(30)->get($imageUrl);
 
 				if ($response->failed()) {
