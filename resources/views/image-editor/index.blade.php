@@ -52,6 +52,12 @@
 							Add Image
 						</button>
 						
+						{{-- START MODIFICATION: Add crop layer button. --}}
+						<button id="crop-layer-btn" class="btn btn-secondary" disabled>
+							Crop Layer
+						</button>
+						{{-- END MODIFICATION --}}
+						
 						<button id="save-image-btn" class="btn btn-info">
 							Save and Return
 						</button>
@@ -169,6 +175,7 @@
 			
 			// App view buttons
 			const addImageBtn = document.getElementById('add-image-btn');
+			const cropLayerBtn = document.getElementById('crop-layer-btn'); // MODIFICATION: Get new button.
 			
 			// History Modal
 			const historyModalEl = document.getElementById('historyModal');
@@ -196,6 +203,7 @@
 			let originalWidth, originalHeight;
 			let currentScale = 1;
 			let isSettingBackground = false;
+			let recropTargetObject = null; // MODIFICATION: Add state for recropping.
 			
 			// --- Utility Functions ---
 			const debounce = (func, delay) => {
@@ -355,7 +363,38 @@
 			});
 			
 			// --- Core Image Processing ---
-			// START MODIFICATION: Refactor image processing functions to return promises for better async handling.
+			
+			// START MODIFICATION: Add canvas selection listeners to manage the crop button state.
+			const handleCanvasSelection = () => {
+				const activeObject = canvas.getActiveObject();
+				// Enable button only for single, selectable image objects.
+				if (activeObject && activeObject.type === 'image' && activeObject.selectable) {
+					cropLayerBtn.disabled = false;
+				} else {
+					cropLayerBtn.disabled = true;
+				}
+			};
+			
+			// Add function to replace an existing canvas object's image.
+			const replaceObjectImage = (targetObject, newImageUrl) => {
+				return new Promise((resolve, reject) => {
+					// Create a new Fabric image from the new URL
+					fabric.Image.fromURL(newImageUrl, (newImg) => {
+						if (!newImg) {
+							return reject(new Error('Failed to load the new cropped image.'));
+						}
+						
+						// Preserve transformations (scale, angle, position) while replacing the image content.
+						targetObject.setElement(newImg.getElement());
+						
+						canvas.renderAll();
+						canvas.setActiveObject(targetObject); // Re-select the object
+						resolve();
+					}, { crossorigin: 'anonymous' });
+				});
+			};
+			// END MODIFICATION
+			
 			const processFinalImage = async (imageUrl) => {
 				const finalUrl = await getProxiedImageUrl(imageUrl);
 				if (!finalUrl) return;
@@ -371,6 +410,15 @@
 			const initializeCanvas = (imageUrl) => {
 				return new Promise((resolve, reject) => {
 					canvas = new fabric.Canvas('c');
+					
+					// START MODIFICATION: Attach selection event listeners to the new canvas instance.
+					canvas.on({
+						'selection:created': handleCanvasSelection,
+						'selection:updated': handleCanvasSelection,
+						'selection:cleared': handleCanvasSelection,
+					});
+					// END MODIFICATION
+					
 					fabric.Image.fromURL(imageUrl, (img) => {
 						if (!img) return reject(new Error('Fabric.js failed to load the image.'));
 						
@@ -409,7 +457,6 @@
 					}, { crossorigin: 'anonymous' });
 				});
 			};
-			// END MODIFICATION
 			
 			// --- Event Listeners ---
 			
@@ -434,9 +481,21 @@
 			// Step 2: Add Foreground Image
 			addImageBtn.addEventListener('click', () => {
 				isSettingBackground = false;
+				recropTargetObject = null; // MODIFICATION: Reset recrop state when adding a new image.
 				loadHistory(1);
 				historyModal.show();
 			});
+			
+			// START MODIFICATION: Add listener for the new crop layer button.
+			cropLayerBtn.addEventListener('click', () => {
+				const activeObject = canvas.getActiveObject();
+				if (activeObject && activeObject.type === 'image') {
+					recropTargetObject = activeObject;
+					// Use the element's src, which will be the proxied URL.
+					openCropper(activeObject._element.src);
+				}
+			});
+			// END MODIFICATION
 			
 			// History Modal Events
 			[historySource, historySort, historyPerPage].forEach(el => el.addEventListener('change', () => loadHistory(1)));
@@ -473,18 +532,37 @@
 				e.target.value = '';
 			});
 			
+			// START MODIFICATION: Update crop confirmation to handle both new images and recropping.
 			// Cropper Modal Events
-			confirmCropBtn.addEventListener('click', () => {
+			confirmCropBtn.addEventListener('click', async () => {
 				if (!cropper) return;
 				const croppedDataUrl = cropper.getCroppedCanvas().toDataURL('image/png');
-				processFinalImage(croppedDataUrl);
+				
+				if (recropTargetObject) {
+					// We are recropping an existing layer
+					await replaceObjectImage(recropTargetObject, croppedDataUrl);
+					recropTargetObject = null; // Reset state
+					cropModal.hide();
+				} else {
+					// We are adding a new image
+					await processFinalImage(croppedDataUrl);
+				}
 			});
 			
 			useFullImageBtn.addEventListener('click', async () => {
 				if (imageToCrop.src) {
-					await processFinalImage(imageToCrop.src);
+					if (recropTargetObject) {
+						// We are recropping, so replace the image
+						await replaceObjectImage(recropTargetObject, imageToCrop.src);
+						recropTargetObject = null; // Reset state
+						cropModal.hide();
+					} else {
+						// We are adding a new image
+						await processFinalImage(imageToCrop.src);
+					}
 				}
 			});
+			// END MODIFICATION
 			
 			// Canvas Object Deletion
 			window.addEventListener('keydown', (e) => {
@@ -554,7 +632,7 @@
 				}
 			});
 			
-			// START MODIFICATION: Add logic to auto-start the editor if URLs are provided.
+			// Add logic to auto-start the editor if URLs are provided.
 			const autoStartEditor = async () => {
 				const backgroundUrl = @json($background_url);
 				const overlayUrls = @json($overlay_urls ?? []);
@@ -586,7 +664,6 @@
 			};
 			
 			autoStartEditor();
-			// END MODIFICATION
 		});
 	</script>
 @endsection

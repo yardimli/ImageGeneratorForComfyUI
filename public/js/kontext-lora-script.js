@@ -18,12 +18,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		if (selectedOption && selectedOption.value) {
 			const trigger = selectedOption.dataset.trigger;
 			const notes = selectedOption.dataset.notes;
+			const promptTextarea = document.getElementById('promptTextarea');
+			const currentPrompt = promptTextarea.value.trim();
 			
 			let infoHtml = `<strong>Trigger:</strong> ${trigger}`;
 			if (notes) {
 				infoHtml += ` <strong>Notes:</strong> ${notes}`;
 			}
 			loraInfo.innerHTML = infoHtml;
+			//prepend the trigger to the prompt textarea
+			if (!currentPrompt.startsWith(trigger)) {
+				promptTextarea.value = trigger + (currentPrompt ? ' ' + currentPrompt : '');
+			}
 		} else {
 			loraInfo.innerHTML = 'Select a Lora to see its trigger and notes.';
 		}
