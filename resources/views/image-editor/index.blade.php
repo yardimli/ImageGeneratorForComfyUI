@@ -52,9 +52,13 @@
 							Add Image
 						</button>
 						
-						{{-- START MODIFICATION: Add crop layer button. --}}
 						<button id="crop-layer-btn" class="btn btn-secondary" disabled>
 							Crop Layer
+						</button>
+						
+						{{-- START MODIFICATION: Add flip horizontal button. --}}
+						<button id="flip-horizontal-btn" class="btn btn-secondary" disabled>
+							Flip Horizontal
 						</button>
 						{{-- END MODIFICATION --}}
 						
@@ -175,7 +179,8 @@
 			
 			// App view buttons
 			const addImageBtn = document.getElementById('add-image-btn');
-			const cropLayerBtn = document.getElementById('crop-layer-btn'); // MODIFICATION: Get new button.
+			const cropLayerBtn = document.getElementById('crop-layer-btn');
+			const flipHorizontalBtn = document.getElementById('flip-horizontal-btn'); // MODIFICATION: Get new button.
 			
 			// History Modal
 			const historyModalEl = document.getElementById('historyModal');
@@ -203,7 +208,7 @@
 			let originalWidth, originalHeight;
 			let currentScale = 1;
 			let isSettingBackground = false;
-			let recropTargetObject = null; // MODIFICATION: Add state for recropping.
+			let recropTargetObject = null;
 			
 			// --- Utility Functions ---
 			const debounce = (func, delay) => {
@@ -364,15 +369,12 @@
 			
 			// --- Core Image Processing ---
 			
-			// START MODIFICATION: Add canvas selection listeners to manage the crop button state.
 			const handleCanvasSelection = () => {
 				const activeObject = canvas.getActiveObject();
-				// Enable button only for single, selectable image objects.
-				if (activeObject && activeObject.type === 'image' && activeObject.selectable) {
-					cropLayerBtn.disabled = false;
-				} else {
-					cropLayerBtn.disabled = true;
-				}
+				// Enable buttons only for single, selectable image objects.
+				const isImageSelected = activeObject && activeObject.type === 'image' && activeObject.selectable;
+				cropLayerBtn.disabled = !isImageSelected;
+				flipHorizontalBtn.disabled = !isImageSelected; // MODIFICATION: Manage flip button state.
 			};
 			
 			// Add function to replace an existing canvas object's image.
@@ -393,7 +395,6 @@
 					}, { crossorigin: 'anonymous' });
 				});
 			};
-			// END MODIFICATION
 			
 			const processFinalImage = async (imageUrl) => {
 				const finalUrl = await getProxiedImageUrl(imageUrl);
@@ -411,13 +412,11 @@
 				return new Promise((resolve, reject) => {
 					canvas = new fabric.Canvas('c');
 					
-					// START MODIFICATION: Attach selection event listeners to the new canvas instance.
 					canvas.on({
 						'selection:created': handleCanvasSelection,
 						'selection:updated': handleCanvasSelection,
 						'selection:cleared': handleCanvasSelection,
 					});
-					// END MODIFICATION
 					
 					fabric.Image.fromURL(imageUrl, (img) => {
 						if (!img) return reject(new Error('Fabric.js failed to load the image.'));
@@ -481,18 +480,27 @@
 			// Step 2: Add Foreground Image
 			addImageBtn.addEventListener('click', () => {
 				isSettingBackground = false;
-				recropTargetObject = null; // MODIFICATION: Reset recrop state when adding a new image.
+				recropTargetObject = null;
 				loadHistory(1);
 				historyModal.show();
 			});
 			
-			// START MODIFICATION: Add listener for the new crop layer button.
 			cropLayerBtn.addEventListener('click', () => {
 				const activeObject = canvas.getActiveObject();
 				if (activeObject && activeObject.type === 'image') {
 					recropTargetObject = activeObject;
 					// Use the element's src, which will be the proxied URL.
 					openCropper(activeObject._element.src);
+				}
+			});
+			
+			// START MODIFICATION: Add listener for the flip horizontal button.
+			flipHorizontalBtn.addEventListener('click', () => {
+				const activeObject = canvas.getActiveObject();
+				if (activeObject && activeObject.type === 'image') {
+					// Toggle the flipX property of the selected object.
+					activeObject.set('flipX', !activeObject.get('flipX'));
+					canvas.renderAll();
 				}
 			});
 			// END MODIFICATION
@@ -532,7 +540,6 @@
 				e.target.value = '';
 			});
 			
-			// START MODIFICATION: Update crop confirmation to handle both new images and recropping.
 			// Cropper Modal Events
 			confirmCropBtn.addEventListener('click', async () => {
 				if (!cropper) return;
@@ -562,7 +569,6 @@
 					}
 				}
 			});
-			// END MODIFICATION
 			
 			// Canvas Object Deletion
 			window.addEventListener('keydown', (e) => {
