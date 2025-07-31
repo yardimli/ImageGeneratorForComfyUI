@@ -184,13 +184,53 @@ document.addEventListener('DOMContentLoaded', function () {
 		renderPagination(document.getElementById('historyPagination'), paginationData);
 	}
 	
-	function renderPagination(paginationContainer, data) {
-		paginationContainer.innerHTML = '';
-		if (!data || data.total_pages <= 1) return;
-		for (let i = 1; i <= data.total_pages; i++) {
-			paginationContainer.innerHTML += `<li class="page-item ${i === data.current_page ? 'active' : ''}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+	
+	function renderPagination(paginationContainer, data)
+	{
+		historyPagination.innerHTML = '';
+		const currentPage = data.current_page;
+		const totalPages = data.total_pages;
+		
+		if (!data || totalPages <= 1) {
+			return;
 		}
+		
+		let html = '';
+		const windowSize = 1; // Pages on each side of the current page.
+		const range = [];
+		
+		// Previous button
+		html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage - 1}" aria-label="Previous">«</a>
+                         </li>`;
+		
+		// Determine which page numbers to display.
+		for (let i = 1; i <= totalPages; i++) {
+			if (i === 1 || i === totalPages || (i >= currentPage - windowSize && i <= currentPage + windowSize)) {
+				range.push(i);
+			}
+		}
+		
+		let last = 0;
+		// Create the page items, adding ellipses where there are gaps.
+		for (const i of range) {
+			if (last + 1 !== i) {
+				html += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+			}
+			html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                                <a class="page-link" href="#" data-page="${i}">${i}</a>
+                             </li>`;
+			last = i;
+		}
+		
+		// Next button
+		html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                            <a class="page-link" href="#" data-page="${currentPage + 1}" aria-label="Next">»</a>
+                         </li>`;
+		
+		paginationContainer.innerHTML = html;
 	}
+	
 	
 	if (historyModalEl) {
 		historyModalEl.addEventListener('click', e => {
