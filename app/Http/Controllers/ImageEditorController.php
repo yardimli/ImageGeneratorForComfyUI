@@ -23,7 +23,19 @@
 		{
 			// Pass the return URL to the view, so it can be submitted back.
 			$returnUrl = $request->query('return_url', url('/'));
-			return view('image-editor.index', ['return_url' => $returnUrl]);
+
+			// START MODIFICATION: Get background and overlay images from query params.
+			$backgroundUrl = $request->query('bg_url');
+			$overlayUrls = $request->query('overlay_urls', []);
+			// END MODIFICATION
+
+			// START MODIFICATION: Pass new variables to the view.
+			return view('image-editor.index', [
+				'return_url' => $returnUrl,
+				'background_url' => $backgroundUrl,
+				'overlay_urls' => $overlayUrls,
+			]);
+			// END MODIFICATION
 		}
 
 		/**

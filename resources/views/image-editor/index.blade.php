@@ -207,6 +207,10 @@
 			};
 			
 			const getProxiedImageUrl = async (externalUrl) => {
+				// Don't proxy local blob URLs
+				if (externalUrl.startsWith('blob:')) {
+					return externalUrl;
+				}
 				try {
 					const response = await fetch('{{ route("image-editor.proxy") }}', {
 						method: 'POST',
@@ -280,7 +284,6 @@
 				renderPagination(paginationData);
 			};
 			
-			// START MODIFICATION: Rework pagination to handle many pages gracefully using ellipses.
 			const renderPagination = (data) => {
 				historyPagination.innerHTML = '';
 				const currentPage = data.current_page;
@@ -291,7 +294,7 @@
 				}
 				
 				let html = '';
-				const window = 1; // Pages on each side of the current page.
+				const windowSize = 1; // Pages on each side of the current page.
 				const range = [];
 				
 				// Previous button
@@ -301,8 +304,7 @@
 				
 				// Determine which page numbers to display.
 				for (let i = 1; i <= totalPages; i++) {
-					// Always show first and last page, and pages within the window of the current page.
-					if (i === 1 || i === totalPages || (i >= currentPage - window && i <= currentPage + window)) {
+					if (i === 1 || i === totalPages || (i >= currentPage - windowSize && i <= currentPage + windowSize)) {
 						range.push(i);
 					}
 				}
@@ -326,19 +328,13 @@
 				
 				historyPagination.innerHTML = html;
 			};
-			// END MODIFICATION
 			
 			// --- Cropper Modal Logic ---
 			const openCropper = async (imageUrl) => {
-				let finalUrl = imageUrl;
-				// Proxy if the URL is from cloudfront to avoid tainting the canvas for the cropper.
-				if (typeof imageUrl === 'string' && imageUrl.includes('cloudfront.net')) {
-					const proxiedUrl = await getProxiedImageUrl(imageUrl);
-					if (!proxiedUrl) return; // Stop if proxying failed.
-					finalUrl = proxiedUrl;
-				}
+				const proxiedUrl = await getProxiedImageUrl(imageUrl);
+				if (!proxiedUrl) return; // Stop if proxying failed.
 				
-				imageToCrop.src = finalUrl;
+				imageToCrop.src = proxiedUrl;
 				historyModal.hide();
 				cropModal.show();
 			};
@@ -359,54 +355,61 @@
 			});
 			
 			// --- Core Image Processing ---
+			// START MODIFICATION: Refactor image processing functions to return promises for better async handling.
 			const processFinalImage = async (imageUrl) => {
-				let finalUrl = imageUrl;
-				
-				// This handles the "Use Full Image" case where the original URL is passed.
-				if (typeof imageUrl === 'string' && imageUrl.includes('cloudfront.net')) {
-					const proxiedUrl = await getProxiedImageUrl(imageUrl);
-					if (!proxiedUrl) return; // Stop if proxying fails
-					finalUrl = proxiedUrl;
-				}
+				const finalUrl = await getProxiedImageUrl(imageUrl);
+				if (!finalUrl) return;
 				
 				if (isSettingBackground) {
-					initializeCanvas(finalUrl);
+					await initializeCanvas(finalUrl);
 				} else {
-					addForegroundImage(finalUrl);
+					await addForegroundImage(finalUrl);
 				}
 				cropModal.hide();
 			};
 			
 			const initializeCanvas = (imageUrl) => {
-				canvas = new fabric.Canvas('c');
-				fabric.Image.fromURL(imageUrl, (img) => {
-					backgroundImageObject = img;
-					originalWidth = img.width;
-					originalHeight = img.height;
-					
-					initialUploadView.classList.add('d-none');
-					appView.classList.remove('d-none');
-					
-					resizeCanvas();
-					window.addEventListener('resize', debouncedResize);
-				}, { crossorigin: 'anonymous' });
+				return new Promise((resolve, reject) => {
+					canvas = new fabric.Canvas('c');
+					fabric.Image.fromURL(imageUrl, (img) => {
+						if (!img) return reject(new Error('Fabric.js failed to load the image.'));
+						
+						backgroundImageObject = img;
+						originalWidth = img.width;
+						originalHeight = img.height;
+						
+						initialUploadView.classList.add('d-none');
+						appView.classList.remove('d-none');
+						
+						resizeCanvas();
+						window.addEventListener('resize', debouncedResize);
+						resolve(canvas);
+					}, { crossorigin: 'anonymous' });
+				});
 			};
 			
 			const addForegroundImage = (imageUrl) => {
-				fabric.Image.fromURL(imageUrl, (fabricImage) => {
-					fabricImage.set({
-						left: canvas.width / 2,
-						top: canvas.height / 2,
-						originX: 'center',
-						originY: 'center',
-						scaleX: (canvas.width / 4) / fabricImage.width,
-						scaleY: (canvas.width / 4) / fabricImage.width,
-					});
-					canvas.add(fabricImage);
-					canvas.setActiveObject(fabricImage);
-					canvas.renderAll();
-				}, { crossorigin: 'anonymous' });
+				return new Promise((resolve, reject) => {
+					if (!canvas) return reject(new Error('Canvas is not initialized.'));
+					fabric.Image.fromURL(imageUrl, (fabricImage) => {
+						if (!fabricImage) return reject(new Error(`Failed to load overlay image: ${imageUrl}`));
+						
+						fabricImage.set({
+							left: canvas.width / 2,
+							top: canvas.height / 2,
+							originX: 'center',
+							originY: 'center',
+							scaleX: (canvas.width / 4) / fabricImage.width,
+							scaleY: (canvas.width / 4) / fabricImage.width,
+						});
+						canvas.add(fabricImage);
+						canvas.setActiveObject(fabricImage);
+						canvas.renderAll();
+						resolve(fabricImage);
+					}, { crossorigin: 'anonymous' });
+				});
 			};
+			// END MODIFICATION
 			
 			// --- Event Listeners ---
 			
@@ -441,7 +444,7 @@
 				if (e.target.matches('.page-link')) {
 					e.preventDefault();
 					const page = parseInt(e.target.dataset.page);
-					if (page) { // Ensure page is a valid number before loading
+					if (page) {
 						loadHistory(page);
 					}
 				}
@@ -550,6 +553,40 @@
 					saveImageBtn.textContent = 'Save and Return';
 				}
 			});
+			
+			// START MODIFICATION: Add logic to auto-start the editor if URLs are provided.
+			const autoStartEditor = async () => {
+				const backgroundUrl = @json($background_url);
+				const overlayUrls = @json($overlay_urls ?? []);
+				
+				if (backgroundUrl) {
+					try {
+						const proxiedBgUrl = await getProxiedImageUrl(backgroundUrl);
+						if (!proxiedBgUrl) throw new Error('Failed to proxy background image.');
+						
+						await initializeCanvas(proxiedBgUrl);
+						
+						if (overlayUrls.length > 0) {
+							const proxyPromises = overlayUrls.map(url => getProxiedImageUrl(url));
+							const proxiedOverlayUrls = await Promise.all(proxyPromises);
+							
+							for (const url of proxiedOverlayUrls) {
+								if (url) {
+									await addForegroundImage(url);
+								}
+							}
+						}
+					} catch (error) {
+						console.error('Auto-start error:', error);
+						alert('Could not automatically load the editor with the provided images. Please select them manually. Error: ' + error.message);
+						initialUploadView.classList.remove('d-none');
+						appView.classList.add('d-none');
+					}
+				}
+			};
+			
+			autoStartEditor();
+			// END MODIFICATION
 		});
 	</script>
 @endsection
