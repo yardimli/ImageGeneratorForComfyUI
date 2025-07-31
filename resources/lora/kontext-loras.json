@@ -15,7 +15,7 @@
     "notes": "This is the model to dynamic one characters in several photos. Suggest Weight : 0.5"
   },
   {
-    "trigger": "Place it <your item>",
+    "trigger": "Place it",
     "model": "place_it.safetensors",
     "notes": "Use the trigger 'Place it' followed by the item you want to place. Used to merge a new face to a photo."
   },
