@@ -166,31 +166,56 @@
 							
 							<fieldset>
 								<legend class="h5">Styling</legend>
-								<div class="row mb-3">
-									<div class="col-md-6">
-										<label for="font_name" class="form-label">Main Font</label>
-										<select class="form-select" id="font_name" name="font_name" required>
-											@forelse($fonts as $font)
-												<option value="{{ $font['name'] }}" style="font-family: '{{ $font['name'] }}', sans-serif; font-size: 1.2rem;" {{ old('font_name', 'LoveYaLikeASister') == $font['name'] ? 'selected' : '' }}>
-													{{ $font['name'] }}
-												</option>
-											@empty
-												<option value="" disabled>No fonts found in resources/fonts.</option>
-											@endforelse
-										</select>
-										<div class="form-text">Fonts are loaded from <code>resources/fonts/</code>. Previews are best-effort.</div>
-									</div>
-									<div class="col-md-6">
-										<label class="form-label">Text Page Wallpaper</label>
-										<div>
-											<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#wallpaperModal">
-												Select Wallpaper
-											</button>
-											<span id="selectedWallpaperName" class="ms-2 fst-italic text-muted">{{ old('wallpaper') ?: 'No wallpaper selected' }}</span>
-										</div>
-										<input type="hidden" name="wallpaper" id="wallpaperInput" value="{{ old('wallpaper') }}">
-										<div class="form-text">Wallpapers are loaded from <code>resources/wallpapers/</code>.</div>
-									</div>
+								
+								{{-- New table for font/color/size/line-height settings --}}
+								<h6 class="mt-4">Fonts, Sizes, Line Height & Colors</h6>
+								<div class="table-responsive">
+									<table class="table table-bordered align-middle text-center">
+										<thead class="table-light">
+										<tr>
+											<th class="text-start">Page Type</th>
+											<th>Font</th>
+											<th>Font Size (pt)</th>
+											<th>Line Height</th>
+											<th>Color</th>
+										</tr>
+										</thead>
+										<tbody>
+										@php
+											$styleTypes = [
+												'title' => ['label' => 'Title', 'size' => 28, 'line_height' => 1.2, 'color' => '#1E1E64', 'font' => 'LoveYaLikeASister'],
+												'copyright' => ['label' => 'Copyright', 'size' => 8, 'line_height' => 1.2, 'color' => '#000000', 'font' => 'Arial'],
+												'introduction' => ['label' => 'Introduction', 'size' => 12, 'line_height' => 1.5, 'color' => '#000000', 'font' => 'Arial'],
+												'main' => ['label' => 'Main Text', 'size' => 14, 'line_height' => 1.6, 'color' => '#000000', 'font' => 'LoveYaLikeASister'],
+											];
+										@endphp
+										@foreach($styleTypes as $type => $details)
+											<tr>
+												<td class="text-start fw-bold">{{ $details['label'] }}</td>
+												<td style="width: 25%;">
+													<select class="form-select" name="font_name_{{ $type }}" required>
+														@forelse($fonts as $font)
+															<option value="{{ $font['name'] }}" style="font-family: '{{ $font['name'] }}', sans-serif; font-size: 1.1rem;" {{ old('font_name_' . $type, $details['font']) == $font['name'] ? 'selected' : '' }}>
+																{{ $font['name'] }}
+															</option>
+														@empty
+															<option value="" disabled>No fonts found.</option>
+														@endforelse
+													</select>
+												</td>
+												<td><input type="number" class="form-control" name="font_size_{{ $type }}" value="{{ old('font_size_' . $type, $details['size']) }}"></td>
+												<td><input type="number" class="form-control" name="line_height_{{ $type }}" value="{{ old('line_height_' . $type, $details['line_height']) }}" step="0.1"></td>
+												<td><input type="color" class="form-control form-control-color w-100" name="color_{{ $type }}" value="{{ old('color_' . $type, $details['color']) }}"></td>
+											</tr>
+										@endforeach
+										<tr>
+											<td class="text-start fw-bold">Footer / Page #</td>
+											<td class="text-muted" colspan="2">Uses 'Main Text' font</td>
+											<td><input type="number" class="form-control" name="font_size_footer" value="{{ old('font_size_footer', 10) }}"></td>
+											<td><input type="color" class="form-control form-control-color w-100" name="color_footer" value="{{ old('color_footer', '#808080') }}"></td>
+										</tr>
+										</tbody>
+									</table>
 								</div>
 								
 								<h6 class="mt-4">Text Page Styling</h6>
@@ -203,7 +228,7 @@
 									<div class="col-md-4">
 										<label class="form-label">Text Box Background</label>
 										<div class="form-check">
-											<input class="form-check-input" type="checkbox" id="use_text_background" name="use_text_background" value="1" {{ old('use_text_background') !== null ? 'checked' : (request()->isMethod('get') ? 'checked' : '') }}>
+											<input class="form-check-input" type="checkbox" id="use_text_background" name="use_text_background" value="1" {{ old('use_text_background', true) ? 'checked' : '' }}>
 											<label class="form-check-label" for="use_text_background">
 												Enable background color
 											</label>
@@ -213,15 +238,37 @@
 										<label for="text_background_color" class="form-label">Background Color</label>
 										<input type="color" class="form-control form-control-color" name="text_background_color" id="text_background_color" value="{{ old('text_background_color', '#ffffff') }}">
 									</div>
+									<div class="col-md-12 mt-3">
+										<label class="form-label">Wallpaper</label>
+										<div>
+											<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#wallpaperModal">
+												Select Wallpaper
+											</button>
+											<span id="selectedWallpaperName" class="ms-2 fst-italic text-muted">{{ old('wallpaper') ?: 'No wallpaper selected' }}</span>
+										</div>
+										<input type="hidden" name="wallpaper" id="wallpaperInput" value="{{ old('wallpaper') }}">
+										<div class="form-text">Wallpapers are loaded from <code>resources/wallpapers/</code>.</div>
+									</div>
 								</div>
 								
-								<h6 class="mt-4">Font Sizes (pt)</h6>
-								<div class="row mb-3">
-									<div class="col-md col-6"><label for="font_size_title" class="form-label">Title</label><input type="number" class="form-control" name="font_size_title" id="font_size_title" value="{{ old('font_size_title', 28) }}"></div>
-									<div class="col-md col-6"><label for="font_size_copyright" class="form-label">Copyright</label><input type="number" class="form-control" name="font_size_copyright" id="font_size_copyright" value="{{ old('font_size_copyright', 8) }}"></div>
-									<div class="col-md col-6"><label for="font_size_introduction" class="form-label">Intro</label><input type="number" class="form-control" name="font_size_introduction" id="font_size_introduction" value="{{ old('font_size_introduction', 12) }}"></div>
-									<div class="col-md col-6"><label for="font_size_main" class="form-label">Main Text</label><input type="number" class="form-control" name="font_size_main" id="font_size_main" value="{{ old('font_size_main', 14) }}"></div>
-									<div class="col-md col-6"><label for="font_size_footer" class="form-label">Footer</label><input type="number" class="form-control" name="font_size_footer" id="font_size_footer" value="{{ old('font_size_footer', 10) }}"></div>
+								{{-- New Dashed Border controls --}}
+								<h6 class="mt-4">Text Page Border Styling</h6>
+								<div class="row mb-3 p-3 border rounded align-items-end">
+									<div class="col-md-4">
+										<label class="form-label">Dashed Border</label>
+										<div class="form-check form-switch">
+											<input class="form-check-input" type="checkbox" id="enable_dashed_border" name="enable_dashed_border" value="1" {{ old('enable_dashed_border', true) ? 'checked' : '' }}>
+											<label class="form-check-label" for="enable_dashed_border">Enable Border</label>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<label for="dashed_border_width" class="form-label">Border Width (pt)</label>
+										<input type="number" class="form-control" name="dashed_border_width" id="dashed_border_width" value="{{ old('dashed_border_width', 5) }}" min="0" step="0.5">
+									</div>
+									<div class="col-md-4">
+										<label for="dashed_border_color" class="form-label">Border Color</label>
+										<input type="color" class="form-control form-control-color" name="dashed_border_color" id="dashed_border_color" value="{{ old('dashed_border_color', '#333333') }}">
+									</div>
 								</div>
 								
 								<h6 class="mt-4">Margins (in)</h6>
@@ -230,15 +277,6 @@
 										<label for="page_number_margin_bottom" class="form-label">Footer Bottom Margin</label>
 										<input type="number" class="form-control" name="page_number_margin_bottom" value="{{ old('page_number_margin_bottom', '0.5') }}" step="0.1" required>
 									</div>
-								</div>
-								
-								<h6 class="mt-4">Colors</h6>
-								<div class="row mb-3">
-									<div class="col-md col-6"><label for="color_title" class="form-label">Title</label><input type="color" class="form-control form-control-color" name="color_title" id="color_title" value="{{ old('color_title', '#1E1E64') }}"></div>
-									<div class="col-md col-6"><label for="color_copyright" class="form-label">Copyright</label><input type="color" class="form-control form-control-color" name="color_copyright" id="color_copyright" value="{{ old('color_copyright', '#000000') }}"></div>
-									<div class="col-md col-6"><label for="color_introduction" class="form-label">Intro</label><input type="color" class="form-control form-control-color" name="color_introduction" id="color_introduction" value="{{ old('color_introduction', '#000000') }}"></div>
-									<div class="col-md col-6"><label for="color_main" class="form-label">Main Text</label><input type="color" class="form-control form-control-color" name="color_main" id="color_main" value="{{ old('color_main', '#000000') }}"></div>
-									<div class="col-md col-6"><label for="color_footer" class="form-label">Footer</label><input type="color" class="form-control form-control-color" name="color_footer" id="color_footer" value="{{ old('color_footer', '#808080') }}"></div>
 								</div>
 							</fieldset>
 							{{-- END MODIFICATION --}}
@@ -302,6 +340,20 @@
 			
 			useBgCheckbox.addEventListener('change', toggleBgColorInput);
 			toggleBgColorInput(); // Set initial state on page load
+			
+			// --- Dashed Border Logic ---
+			const useBorderCheckbox = document.getElementById('enable_dashed_border');
+			const borderWidthInput = document.getElementById('dashed_border_width');
+			const borderColorInput = document.getElementById('dashed_border_color');
+			
+			function toggleBorderInputs() {
+				const isDisabled = !useBorderCheckbox.checked;
+				borderWidthInput.disabled = isDisabled;
+				borderColorInput.disabled = isDisabled;
+			}
+			
+			useBorderCheckbox.addEventListener('change', toggleBorderInputs);
+			toggleBorderInputs(); // Set initial state
 			
 			// --- Wallpaper Modal Logic ---
 			const wallpaperModalEl = document.getElementById('wallpaperModal');

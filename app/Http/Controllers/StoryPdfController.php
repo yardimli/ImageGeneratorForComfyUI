@@ -85,6 +85,7 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
+			// START MODIFICATION: Added validation for new font, line-height, and border fields.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -97,13 +98,23 @@
 				'copyright_text' => 'nullable|string|max:5000',
 				'introduction_text' => 'nullable|string|max:10000',
 				'wallpaper' => 'nullable|string',
-				// Styling
-				'font_name' => 'required|string|max:100',
+				// Styling - Fonts
+				'font_name_main' => 'required|string|max:100',
+				'font_name_title' => 'required|string|max:100',
+				'font_name_copyright' => 'required|string|max:100',
+				'font_name_introduction' => 'required|string|max:100',
+				// Styling - Font Sizes
 				'font_size_main' => 'required|numeric|min:6|max:72',
 				'font_size_footer' => 'required|numeric|min:6|max:72',
 				'font_size_title' => 'required|numeric|min:6|max:72',
 				'font_size_copyright' => 'required|numeric|min:6|max:72',
 				'font_size_introduction' => 'required|numeric|min:6|max:72',
+				// Styling - Line Heights
+				'line_height_main' => 'required|numeric|min:0.5|max:5',
+				'line_height_title' => 'required|numeric|min:0.5|max:5',
+				'line_height_copyright' => 'required|numeric|min:0.5|max:5',
+				'line_height_introduction' => 'required|numeric|min:0.5|max:5',
+				// Styling - Colors
 				'color_main' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_footer' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_title' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
@@ -117,11 +128,16 @@
 				'valign_introduction' => 'required|string|in:top,middle,bottom',
 				'margin_horizontal_introduction' => 'required|numeric|min:0',
 				'page_number_margin_bottom' => 'required|numeric|min:0',
-				// New Text Page Styling fields
+				// Text Page Styling fields
 				'text_box_width' => 'required|numeric|min:10|max:100',
 				'use_text_background' => 'nullable|boolean',
 				'text_background_color' => 'required_if:use_text_background,1|string|regex:/^#[a-fA-F0-9]{6}$/',
+				// Dashed Border fields
+				'enable_dashed_border' => 'nullable|boolean',
+				'dashed_border_width' => 'required_if:enable_dashed_border,1|numeric|min:0',
+				'dashed_border_color' => 'required_if:enable_dashed_border,1|string|regex:/^#[a-fA-F0-9]{6}$/',
 			]);
+			// END MODIFICATION
 
 			if ($validator->fails()) {
 				return back()->withErrors($validator)->withInput();
@@ -164,12 +180,23 @@
 				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
 				$pythonScriptPath = base_path('python/storybook-html2pdf.py');
 
-				// IMPORTANT: The Python script needs the *file system path*, which is what this code correctly provides.
-				// No changes are needed here for how the script gets its files.
-				$fontFile = resource_path('fonts/' . $validated['font_name'] . '-Regular.ttf');
-				if (!File::exists($fontFile)) {
-					throw new \Exception("Font file not found: " . basename($fontFile));
+				// START MODIFICATION: Validate and collect paths for all four font types.
+				$fontTypes = ['main', 'title', 'copyright', 'introduction'];
+				$fontPaths = [];
+				foreach ($fontTypes as $type) {
+					$fontNameKey = 'font_name_' . $type;
+					$fontName = $validated[$fontNameKey];
+					$fontFile = resource_path('fonts/' . $fontName . '-Regular.ttf');
+					if (!File::exists($fontFile)) {
+						// Attempt to find a matching file without '-Regular' for robustness
+						$fontFile = resource_path('fonts/' . $fontName . '.ttf');
+						if (!File::exists($fontFile)) {
+							throw new \Exception("Font file not found for type '{$type}': " . basename($validated[$fontNameKey]));
+						}
+					}
+					$fontPaths[$type] = $fontFile;
 				}
+				// END MODIFICATION
 
 				$wallpaperFile = null;
 				if (!empty($validated['wallpaper'])) {
@@ -201,8 +228,10 @@
 					'--title-page-text', $validated['title_page_text'] ?? '',
 					'--copyright-text', $validated['copyright_text'] ?? '',
 					'--introduction-text', $validated['introduction_text'] ?? '',
-					'--font-name', $validated['font_name'],
-					'--font-file', $fontFile,
+					// START MODIFICATION: Remove old font args, will be added in a loop.
+					// '--font-name', $validated['font_name'],
+					// '--font-file', $fontFile,
+					// END MODIFICATION
 					'--font-size-main', $validated['font_size_main'],
 					'--font-size-footer', $validated['font_size_footer'],
 					'--font-size-title', $validated['font_size_title'],
@@ -222,6 +251,25 @@
 					'--page-number-margin-bottom-mm', $page_number_margin_bottom_mm,
 					'--text-box-width', $validated['text_box_width'],
 				];
+
+				// START MODIFICATION: Add new arguments for fonts, line-heights, and borders to the command.
+				foreach ($fontTypes as $type) {
+					$command[] = '--font-name-' . $type;
+					$command[] = $validated['font_name_' . $type];
+					$command[] = '--font-file-' . $type;
+					$command[] = $fontPaths[$type];
+					$command[] = '--line-height-' . $type;
+					$command[] = $validated['line_height_' . $type];
+				}
+
+				if ($validated['enable_dashed_border'] ?? false) {
+					$command[] = '--enable-dashed-border';
+					$command[] = '--dashed-border-width';
+					$command[] = $validated['dashed_border_width'];
+					$command[] = '--dashed-border-color';
+					$command[] = $validated['dashed_border_color'];
+				}
+				// END MODIFICATION
 
 				$textBackgroundColor = 'transparent';
 				if ($validated['use_text_background'] ?? false) {

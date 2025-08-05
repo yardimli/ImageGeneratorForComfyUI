@@ -32,53 +32,59 @@ def download_image_as_data_uri(url, page_num):
 
 def generate_css(args):
     """Generates a CSS string from the script's arguments."""
-    font_file_uri = Path(args.font_file).as_uri()
+    # START MODIFICATION: Generate multiple font-face rules from arguments
+    font_faces = []
+    # Use a set to avoid duplicate @font-face rules if the same font is used for multiple types
+    font_types = ['main', 'title', 'copyright', 'introduction']
+    unique_fonts = {
+        (getattr(args, f"font_name_{type}"), getattr(args, f"font_file_{type}"))
+        for type in font_types
+    }
+    for font_name, font_file in unique_fonts:
+        font_file_uri = Path(font_file).as_uri()
+        font_faces.append(f"""
+    @font-face {{
+        font-family: '{font_name}';
+        src: url("{font_file_uri}");
+    }}""")
+    font_face_css = "\n".join(font_faces)
+    # END MODIFICATION
+
     wallpaper_uri = Path(args.wallpaper_file).as_uri() if args.wallpaper_file and os.path.exists(args.wallpaper_file) else None
 
     # --- New Layout Model Calculations ---
-    # The page itself will be the full bleed size.
-    # Content is then inset using padding.
     bleed_width_mm = args.width_mm + (2 * args.bleed_mm)
     bleed_height_mm = args.height_mm + (2 * args.bleed_mm)
+
+    # START MODIFICATION: Logic for dashed border style
+    if args.enable_dashed_border:
+        dashed_border_style = f"border: {args.dashed_border_width}px dashed {args.dashed_border_color};"
+    else:
+        dashed_border_style = "border: none;"
+    # END MODIFICATION
 
     # Note: We use white-space: pre-wrap to respect newlines from the web form's textareas.
     return f"""
     /* --- Base Setup & Font Configuration --- */
-    @font-face {{
-        font-family: '{args.font_name}';
-        src: url("{font_file_uri}");
-    }}
+    {font_face_css}
 
     @page {{
-        /* In this model, the page size IS the full bleed size. */
         size: {bleed_width_mm}mm {bleed_height_mm}mm;
         margin: 0;
-        /* Note: 'marks: crop' is not used here because it requires a separate
-           bleed definition. We are defining the page as the bleed box itself. */
     }}
 
-    /* Named page for story content that needs a page number */
-    @page main-content {{
-        @bottom-center {{
-            content: counter(page);
-            font-family: '{args.font_name}';
-            font-size: {args.font_size_footer}pt;
-            color: {args.color_footer};
-            /* Position the page number relative to the bottom of the full bleed page */
-            margin-bottom: calc({args.bleed_mm}mm + {args.page_number_margin_bottom_mm}mm);
-            vertical-align: top;
-        }}
-    }}
+    /* START MODIFICATION: Removed named page for page numbers. This is now handled by a div. */
+    /* END MODIFICATION */
 
     body {{
-        font-family: '{args.font_name}', sans-serif;
+        font-family: '{args.font_name_main}', sans-serif;
         margin: 0;
         padding: 0;
+        counter-reset: page; /* Add page counter reset */
     }}
 
     /* --- Page Structure & Layout --- */
     .page {{
-        /* The page container fills the entire bleed area */
         width: {bleed_width_mm}mm;
         height: {bleed_height_mm}mm;
         position: relative;
@@ -87,11 +93,28 @@ def generate_css(args):
         page-break-after: always;
         display: flex;
         flex-direction: column;
+        counter-increment: page; /* Increment page counter on each page */
     }}
 
     .page:last-child {{
         page-break-after: auto;
     }}
+
+    /* START MODIFICATION: New page number element styling */
+    .page-number {{
+        position: absolute;
+        bottom: calc({args.bleed_mm}mm + {args.page_number_margin_bottom_mm}mm);
+        left: 0;
+        right: 0;
+        text-align: center;
+    }}
+    .page-number::after {{
+        content: counter(page);
+        font-family: '{args.font_name_main}';
+        font-size: {args.font_size_footer}pt;
+        color: {args.color_footer};
+    }}
+    /* END MODIFICATION */
 
     .content-box {{
         width: 100%;
@@ -107,46 +130,48 @@ def generate_css(args):
 
     /* --- Special Pages (Title, Copyright, Intro) --- */
     .title-page, .copyright-page, .introduction-page {{
-        /* Use padding to create the trim box area */
         padding: {args.bleed_mm}mm;
     }}
 
     .title-page .content-box {{
         color: {args.color_title};
+        font-family: '{args.font_name_title}';
         font-size: {args.font_size_title}pt;
+        line-height: {args.line_height_title};
         text-align: center;
         padding: 0 {args.margin_horizontal_title_mm}mm;
     }}
 
     .copyright-page .content-box {{
         color: {args.color_copyright};
+        font-family: '{args.font_name_copyright}';
         font-size: {args.font_size_copyright}pt;
+        line-height: {args.line_height_copyright};
         text-align: center;
         padding: 0 {args.margin_horizontal_copyright_mm}mm;
     }}
 
     .introduction-page .content-box {{
         color: {args.color_introduction};
+        font-family: '{args.font_name_introduction}';
         font-size: {args.font_size_introduction}pt;
+        line-height: {args.line_height_introduction};
         text-align: justify;
         padding: 0 {args.margin_horizontal_introduction_mm}mm;
     }}
 
     /* --- Story Content Pages --- */
     .story-image-page {{
-        /* This page is for full-bleed images, so it has zero padding. */
         padding: 0;
     }}
 
     .story-image-page img {{
-        /* The image simply fills its parent, which is already the full bleed size. */
         width: 100%;
         height: 100%;
         object-fit: cover;
     }}
 
     .story-text-page {{
-        page: main-content;
         padding: {args.bleed_mm}mm;
         display: flex;
         justify-content: center;
@@ -156,10 +181,10 @@ def generate_css(args):
         {f'background-image: url("{wallpaper_uri}");' if wallpaper_uri else ''}
     }}
 
-  .story-text-page .text-background {{
+    .story-text-page .text-background {{
         background-color: {args.text_background_color};
-        border-radius: 10mm;
-        padding: 3px;
+        border-radius: 25px;
+        padding: 10px;
         width: {args.text_box_width}%;
         height: {args.text_box_width}%;
         box-sizing: border-box;
@@ -170,17 +195,19 @@ def generate_css(args):
 
     .story-text-page .text-container {{
         color: {args.color_main};
+        font-family: '{args.font_name_main}';
         font-size: {args.font_size_main}pt;
+        line-height: {args.line_height_main};
         background-color: {args.text_background_color};
         width: 100%;
         height: 100%;
-        border: 5px dashed #333;
-        border-radius: 10mm;
+        {dashed_border_style}
+        border-radius: 25px;
         display: flex;
         justify-content: center;
         align-items: center;
-        padding: 10mm;
         box-sizing: border-box;
+        padding: 20px;
     }}
 
     .content-box {{
@@ -220,6 +247,7 @@ def generate_html(args, story_data, image_uris):
         text = page_data.get("text", "")
         image_uri = image_uris[i]
 
+        # START MODIFICATION: Add page-number div to text pages.
         html_parts.append(f"""
             <div class="page story-text-page">
                 <div class="text-background">
@@ -227,7 +255,9 @@ def generate_html(args, story_data, image_uris):
                         <div class="content-box">{html.escape(text)}</div>
                     </div>
                 </div>
+                <div class="page-number"></div>
             </div>""")
+        # END MODIFICATION
 
         # Image Page
         html_parts.append(f"""
@@ -256,9 +286,16 @@ def main():
     parser.add_argument("--copyright-text", default="", help="Text for the copyright page.")
     parser.add_argument("--introduction-text", default="", help="Text for the introduction page.")
     parser.add_argument("--wallpaper-file", help="Optional path to the wallpaper image for text pages.")
+
+    # START MODIFICATION: Replace single font args with per-type args for fonts and line-heights.
+    font_types = ['main', 'title', 'copyright', 'introduction']
+    for type in font_types:
+        parser.add_argument(f"--font-name-{type}", required=True, help=f"Logical name for the {type} font.")
+        parser.add_argument(f"--font-file-{type}", required=True, help=f"Path to the .ttf font file for {type}.")
+        parser.add_argument(f"--line-height-{type}", required=True, type=float, help=f"Line height for {type} text.")
+    # END MODIFICATION
+
     # Styling
-    parser.add_argument("--font-name", required=True, help="Logical name for the font (e.g., 'LoveYaLikeASister').")
-    parser.add_argument("--font-file", required=True, help="Path to the .ttf font file.")
     parser.add_argument("--font-size-main", default=14, type=float, help="Font size for main story text.")
     parser.add_argument("--font-size-footer", default=10, type=float, help="Font size for the footer.")
     parser.add_argument("--font-size-title", default=24, type=float, help="Font size for the title page.")
@@ -277,9 +314,14 @@ def main():
     parser.add_argument("--valign-introduction", choices=['top', 'middle', 'bottom'], default='top', help="Vertical alignment for the introduction page.")
     parser.add_argument("--margin-horizontal-introduction-mm", type=float, default=25.4, help="Horizontal margin for the introduction page in mm.")
     parser.add_argument("--page-number-margin-bottom-mm", type=float, default=12.7, help="Bottom margin for page numbers in mm.")
-    # START MODIFICATION: Add new arguments for text page styling.
+    # Text Page Styling
     parser.add_argument("--text-box-width", type=float, default=80, help="Width of the text box as a percentage.")
     parser.add_argument("--text-background-color", default="transparent", help="Background color for the text box (hex or 'transparent').")
+
+    # START MODIFICATION: Add new arguments for dashed border.
+    parser.add_argument("--enable-dashed-border", action="store_true", help="If set, enables the dashed border on text pages.")
+    parser.add_argument("--dashed-border-width", type=float, default=5, help="Width of the dashed border in points.")
+    parser.add_argument("--dashed-border-color", default="#333333", help="Color of the dashed border.")
     # END MODIFICATION
 
     args = parser.parse_args()
