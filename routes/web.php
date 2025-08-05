@@ -179,5 +179,6 @@
 		// START MODIFICATION: Add routes to serve assets for the PDF setup page.
 		Route::get('/assets/fonts/{filename}', [StoryPdfController::class, 'serveFont'])->name('assets.font');
 		Route::get('/assets/wallpapers/{filename}', [StoryPdfController::class, 'serveWallpaper'])->name('assets.wallpaper');
+		Route::get('/assets/logos/{filename}', [StoryPdfController::class, 'serveLogo'])->name('assets.logo');
 		// END MODIFICATION
 	});

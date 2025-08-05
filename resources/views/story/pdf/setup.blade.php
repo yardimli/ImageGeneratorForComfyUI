@@ -1,6 +1,6 @@
 @extends('layouts.bootstrap-app')
 
-{{-- START MODIFICATION: Add styles for font previews and wallpaper modal --}}
+{{-- START MODIFICATION: Add styles for font previews and new logo modal --}}
 @section('styles')
 	<style>
       /* Dynamically generate @font-face rules for each available font */
@@ -14,8 +14,8 @@
 				}
 			@endphp
 			
-/* Wallpaper modal styles */
-      .wallpaper-preview {
+/* Wallpaper and Logo modal styles */
+      .asset-preview {
           cursor: pointer;
           border: 3px solid transparent;
           transition: border-color 0.2s ease-in-out;
@@ -24,11 +24,11 @@
           object-fit: cover;
       }
 
-      .wallpaper-preview:hover {
+      .asset-preview:hover {
           border-color: #0d6efd;
       }
 
-      .wallpaper-preview.selected {
+      .asset-preview.selected {
           border-color: #0d6efd;
           box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
       }
@@ -101,25 +101,50 @@
 							<fieldset class="mb-4">
 								<legend class="h5">Content Pages</legend>
 								
-								{{-- Title Page --}}
+								{{-- START MODIFICATION: New structured title page settings --}}
 								<div class="mb-3 p-3 border rounded">
-									<label for="title_page_text" class="form-label fw-bold">Title Page Content</label>
-									<textarea class="form-control" id="title_page_text" name="title_page_text" rows="4">{{ old('title_page_text', $defaultTitlePage) }}</textarea>
-									<div class="row mt-2">
-										<div class="col-md-4">
-											<label for="valign_title" class="form-label small text-muted">Vertical Alignment</label>
-											<select class="form-select form-select-sm" id="valign_title" name="valign_title">
-												<option value="top" {{ old('valign_title') == 'top' ? 'selected' : '' }}>Top</option>
-												<option value="middle" {{ old('valign_title', 'middle') == 'middle' ? 'selected' : '' }}>Middle</option>
-												<option value="bottom" {{ old('valign_title') == 'bottom' ? 'selected' : '' }}>Bottom</option>
-											</select>
+									<h6 class="fw-bold">Title Page Designer</h6>
+									<div class="row g-3">
+										<div class="col-md-6">
+											<label class="form-label">Background Image</label>
+											<div>
+												<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#titleWallpaperModal">
+													Select Background...
+												</button>
+												<span id="selectedTitleWallpaperName" class="ms-2 fst-italic text-muted">{{ old('title_wallpaper') ?: 'None' }}</span>
+											</div>
+											<input type="hidden" name="title_wallpaper" id="titleWallpaperInput" value="{{ old('title_wallpaper') }}">
 										</div>
-										<div class="col-md-4">
-											<label for="margin_horizontal_title" class="form-label small text-muted">Horiz. Margin (in)</label>
-											<input type="number" class="form-control form-control-sm" id="margin_horizontal_title" name="margin_horizontal_title" value="{{ old('margin_horizontal_title', '1.0') }}" step="0.1" required>
+										<div class="col-md-6">
+											<label class="form-label">Logo</label>
+											<div>
+												<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#logoModal">
+													Select Logo...
+												</button>
+												<span id="selectedLogoName" class="ms-2 fst-italic text-muted">{{ old('title_logo') ?: 'None' }}</span>
+											</div>
+											<input type="hidden" name="title_logo" id="logoInput" value="{{ old('title_logo') }}">
+										</div>
+										<div class="col-md-12">
+											<label for="title_top_text" class="form-label">Top Text (Optional)</label>
+											<input type="text" class="form-control" id="title_top_text" name="title_top_text" value="{{ old('title_top_text', $defaultTitleTopText) }}">
+										</div>
+										<div class="col-md-12">
+											<label for="title_main_text" class="form-label">Main Title</label>
+											<input type="text" class="form-control" id="title_main_text" name="title_main_text" value="{{ old('title_main_text', $defaultTitleMainText) }}">
+										</div>
+										<div class="col-md-12">
+											<label for="title_author_text" class="form-label">Author Text</label>
+											<input type="text" class="form-control" id="title_author_text" name="title_author_text" value="{{ old('title_author_text', $defaultTitleAuthorText) }}">
+										</div>
+										<div class="col-md-12">
+											<label for="title_bottom_text" class="form-label">Bottom Text (Optional)</label>
+											<input type="text" class="form-control" id="title_bottom_text" name="title_bottom_text" value="{{ old('title_bottom_text', $defaultTitleBottomText) }}">
 										</div>
 									</div>
+									<div class="form-text mt-2">Use the Styling section below to control fonts and colors for the title page.</div>
 								</div>
+								{{-- END MODIFICATION --}}
 								
 								{{-- Copyright Page --}}
 								<div class="mb-3 p-3 border rounded">
@@ -183,7 +208,7 @@
 										<tbody>
 										@php
 											$styleTypes = [
-												'title' => ['label' => 'Title', 'size' => 28, 'line_height' => 1.2, 'color' => '#1E1E64', 'font' => 'LoveYaLikeASister'],
+												'title' => ['label' => 'Title Page', 'size' => 28, 'line_height' => 1.2, 'color' => '#D63346', 'font' => 'LoveYaLikeASister'],
 												'copyright' => ['label' => 'Copyright', 'size' => 8, 'line_height' => 1.2, 'color' => '#000000', 'font' => 'Arial'],
 												'introduction' => ['label' => 'Introduction', 'size' => 12, 'line_height' => 1.5, 'color' => '#000000', 'font' => 'Arial'],
 												'main' => ['label' => 'Main Text', 'size' => 14, 'line_height' => 1.6, 'color' => '#000000', 'font' => 'LoveYaLikeASister'],
@@ -239,7 +264,7 @@
 										<input type="color" class="form-control form-control-color" name="text_background_color" id="text_background_color" value="{{ old('text_background_color', '#ffffff') }}">
 									</div>
 									<div class="col-md-12 mt-3">
-										<label class="form-label">Wallpaper</label>
+										<label class="form-label">Wallpaper (for text pages)</label>
 										<div>
 											<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#wallpaperModal">
 												Select Wallpaper
@@ -292,28 +317,72 @@
 		</div>
 	</div>
 	
-	{{-- START MODIFICATION: Wallpaper selection modal --}}
-	<div class="modal fade" id="wallpaperModal" tabindex="-1" aria-labelledby="wallpaperModalLabel" aria-hidden="true">
+	{{-- START MODIFICATION: Add modals for title page assets and general text page wallpaper --}}
+	<div class="modal fade" id="titleWallpaperModal" tabindex="-1" aria-labelledby="titleWallpaperModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-xl modal-dialog-scrollable">
 			<div class="modal-content">
 				<div class="modal-header">
-					<h5 class="modal-title" id="wallpaperModalLabel">Select a Wallpaper</h5>
+					<h5 class="modal-title" id="titleWallpaperModalLabel">Select a Title Page Background</h5>
 					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
 						<div class="col-12 mb-3">
-							<button type="button" class="btn btn-secondary btn-sm w-100" id="clearWallpaper">
-								No Wallpaper
-							</button>
+							<button type="button" class="btn btn-secondary btn-sm w-100" id="clearTitleWallpaper">No Background</button>
 						</div>
 						@forelse($wallpapers as $wallpaper)
 							<div class="col-lg-3 col-md-4 col-6 mb-3">
-								{{-- Use the new route to serve the wallpaper image --}}
-								<img src="{{ route('assets.wallpaper', ['filename' => $wallpaper]) }}"
-								     alt="{{ $wallpaper }}"
-								     class="img-fluid rounded wallpaper-preview"
-								     data-filename="{{ $wallpaper }}">
+								<img src="{{ route('assets.wallpaper', ['filename' => $wallpaper]) }}" alt="{{ $wallpaper }}" class="img-fluid rounded asset-preview" data-asset-type="title-wallpaper" data-filename="{{ $wallpaper }}">
+							</div>
+						@empty
+							<p class="text-center">No wallpapers found in <code>resources/wallpapers/</code>.</p>
+						@endforelse
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="modal fade" id="logoModal" tabindex="-1" aria-labelledby="logoModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="logoModalLabel">Select a Logo</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12 mb-3">
+							<button type="button" class="btn btn-secondary btn-sm w-100" id="clearLogo">No Logo</button>
+						</div>
+						@forelse($logos as $logo)
+							<div class="col-lg-3 col-md-4 col-6 mb-3">
+								<img src="{{ route('assets.logo', ['filename' => $logo]) }}" alt="{{ $logo }}" class="img-fluid rounded asset-preview" data-asset-type="logo" data-filename="{{ $logo }}">
+							</div>
+						@empty
+							<p class="text-center">No logos found in <code>resources/logos/</code>.</p>
+						@endforelse
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	
+	<div class="modal fade" id="wallpaperModal" tabindex="-1" aria-labelledby="wallpaperModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="wallpaperModalLabel">Select a Wallpaper (for Text Pages)</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12 mb-3">
+							<button type="button" class="btn btn-secondary btn-sm w-100" id="clearWallpaper">No Wallpaper</button>
+						</div>
+						@forelse($wallpapers as $wallpaper)
+							<div class="col-lg-3 col-md-4 col-6 mb-3">
+								<img src="{{ route('assets.wallpaper', ['filename' => $wallpaper]) }}" alt="{{ $wallpaper }}" class="img-fluid rounded asset-preview" data-asset-type="wallpaper" data-filename="{{ $wallpaper }}">
 							</div>
 						@empty
 							<p class="text-center">No wallpapers found in <code>resources/wallpapers/</code>.</p>
@@ -355,15 +424,33 @@
 			useBorderCheckbox.addEventListener('change', toggleBorderInputs);
 			toggleBorderInputs(); // Set initial state
 			
-			// --- Wallpaper Modal Logic ---
-			const wallpaperModalEl = document.getElementById('wallpaperModal');
-			const wallpaperModal = new bootstrap.Modal(wallpaperModalEl);
-			const wallpaperInput = document.getElementById('wallpaperInput');
-			const selectedWallpaperName = document.getElementById('selectedWallpaperName');
-			const previews = document.querySelectorAll('.wallpaper-preview');
+			// --- Asset Modal Logic (Unified for all asset types) ---
+			const modals = {
+				'title-wallpaper': new bootstrap.Modal(document.getElementById('titleWallpaperModal')),
+				'logo': new bootstrap.Modal(document.getElementById('logoModal')),
+				'wallpaper': new bootstrap.Modal(document.getElementById('wallpaperModal')),
+			};
 			
-			function updateSelectedVisuals(filename) {
-				previews.forEach(p => {
+			const inputs = {
+				'title-wallpaper': document.getElementById('titleWallpaperInput'),
+				'logo': document.getElementById('logoInput'),
+				'wallpaper': document.getElementById('wallpaperInput'),
+			};
+			
+			const nameSpans = {
+				'title-wallpaper': document.getElementById('selectedTitleWallpaperName'),
+				'logo': document.getElementById('selectedLogoName'),
+				'wallpaper': document.getElementById('selectedWallpaperName'),
+			};
+			
+			const noAssetTexts = {
+				'title-wallpaper': 'None',
+				'logo': 'None',
+				'wallpaper': 'No wallpaper selected',
+			};
+			
+			function updateSelectedVisuals(assetType, filename) {
+				document.querySelectorAll(`.asset-preview[data-asset-type="${assetType}"]`).forEach(p => {
 					if (p.dataset.filename === filename) {
 						p.classList.add('selected');
 					} else {
@@ -372,25 +459,43 @@
 				});
 			}
 			
-			previews.forEach(preview => {
+			document.querySelectorAll('.asset-preview').forEach(preview => {
 				preview.addEventListener('click', function () {
+					const assetType = this.dataset.assetType;
 					const filename = this.dataset.filename;
-					wallpaperInput.value = filename;
-					selectedWallpaperName.textContent = filename;
-					updateSelectedVisuals(filename);
-					wallpaperModal.hide();
+					
+					inputs[assetType].value = filename;
+					nameSpans[assetType].textContent = filename;
+					updateSelectedVisuals(assetType, filename);
+					modals[assetType].hide();
 				});
 			});
 			
-			document.getElementById('clearWallpaper').addEventListener('click', function() {
-				wallpaperInput.value = '';
-				selectedWallpaperName.textContent = 'No wallpaper selected';
-				updateSelectedVisuals('');
-				wallpaperModal.hide();
+			document.getElementById('clearTitleWallpaper').addEventListener('click', function() {
+				inputs['title-wallpaper'].value = '';
+				nameSpans['title-wallpaper'].textContent = noAssetTexts['title-wallpaper'];
+				updateSelectedVisuals('title-wallpaper', '');
+				modals['title-wallpaper'].hide();
 			});
 			
-			// Set initial selected state on page load
-			updateSelectedVisuals(wallpaperInput.value);
+			document.getElementById('clearLogo').addEventListener('click', function() {
+				inputs['logo'].value = '';
+				nameSpans['logo'].textContent = noAssetTexts['logo'];
+				updateSelectedVisuals('logo', '');
+				modals['logo'].hide();
+			});
+			
+			document.getElementById('clearWallpaper').addEventListener('click', function() {
+				inputs['wallpaper'].value = '';
+				nameSpans['wallpaper'].textContent = noAssetTexts['wallpaper'];
+				updateSelectedVisuals('wallpaper', '');
+				modals['wallpaper'].hide();
+			});
+			
+			// Set initial selected states on page load
+			for (const assetType in inputs) {
+				updateSelectedVisuals(assetType, inputs[assetType].value);
+			}
 		});
 	</script>
 @endsection

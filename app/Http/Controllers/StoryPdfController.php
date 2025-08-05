@@ -52,6 +52,20 @@
 				}
 			}
 
+			// START MODIFICATION: Add logo loading
+			$logoPath = resource_path('logos');
+			$logos = [];
+
+			if (File::isDirectory($logoPath)) {
+				$files = File::files($logoPath);
+				foreach ($files as $file) {
+					if (in_array(strtolower($file->getExtension()), ['jpg', 'jpeg', 'png', 'svg'])) {
+						$logos[] = $file->getFilename();
+					}
+				}
+			}
+			// END MODIFICATION
+
 			$fontPath = resource_path('fonts');
 			$fonts = [];
 			if (File::isDirectory($fontPath)) {
@@ -69,10 +83,17 @@
 
 			$story->load('user');
 			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
-			$defaultTitlePage = $story->title . "\n\nBy\n" . $story->user->name;
+			// START MODIFICATION: Replace single title page text with structured defaults
+			$defaultTitleTopText = 'An EQ Original';
+			$defaultTitleMainText = $story->title;
+			$defaultTitleAuthorText = 'by ' . $story->user->name;
+			$defaultTitleBottomText = 'EQ Books';
+			// END MODIFICATION
 			$defaultIntroduction = "This is the introduction to the story. It can contain a brief overview, background information, or any other relevant details that set the stage for the narrative.\n\nFeel free to customize this text as needed.";
 
-			return view('story.pdf.setup', compact('story', 'wallpapers', 'fonts', 'defaultCopyright', 'defaultTitlePage', 'defaultIntroduction'));
+			// START MODIFICATION: Pass new variables to the view
+			return view('story.pdf.setup', compact('story', 'wallpapers', 'logos', 'fonts', 'defaultCopyright', 'defaultTitleTopText', 'defaultTitleMainText', 'defaultTitleAuthorText', 'defaultTitleBottomText', 'defaultIntroduction'));
+			// END MODIFICATION
 		}
 
 		/**
@@ -85,7 +106,7 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
-			// START MODIFICATION: Added validation for new font, line-height, and border fields.
+			// START MODIFICATION: Added validation for new title page fields.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -94,7 +115,12 @@
 				'dpi' => 'required|integer|min:72|max:1200',
 				'show_bleed_marks' => 'nullable|boolean',
 				// Content
-				'title_page_text' => 'nullable|string|max:5000',
+				'title_wallpaper' => 'nullable|string|max:255',
+				'title_logo' => 'nullable|string|max:255',
+				'title_top_text' => 'nullable|string|max:255',
+				'title_main_text' => 'nullable|string|max:255',
+				'title_author_text' => 'nullable|string|max:255',
+				'title_bottom_text' => 'nullable|string|max:255',
 				'copyright_text' => 'nullable|string|max:5000',
 				'introduction_text' => 'nullable|string|max:10000',
 				'wallpaper' => 'nullable|string',
@@ -120,9 +146,7 @@
 				'color_title' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_copyright' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_introduction' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
-				// Margin and Alignment fields
-				'valign_title' => 'required|string|in:top,middle,bottom',
-				'margin_horizontal_title' => 'required|numeric|min:0',
+				// Margin and Alignment fields (Copyright/Intro only now)
 				'valign_copyright' => 'required|string|in:top,middle,bottom',
 				'margin_horizontal_copyright' => 'required|numeric|min:0',
 				'valign_introduction' => 'required|string|in:top,middle,bottom',
@@ -180,7 +204,6 @@
 				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
 				$pythonScriptPath = base_path('python/storybook-html2pdf.py');
 
-				// START MODIFICATION: Validate and collect paths for all four font types.
 				$fontTypes = ['main', 'title', 'copyright', 'introduction'];
 				$fontPaths = [];
 				foreach ($fontTypes as $type) {
@@ -188,7 +211,6 @@
 					$fontName = $validated[$fontNameKey];
 					$fontFile = resource_path('fonts/' . $fontName . '-Regular.ttf');
 					if (!File::exists($fontFile)) {
-						// Attempt to find a matching file without '-Regular' for robustness
 						$fontFile = resource_path('fonts/' . $fontName . '.ttf');
 						if (!File::exists($fontFile)) {
 							throw new \Exception("Font file not found for type '{$type}': " . basename($validated[$fontNameKey]));
@@ -196,7 +218,6 @@
 					}
 					$fontPaths[$type] = $fontFile;
 				}
-				// END MODIFICATION
 
 				$wallpaperFile = null;
 				if (!empty($validated['wallpaper'])) {
@@ -206,11 +227,28 @@
 					}
 				}
 
+				// START MODIFICATION: Get paths for title page assets
+				$titleWallpaperFile = null;
+				if (!empty($validated['title_wallpaper'])) {
+					$path = resource_path('wallpapers/' . $validated['title_wallpaper']);
+					if (File::exists($path)) {
+						$titleWallpaperFile = $path;
+					}
+				}
+
+				$titleLogoFile = null;
+				if (!empty($validated['title_logo'])) {
+					$path = resource_path('logos/' . $validated['title_logo']);
+					if (File::exists($path)) {
+						$titleLogoFile = $path;
+					}
+				}
+				// END MODIFICATION
+
 				$inch_to_mm = 25.4;
 				$width_mm = $validated['width'] * $inch_to_mm;
 				$height_mm = $validated['height'] * $inch_to_mm;
 				$bleed_mm = $validated['bleed'] * $inch_to_mm;
-				$margin_h_title_mm = $validated['margin_horizontal_title'] * $inch_to_mm;
 				$margin_h_copyright_mm = $validated['margin_horizontal_copyright'] * $inch_to_mm;
 				$margin_h_introduction_mm = $validated['margin_horizontal_introduction'] * $inch_to_mm;
 				$page_number_margin_bottom_mm = $validated['page_number_margin_bottom'] * $inch_to_mm;
@@ -225,13 +263,14 @@
 					'--height-mm', $height_mm,
 					'--bleed-mm', $bleed_mm,
 					'--dpi', $validated['dpi'],
-					'--title-page-text', $validated['title_page_text'] ?? '',
+					// START MODIFICATION: Pass new title page text fields
+					'--title-top-text', $validated['title_top_text'] ?? '',
+					'--title-main-text', $validated['title_main_text'] ?? '',
+					'--title-author-text', $validated['title_author_text'] ?? '',
+					'--title-bottom-text', $validated['title_bottom_text'] ?? '',
+					// END MODIFICATION
 					'--copyright-text', $validated['copyright_text'] ?? '',
 					'--introduction-text', $validated['introduction_text'] ?? '',
-					// START MODIFICATION: Remove old font args, will be added in a loop.
-					// '--font-name', $validated['font_name'],
-					// '--font-file', $fontFile,
-					// END MODIFICATION
 					'--font-size-main', $validated['font_size_main'],
 					'--font-size-footer', $validated['font_size_footer'],
 					'--font-size-title', $validated['font_size_title'],
@@ -242,8 +281,6 @@
 					'--color-title', $validated['color_title'],
 					'--color-copyright', $validated['color_copyright'],
 					'--color-introduction', $validated['color_introduction'],
-					'--valign-title', $validated['valign_title'],
-					'--margin-horizontal-title-mm', $margin_h_title_mm,
 					'--valign-copyright', $validated['valign_copyright'],
 					'--margin-horizontal-copyright-mm', $margin_h_copyright_mm,
 					'--valign-introduction', $validated['valign_introduction'],
@@ -252,7 +289,6 @@
 					'--text-box-width', $validated['text_box_width'],
 				];
 
-				// START MODIFICATION: Add new arguments for fonts, line-heights, and borders to the command.
 				foreach ($fontTypes as $type) {
 					$command[] = '--font-name-' . $type;
 					$command[] = $validated['font_name_' . $type];
@@ -269,7 +305,6 @@
 					$command[] = '--dashed-border-color';
 					$command[] = $validated['dashed_border_color'];
 				}
-				// END MODIFICATION
 
 				$textBackgroundColor = 'transparent';
 				if ($validated['use_text_background'] ?? false) {
@@ -287,6 +322,17 @@
 					$command[] = '--wallpaper-file';
 					$command[] = $wallpaperFile;
 				}
+
+				// START MODIFICATION: Add new title page asset arguments to the command.
+				if ($titleWallpaperFile) {
+					$command[] = '--title-wallpaper-file';
+					$command[] = $titleWallpaperFile;
+				}
+				if ($titleLogoFile) {
+					$command[] = '--title-logo-file';
+					$command[] = $titleLogoFile;
+				}
+				// END MODIFICATION
 
 				$process = new Process($command);
 				$process->setTimeout(300);
@@ -354,6 +400,25 @@
 
 			if (!File::exists($path)) {
 				abort(404, 'Wallpaper not found.');
+			}
+
+			return response()->file($path);
+		}
+
+		/**
+		 * Serves a logo image from the resources/logos directory.
+		 *
+		 * @param string $filename
+		 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+		 */
+		public function serveLogo(string $filename)
+		{
+			// Sanitize filename to prevent directory traversal attacks
+			$filename = basename($filename);
+			$path = resource_path('logos/' . $filename);
+
+			if (!File::exists($path)) {
+				abort(404, 'Logo not found.');
 			}
 
 			return response()->file($path);

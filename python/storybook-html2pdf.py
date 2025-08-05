@@ -2,12 +2,30 @@ import argparse
 import base64
 import html
 import json
+import mimetypes # MODIFICATION: Import mimetypes
 import os
 import requests
 import sys
 from pathlib import Path
 
 from weasyprint import HTML, CSS
+
+# START MODIFICATION: Add helper to convert local files to data URI
+def file_to_data_uri(filepath):
+    """Reads a local file and returns it as a base64 data URI."""
+    if not filepath or not os.path.exists(filepath):
+        return None
+    try:
+        mime_type, _ = mimetypes.guess_type(filepath)
+        if not mime_type:
+            mime_type = 'application/octet-stream' # Fallback
+        with open(filepath, "rb") as f:
+            encoded_string = base64.b64encode(f.read()).decode('utf-8')
+        return f"data:{mime_type};base64,{encoded_string}"
+    except Exception as e:
+        print(f"Error converting file to data URI: {filepath}, {e}", file=sys.stderr)
+        return None
+# END MODIFICATION
 
 def download_image_as_data_uri(url, page_num):
     """Downloads an image and returns it as a base64 data URI."""
@@ -32,9 +50,7 @@ def download_image_as_data_uri(url, page_num):
 
 def generate_css(args):
     """Generates a CSS string from the script's arguments."""
-    # START MODIFICATION: Generate multiple font-face rules from arguments
     font_faces = []
-    # Use a set to avoid duplicate @font-face rules if the same font is used for multiple types
     font_types = ['main', 'title', 'copyright', 'introduction']
     unique_fonts = {
         (getattr(args, f"font_name_{type}"), getattr(args, f"font_file_{type}"))
@@ -48,22 +64,17 @@ def generate_css(args):
         src: url("{font_file_uri}");
     }}""")
     font_face_css = "\n".join(font_faces)
-    # END MODIFICATION
 
     wallpaper_uri = Path(args.wallpaper_file).as_uri() if args.wallpaper_file and os.path.exists(args.wallpaper_file) else None
 
-    # --- New Layout Model Calculations ---
     bleed_width_mm = args.width_mm + (2 * args.bleed_mm)
     bleed_height_mm = args.height_mm + (2 * args.bleed_mm)
 
-    # START MODIFICATION: Logic for dashed border style
     if args.enable_dashed_border:
         dashed_border_style = f"border: {args.dashed_border_width}px dashed {args.dashed_border_color};"
     else:
         dashed_border_style = "border: none;"
-    # END MODIFICATION
 
-    # Note: We use white-space: pre-wrap to respect newlines from the web form's textareas.
     return f"""
     /* --- Base Setup & Font Configuration --- */
     {font_face_css}
@@ -73,14 +84,11 @@ def generate_css(args):
         margin: 0;
     }}
 
-    /* START MODIFICATION: Removed named page for page numbers. This is now handled by a div. */
-    /* END MODIFICATION */
-
     body {{
         font-family: '{args.font_name_main}', sans-serif;
         margin: 0;
         padding: 0;
-        counter-reset: page; /* Add page counter reset */
+        counter-reset: page;
     }}
 
     /* --- Page Structure & Layout --- */
@@ -93,14 +101,13 @@ def generate_css(args):
         page-break-after: always;
         display: flex;
         flex-direction: column;
-        counter-increment: page; /* Increment page counter on each page */
+        counter-increment: page;
     }}
 
     .page:last-child {{
         page-break-after: auto;
     }}
 
-    /* START MODIFICATION: New page number element styling */
     .page-number {{
         position: absolute;
         bottom: calc({args.bleed_mm}mm + {args.page_number_margin_bottom_mm}mm);
@@ -114,7 +121,6 @@ def generate_css(args):
         font-size: {args.font_size_footer}pt;
         color: {args.color_footer};
     }}
-    /* END MODIFICATION */
 
     .content-box {{
         width: 100%;
@@ -128,18 +134,83 @@ def generate_css(args):
     .valign-middle {{ justify-content: center; }}
     .valign-bottom {{ justify-content: flex-end; }}
 
-    /* --- Special Pages (Title, Copyright, Intro) --- */
-    .title-page, .copyright-page, .introduction-page {{
+    /* START MODIFICATION: New Title Page Styling */
+    .title-page-container {{
+        justify-content: center;
+        align-items: center;
+        background-size: cover;
+        background-position: center;
         padding: {args.bleed_mm}mm;
     }}
 
-    .title-page .content-box {{
-        color: {args.color_title};
-        font-family: '{args.font_name_title}';
-        font-size: {args.font_size_title}pt;
-        line-height: {args.line_height_title};
+    .title-page-frame {{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 5%;
+        box-sizing: border-box;
+    }}
+
+    .title-page-content {{
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: center;
         text-align: center;
-        padding: 0 {args.margin_horizontal_title_mm}mm;
+        font-family: '{args.font_name_title}';
+    }}
+
+    .title-page-header {{
+        /* container for logo and top text */
+    }}
+
+    .title-logo {{
+        max-height: 10vh;
+        max-width: 30%;
+        margin-top: 1em;
+    }}
+
+    .title-top-text {{
+        font-size: {args.font_size_title * 0.8}pt;
+        color: {args.color_title};
+        opacity: 0.9;
+        margin-bottom: 1em;
+        margin-top:4em;
+    }}
+
+    .title-main-text {{
+        font-size: {args.font_size_title * 2.0}pt;
+        color: {args.color_title};
+        font-weight: bold;
+        line-height: 1.1;
+        margin: 0.2em 0;
+    }}
+
+    .title-author-text {{
+        font-family: '{args.font_name_main}';
+        font-size: {args.font_size_title * 0.9}pt;
+        color: {args.color_main};
+        margin-top: 0.5em;
+    }}
+
+    .title-page-footer {{
+        /* container for bottom text */
+    }}
+
+    .title-bottom-text {{
+        font-family: '{args.font_name_main}';
+        font-size: {args.font_size_footer}pt;
+        color: {args.color_footer};
+    }}
+    /* END MODIFICATION */
+
+    /* --- Special Pages (Copyright, Intro) --- */
+    .copyright-page, .introduction-page {{
+        padding: {args.bleed_mm}mm;
     }}
 
     .copyright-page .content-box {{
@@ -223,13 +294,35 @@ def generate_html(args, story_data, image_uris):
     """Generates the full HTML document string."""
     html_parts = []
 
-    # --- Special Pages ---
-    if args.title_page_text:
-        html_parts.append(f"""
-        <div class="page title-page valign-{args.valign_title}">
-            <div class="content-box">{html.escape(args.title_page_text)}</div>
-        </div>""")
+    # START MODIFICATION: Generate new title page
+    title_wallpaper_uri = file_to_data_uri(args.title_wallpaper_file)
+    title_logo_uri = file_to_data_uri(args.title_logo_file)
 
+    # Only create a title page if there's some content for it
+    if any([args.title_top_text, args.title_main_text, args.title_author_text, args.title_bottom_text, title_logo_uri]):
+        title_page_html = f"""
+        <div class="page title-page-container" style="background-image: url('{title_wallpaper_uri or ''}');">
+            <div class="title-page-frame">
+                <div class="title-page-content">
+                    <div class="title-page-header">
+                        {f'<div class="title-top-text">{html.escape(args.title_top_text)}</div>' if args.title_top_text else ''}
+                    </div>
+                    <div class="title-page-body">
+                        {f'<div class="title-main-text">{html.escape(args.title_main_text)}</div>' if args.title_main_text else ''}
+                        {f'<div class="title-author-text">{html.escape(args.title_author_text)}</div>' if args.title_author_text else ''}
+                    </div>
+                    <div class="title-page-footer">
+                        {f'<div class="title-bottom-text">{html.escape(args.title_bottom_text)}</div>' if args.title_bottom_text else ''}
+                        {f'<img src="{title_logo_uri}" class="title-logo">' if title_logo_uri else ''}
+                    </div>
+                </div>
+            </div>
+        </div>
+        """
+        html_parts.append(title_page_html)
+    # END MODIFICATION
+
+    # --- Copyright & Intro Pages ---
     if args.copyright_text:
         html_parts.append(f"""
         <div class="page copyright-page valign-{args.valign_copyright}">
@@ -247,7 +340,6 @@ def generate_html(args, story_data, image_uris):
         text = page_data.get("text", "")
         image_uri = image_uris[i]
 
-        # START MODIFICATION: Add page-number div to text pages.
         html_parts.append(f"""
             <div class="page story-text-page">
                 <div class="text-background">
@@ -257,9 +349,7 @@ def generate_html(args, story_data, image_uris):
                 </div>
                 <div class="page-number"></div>
             </div>""")
-        # END MODIFICATION
 
-        # Image Page
         html_parts.append(f"""
         <div class="page story-image-page">
             {'<img src="' + image_uri + '">' if image_uri else '<p>Image could not be loaded.</p>'}
@@ -282,18 +372,23 @@ def main():
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing (Note: Not directly used by WeasyPrint, but kept for interface compatibility).")
     parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF.")
     # Content
-    parser.add_argument("--title-page-text", default="", help="Text for the title page.")
+    # START MODIFICATION: Add new title page arguments
+    parser.add_argument("--title-wallpaper-file", help="Optional path to the wallpaper image for the title page.")
+    parser.add_argument("--title-logo-file", help="Optional path to the logo image for the title page.")
+    parser.add_argument("--title-top-text", default="", help="Text for the top of the title page.")
+    parser.add_argument("--title-main-text", default="", help="Main title text.")
+    parser.add_argument("--title-author-text", default="", help="Author text for the title page.")
+    parser.add_argument("--title-bottom-text", default="", help="Text for the bottom of the title page.")
+    # END MODIFICATION
     parser.add_argument("--copyright-text", default="", help="Text for the copyright page.")
     parser.add_argument("--introduction-text", default="", help="Text for the introduction page.")
     parser.add_argument("--wallpaper-file", help="Optional path to the wallpaper image for text pages.")
 
-    # START MODIFICATION: Replace single font args with per-type args for fonts and line-heights.
     font_types = ['main', 'title', 'copyright', 'introduction']
     for type in font_types:
         parser.add_argument(f"--font-name-{type}", required=True, help=f"Logical name for the {type} font.")
         parser.add_argument(f"--font-file-{type}", required=True, help=f"Path to the .ttf font file for {type}.")
         parser.add_argument(f"--line-height-{type}", required=True, type=float, help=f"Line height for {type} text.")
-    # END MODIFICATION
 
     # Styling
     parser.add_argument("--font-size-main", default=14, type=float, help="Font size for main story text.")
@@ -307,8 +402,8 @@ def main():
     parser.add_argument("--color-copyright", default="#000000", help="Hex color for the copyright page text.")
     parser.add_argument("--color-introduction", default="#000000", help="Hex color for the introduction page text.")
     # Margin and Alignment Arguments
-    parser.add_argument("--valign-title", choices=['top', 'middle', 'bottom'], default='middle', help="Vertical alignment for the title page.")
-    parser.add_argument("--margin-horizontal-title-mm", type=float, default=25.4, help="Horizontal margin for the title page in mm.")
+    # START MODIFICATION: Removed title page valign/margin args
+    # END MODIFICATION
     parser.add_argument("--valign-copyright", choices=['top', 'middle', 'bottom'], default='bottom', help="Vertical alignment for the copyright page.")
     parser.add_argument("--margin-horizontal-copyright-mm", type=float, default=25.4, help="Horizontal margin for the copyright page in mm.")
     parser.add_argument("--valign-introduction", choices=['top', 'middle', 'bottom'], default='top', help="Vertical alignment for the introduction page.")
@@ -318,11 +413,9 @@ def main():
     parser.add_argument("--text-box-width", type=float, default=80, help="Width of the text box as a percentage.")
     parser.add_argument("--text-background-color", default="transparent", help="Background color for the text box (hex or 'transparent').")
 
-    # START MODIFICATION: Add new arguments for dashed border.
     parser.add_argument("--enable-dashed-border", action="store_true", help="If set, enables the dashed border on text pages.")
     parser.add_argument("--dashed-border-width", type=float, default=5, help="Width of the dashed border in points.")
     parser.add_argument("--dashed-border-color", default="#333333", help="Color of the dashed border.")
-    # END MODIFICATION
 
     args = parser.parse_args()
 
