@@ -180,5 +180,6 @@
 		Route::get('/assets/fonts/{filename}', [StoryPdfController::class, 'serveFont'])->name('assets.font');
 		Route::get('/assets/wallpapers/{filename}', [StoryPdfController::class, 'serveWallpaper'])->name('assets.wallpaper');
 		Route::get('/assets/logos/{filename}', [StoryPdfController::class, 'serveLogo'])->name('assets.logo');
+		Route::get('/assets/stickers/{filename}', [StoryPdfController::class, 'serveSticker'])->name('assets.sticker'); // MODIFICATION: Add sticker route
 		// END MODIFICATION
 	});

@@ -174,6 +174,18 @@ def generate_css(args):
         margin-top: 1em;
     }}
 
+    .title-stickers-container {{
+        width: 100%;
+        text-align: center;
+        margin-top: 1em;
+    }}
+
+    .title-sticker-img {{
+        max-height: 75px;
+        max-width: 75px;
+        object-fit: contain;
+    }}
+
     .title-top-text {{
         font-size: {args.font_size_title * 0.8}pt;
         color: {args.color_title};
@@ -297,6 +309,7 @@ def generate_html(args, story_data, image_uris):
     # START MODIFICATION: Generate new title page
     title_wallpaper_uri = file_to_data_uri(args.title_wallpaper_file)
     title_logo_uri = file_to_data_uri(args.title_logo_file)
+    sticker_uris = [file_to_data_uri(f) for f in args.sticker_file if f] # MODIFICATION: Convert sticker files to data URIs
 
     # Only create a title page if there's some content for it
     if any([args.title_top_text, args.title_main_text, args.title_author_text, args.title_bottom_text, title_logo_uri]):
@@ -313,6 +326,13 @@ def generate_html(args, story_data, image_uris):
                     </div>
                     <div class="title-page-footer">
                         {f'<div class="title-bottom-text">{html.escape(args.title_bottom_text)}</div>' if args.title_bottom_text else ''}
+
+                        { # MODIFICATION: Add sticker container and images
+                          '<div class="title-stickers-container">' +
+                          ''.join([f'<img src="{uri}" class="title-sticker-img">' for uri in sticker_uris]) +
+                          '</div>' if sticker_uris else ''
+                        }
+
                         {f'<img src="{title_logo_uri}" class="title-logo">' if title_logo_uri else ''}
                     </div>
                 </div>
@@ -375,6 +395,7 @@ def main():
     # START MODIFICATION: Add new title page arguments
     parser.add_argument("--title-wallpaper-file", help="Optional path to the wallpaper image for the title page.")
     parser.add_argument("--title-logo-file", help="Optional path to the logo image for the title page.")
+    parser.add_argument("--sticker-file", action="append", default=[], help="Path to a sticker file to be placed on the title page.") # MODIFICATION: Add sticker argument
     parser.add_argument("--title-top-text", default="", help="Text for the top of the title page.")
     parser.add_argument("--title-main-text", default="", help="Main title text.")
     parser.add_argument("--title-author-text", default="", help="Author text for the title page.")

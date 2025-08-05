@@ -66,6 +66,20 @@
 			}
 			// END MODIFICATION
 
+			// START MODIFICATION: Add sticker loading
+			$stickerPath = resource_path('stickers');
+			$stickers = [];
+
+			if (File::isDirectory($stickerPath)) {
+				$files = File::files($stickerPath);
+				foreach ($files as $file) {
+					if (in_array(strtolower($file->getExtension()), ['png'])) {
+						$stickers[] = $file->getFilename();
+					}
+				}
+			}
+			// END MODIFICATION
+
 			$fontPath = resource_path('fonts');
 			$fonts = [];
 			if (File::isDirectory($fontPath)) {
@@ -92,7 +106,7 @@
 			$defaultIntroduction = "This is the introduction to the story. It can contain a brief overview, background information, or any other relevant details that set the stage for the narrative.\n\nFeel free to customize this text as needed.";
 
 			// START MODIFICATION: Pass new variables to the view
-			return view('story.pdf.setup', compact('story', 'wallpapers', 'logos', 'fonts', 'defaultCopyright', 'defaultTitleTopText', 'defaultTitleMainText', 'defaultTitleAuthorText', 'defaultTitleBottomText', 'defaultIntroduction'));
+			return view('story.pdf.setup', compact('story', 'wallpapers', 'logos', 'stickers', 'fonts', 'defaultCopyright', 'defaultTitleTopText', 'defaultTitleMainText', 'defaultTitleAuthorText', 'defaultTitleBottomText', 'defaultIntroduction'));
 			// END MODIFICATION
 		}
 
@@ -106,7 +120,7 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
-			// START MODIFICATION: Added validation for new title page fields.
+			// START MODIFICATION: Added validation for new title page fields and stickers.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -121,6 +135,8 @@
 				'title_main_text' => 'nullable|string|max:255',
 				'title_author_text' => 'nullable|string|max:255',
 				'title_bottom_text' => 'nullable|string|max:255',
+				'stickers' => 'nullable|array|max:3', // MODIFICATION: Add sticker validation
+				'stickers.*' => 'string|max:255', // MODIFICATION: Add sticker validation
 				'copyright_text' => 'nullable|string|max:5000',
 				'introduction_text' => 'nullable|string|max:10000',
 				'wallpaper' => 'nullable|string',
@@ -334,6 +350,18 @@
 				}
 				// END MODIFICATION
 
+				// START MODIFICATION: Add sticker files to the command.
+				if (!empty($validated['stickers'])) {
+					foreach ($validated['stickers'] as $stickerFilename) {
+						$path = resource_path('stickers/' . $stickerFilename);
+						if (File::exists($path)) {
+							$command[] = '--sticker-file';
+							$command[] = $path;
+						}
+					}
+				}
+				// END MODIFICATION
+
 				$process = new Process($command);
 				$process->setTimeout(300);
 				$process->run();
@@ -419,6 +447,25 @@
 
 			if (!File::exists($path)) {
 				abort(404, 'Logo not found.');
+			}
+
+			return response()->file($path);
+		}
+
+		/**
+		 * Serves a sticker image from the resources/stickers directory.
+		 *
+		 * @param string $filename
+		 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+		 */
+		public function serveSticker(string $filename)
+		{
+			// Sanitize filename to prevent directory traversal attacks
+			$filename = basename($filename);
+			$path = resource_path('stickers/' . $filename);
+
+			if (!File::exists($path)) {
+				abort(404, 'Sticker not found.');
 			}
 
 			return response()->file($path);
