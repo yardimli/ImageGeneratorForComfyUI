@@ -2,9 +2,7 @@
 
 	namespace App\Http\Controllers;
 
-	// START MODIFICATION: Import the Prompt model to check for upscaled images.
 	use App\Models\Prompt;
-// END MODIFICATION
 	use App\Models\Story;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\File;
@@ -54,14 +52,27 @@
 				}
 			}
 
-			// START MODIFICATION: Prepare default text for new content pages.
+			$fontPath = resource_path('fonts');
+			$fonts = [];
+			if (File::isDirectory($fontPath)) {
+				$fontFiles = File::files($fontPath);
+				foreach ($fontFiles as $fontFile) {
+					if (strtolower($fontFile->getExtension()) === 'ttf') {
+						$fontName = preg_replace('/(-Regular)?\.ttf$/i', '', $fontFile->getFilename());
+						$fonts[] = [
+							'name' => $fontName,
+							'filename' => $fontFile->getFilename(),
+						];
+					}
+				}
+			}
+
 			$story->load('user');
 			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
 			$defaultTitlePage = $story->title . "\n\nBy\n" . $story->user->name;
 			$defaultIntroduction = "This is the introduction to the story. It can contain a brief overview, background information, or any other relevant details that set the stage for the narrative.\n\nFeel free to customize this text as needed.";
-			// END MODIFICATION
 
-			return view('story.pdf.setup', compact('story', 'wallpapers', 'defaultCopyright', 'defaultTitlePage', 'defaultIntroduction'));
+			return view('story.pdf.setup', compact('story', 'wallpapers', 'fonts', 'defaultCopyright', 'defaultTitlePage', 'defaultIntroduction'));
 		}
 
 		/**
@@ -74,7 +85,6 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
-			// START MODIFICATION: Add validation for all new PDF settings.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -99,17 +109,19 @@
 				'color_title' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_copyright' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
 				'color_introduction' => 'required|string|regex:/^#[a-fA-F0-9]{6}$/',
-				// New Margin and Alignment fields
+				// Margin and Alignment fields
 				'valign_title' => 'required|string|in:top,middle,bottom',
 				'margin_horizontal_title' => 'required|numeric|min:0',
 				'valign_copyright' => 'required|string|in:top,middle,bottom',
 				'margin_horizontal_copyright' => 'required|numeric|min:0',
 				'valign_introduction' => 'required|string|in:top,middle,bottom',
 				'margin_horizontal_introduction' => 'required|numeric|min:0',
-				'margin_horizontal_main' => 'required|numeric|min:0',
 				'page_number_margin_bottom' => 'required|numeric|min:0',
+				// New Text Page Styling fields
+				'text_box_width' => 'required|numeric|min:10|max:100',
+				'use_text_background' => 'nullable|boolean',
+				'text_background_color' => 'required_if:use_text_background,1|string|regex:/^#[a-fA-F0-9]{6}$/',
 			]);
-			// END MODIFICATION
 
 			if ($validator->fails()) {
 				return back()->withErrors($validator)->withInput();
@@ -121,26 +133,21 @@
 			File::makeDirectory($tempDir, 0755, true, true);
 
 			try {
-				// Load story with relations
 				$story->load('pages', 'user');
 
-				// 1. Prepare data JSON file
-				// START MODIFICATION: Check for upscaled images when preparing data.
 				$storyData = [
 					'title' => $story->title,
 					'author' => $story->user->name,
 					'pages' => $story->pages->map(function ($page) {
-						$imageUrl = $page->image_path; // Default to the original image
+						$imageUrl = $page->image_path;
 
 						if (!empty($page->image_path)) {
-							// Find the prompt associated with this image to check for a successful upscale.
 							$prompt = Prompt::where('filename', $page->image_path)
 								->where('upscale_status', '2')
 								->whereNotNull('upscale_url')
 								->first();
 
 							if ($prompt) {
-								// An upscaled version exists and is ready, use it.
 								$imageUrl = asset('storage/upscaled/' . $prompt->upscale_url);
 							}
 						}
@@ -151,23 +158,19 @@
 						];
 					})->toArray(),
 				];
-				// END MODIFICATION
 				$dataFile = $tempDir . '/data.json';
 				File::put($dataFile, json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
-				// 2. Prepare paths and arguments for the Python script
 				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
-				// START MODIFICATION: Use the new html2pdf Python script.
 				$pythonScriptPath = base_path('python/storybook-html2pdf.py');
-				// END MODIFICATION
 
-				// Font path validation
+				// IMPORTANT: The Python script needs the *file system path*, which is what this code correctly provides.
+				// No changes are needed here for how the script gets its files.
 				$fontFile = resource_path('fonts/' . $validated['font_name'] . '-Regular.ttf');
 				if (!File::exists($fontFile)) {
 					throw new \Exception("Font file not found: " . basename($fontFile));
 				}
 
-				// Wallpaper path validation
 				$wallpaperFile = null;
 				if (!empty($validated['wallpaper'])) {
 					$wallpaperPath = resource_path('wallpapers/' . $validated['wallpaper']);
@@ -176,8 +179,6 @@
 					}
 				}
 
-				// START MODIFICATION: Build the full command with all new arguments.
-				// Convert inches to mm for the script
 				$inch_to_mm = 25.4;
 				$width_mm = $validated['width'] * $inch_to_mm;
 				$height_mm = $validated['height'] * $inch_to_mm;
@@ -185,7 +186,6 @@
 				$margin_h_title_mm = $validated['margin_horizontal_title'] * $inch_to_mm;
 				$margin_h_copyright_mm = $validated['margin_horizontal_copyright'] * $inch_to_mm;
 				$margin_h_introduction_mm = $validated['margin_horizontal_introduction'] * $inch_to_mm;
-				$margin_h_main_mm = $validated['margin_horizontal_main'] * $inch_to_mm;
 				$page_number_margin_bottom_mm = $validated['page_number_margin_bottom'] * $inch_to_mm;
 
 				$pythonExecutable = config('services.python.executable', 'python3');
@@ -194,16 +194,13 @@
 					$pythonScriptPath,
 					'--data-file', $dataFile,
 					'--output-file', $outputFile,
-					// Page Layout
 					'--width-mm', $width_mm,
 					'--height-mm', $height_mm,
 					'--bleed-mm', $bleed_mm,
 					'--dpi', $validated['dpi'],
-					// Content
 					'--title-page-text', $validated['title_page_text'] ?? '',
 					'--copyright-text', $validated['copyright_text'] ?? '',
 					'--introduction-text', $validated['introduction_text'] ?? '',
-					// Styling
 					'--font-name', $validated['font_name'],
 					'--font-file', $fontFile,
 					'--font-size-main', $validated['font_size_main'],
@@ -216,16 +213,23 @@
 					'--color-title', $validated['color_title'],
 					'--color-copyright', $validated['color_copyright'],
 					'--color-introduction', $validated['color_introduction'],
-					// New Margin and Alignment arguments
 					'--valign-title', $validated['valign_title'],
 					'--margin-horizontal-title-mm', $margin_h_title_mm,
 					'--valign-copyright', $validated['valign_copyright'],
 					'--margin-horizontal-copyright-mm', $margin_h_copyright_mm,
 					'--valign-introduction', $validated['valign_introduction'],
 					'--margin-horizontal-introduction-mm', $margin_h_introduction_mm,
-					'--margin-horizontal-main-mm', $margin_h_main_mm,
 					'--page-number-margin-bottom-mm', $page_number_margin_bottom_mm,
+					'--text-box-width', $validated['text_box_width'],
 				];
+
+				$textBackgroundColor = 'transparent';
+				if ($validated['use_text_background'] ?? false) {
+					$textBackgroundColor = $validated['text_background_color'];
+				}
+				$command[] = '--text-background-color';
+				$command[] = $textBackgroundColor;
+
 
 				if ($validated['show_bleed_marks'] ?? false) {
 					$command[] = '--show-bleed-marks';
@@ -235,19 +239,15 @@
 					$command[] = '--wallpaper-file';
 					$command[] = $wallpaperFile;
 				}
-				// END MODIFICATION
 
-				// 4. Execute the process
 				$process = new Process($command);
-				$process->setTimeout(300); // 5-minute timeout
+				$process->setTimeout(300);
 				$process->run();
 
-				// 5. Check for errors
 				if (!$process->isSuccessful()) {
 					throw new ProcessFailedException($process);
 				}
 
-				// 6. Read file content, then prepare response. Cleanup will happen in `finally`.
 				$pdfContent = File::get($outputFile);
 				$pdfFileName = basename($outputFile);
 
@@ -264,11 +264,51 @@
 				Log::error('PDF Generation Failed: ' . $e->getMessage());
 				return back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
 			} finally {
-				// 7. Clean up the temporary directory and all its contents
 				if (File::isDirectory($tempDir)) {
-					// Commenting out for debugging purposes if needed
 					// File::deleteDirectory($tempDir);
 				}
 			}
 		}
+
+		// START MODIFICATION: Add methods to serve assets from the non-public resources directory.
+
+		/**
+		 * Serves a font file from the resources/fonts directory.
+		 *
+		 * @param string $filename
+		 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+		 */
+		public function serveFont(string $filename)
+		{
+			// Sanitize filename to prevent directory traversal attacks
+			$filename = basename($filename);
+			$path = resource_path('fonts/' . $filename);
+
+			if (!File::exists($path)) {
+				abort(404, 'Font not found.');
+			}
+
+			// response()->file() handles the Content-Type and other headers automatically.
+			return response()->file($path);
+		}
+
+		/**
+		 * Serves a wallpaper image from the resources/wallpapers directory.
+		 *
+		 * @param string $filename
+		 * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+		 */
+		public function serveWallpaper(string $filename)
+		{
+			// Sanitize filename to prevent directory traversal attacks
+			$filename = basename($filename);
+			$path = resource_path('wallpapers/' . $filename);
+
+			if (!File::exists($path)) {
+				abort(404, 'Wallpaper not found.');
+			}
+
+			return response()->file($path);
+		}
+		// END MODIFICATION
 	}

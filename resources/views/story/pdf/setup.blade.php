@@ -1,5 +1,41 @@
 @extends('layouts.bootstrap-app')
 
+{{-- START MODIFICATION: Add styles for font previews and wallpaper modal --}}
+@section('styles')
+	<style>
+      /* Dynamically generate @font-face rules for each available font */
+			@php
+				if (!empty($fonts)) {
+					foreach($fonts as $font) {
+						// Use the new route to serve the font file securely
+						$fontUrl = route('assets.font', ['filename' => $font['filename']]);
+						echo "@font-face { font-family: '{$font['name']}'; src: url('{$fontUrl}'); }";
+					}
+				}
+			@endphp
+			
+/* Wallpaper modal styles */
+      .wallpaper-preview {
+          cursor: pointer;
+          border: 3px solid transparent;
+          transition: border-color 0.2s ease-in-out;
+          width: 100%;
+          height: 150px;
+          object-fit: cover;
+      }
+
+      .wallpaper-preview:hover {
+          border-color: #0d6efd;
+      }
+
+      .wallpaper-preview.selected {
+          border-color: #0d6efd;
+          box-shadow: 0 0 10px rgba(13, 110, 253, 0.5);
+      }
+	</style>
+@endsection
+{{-- END MODIFICATION --}}
+
 @section('content')
 	<div class="container py-4">
 		<div class="row justify-content-center">
@@ -132,21 +168,50 @@
 								<legend class="h5">Styling</legend>
 								<div class="row mb-3">
 									<div class="col-md-6">
-										<label for="font_name" class="form-label">Main Font Name</label>
-										<input type="text" class="form-control" id="font_name" name="font_name" value="{{ old('font_name', 'LoveYaLikeASister') }}" required>
-										<div class="form-text">The TTF file must exist in <code>resources/fonts/</code>. E.g., for "LoveYaLikeASister", the file should be "LoveYaLikeASister-Regular.ttf".</div>
-									</div>
-									<div class="col-md-6">
-										<label for="wallpaper" class="form-label">Text Page Wallpaper</label>
-										<select class="form-select" id="wallpaper" name="wallpaper">
-											<option value="">No Wallpaper</option>
-											@forelse($wallpapers as $wallpaper)
-												<option value="{{ $wallpaper }}" {{ old('wallpaper', (str_contains($wallpaper, 'wallpaper3') ? $wallpaper : '')) == $wallpaper ? 'selected' : '' }}>{{ $wallpaper }}</option>
+										<label for="font_name" class="form-label">Main Font</label>
+										<select class="form-select" id="font_name" name="font_name" required>
+											@forelse($fonts as $font)
+												<option value="{{ $font['name'] }}" style="font-family: '{{ $font['name'] }}', sans-serif; font-size: 1.2rem;" {{ old('font_name', 'LoveYaLikeASister') == $font['name'] ? 'selected' : '' }}>
+													{{ $font['name'] }}
+												</option>
 											@empty
-												<option value="" disabled>No wallpapers found.</option>
+												<option value="" disabled>No fonts found in resources/fonts.</option>
 											@endforelse
 										</select>
+										<div class="form-text">Fonts are loaded from <code>resources/fonts/</code>. Previews are best-effort.</div>
+									</div>
+									<div class="col-md-6">
+										<label class="form-label">Text Page Wallpaper</label>
+										<div>
+											<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#wallpaperModal">
+												Select Wallpaper
+											</button>
+											<span id="selectedWallpaperName" class="ms-2 fst-italic text-muted">{{ old('wallpaper') ?: 'No wallpaper selected' }}</span>
+										</div>
+										<input type="hidden" name="wallpaper" id="wallpaperInput" value="{{ old('wallpaper') }}">
 										<div class="form-text">Wallpapers are loaded from <code>resources/wallpapers/</code>.</div>
+									</div>
+								</div>
+								
+								<h6 class="mt-4">Text Page Styling</h6>
+								<div class="row mb-3 p-3 border rounded align-items-end">
+									<div class="col-md-4">
+										<label for="text_box_width" class="form-label">Text Box Width (%)</label>
+										<input type="number" class="form-control" id="text_box_width" name="text_box_width" value="{{ old('text_box_width', '80') }}" min="10" max="100" step="1" required>
+										<div class="form-text">Width of the text area relative to the page.</div>
+									</div>
+									<div class="col-md-4">
+										<label class="form-label">Text Box Background</label>
+										<div class="form-check">
+											<input class="form-check-input" type="checkbox" id="use_text_background" name="use_text_background" value="1" {{ old('use_text_background') !== null ? 'checked' : (request()->isMethod('get') ? 'checked' : '') }}>
+											<label class="form-check-label" for="use_text_background">
+												Enable background color
+											</label>
+										</div>
+									</div>
+									<div class="col-md-4">
+										<label for="text_background_color" class="form-label">Background Color</label>
+										<input type="color" class="form-control form-control-color" name="text_background_color" id="text_background_color" value="{{ old('text_background_color', '#ffffff') }}">
 									</div>
 								</div>
 								
@@ -161,10 +226,6 @@
 								
 								<h6 class="mt-4">Margins (in)</h6>
 								<div class="row mb-3">
-									<div class="col-md-4">
-										<label for="margin_horizontal_main" class="form-label">Main Text H. Margin</label>
-										<input type="number" class="form-control" name="margin_horizontal_main" value="{{ old('margin_horizontal_main', '0.75') }}" step="0.1" required>
-									</div>
 									<div class="col-md-4">
 										<label for="page_number_margin_bottom" class="form-label">Footer Bottom Margin</label>
 										<input type="number" class="form-control" name="page_number_margin_bottom" value="{{ old('page_number_margin_bottom', '0.5') }}" step="0.1" required>
@@ -192,4 +253,93 @@
 			</div>
 		</div>
 	</div>
+	
+	{{-- START MODIFICATION: Wallpaper selection modal --}}
+	<div class="modal fade" id="wallpaperModal" tabindex="-1" aria-labelledby="wallpaperModalLabel" aria-hidden="true">
+		<div class="modal-dialog modal-xl modal-dialog-scrollable">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title" id="wallpaperModalLabel">Select a Wallpaper</h5>
+					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					<div class="row">
+						<div class="col-12 mb-3">
+							<button type="button" class="btn btn-secondary btn-sm w-100" id="clearWallpaper">
+								No Wallpaper
+							</button>
+						</div>
+						@forelse($wallpapers as $wallpaper)
+							<div class="col-lg-3 col-md-4 col-6 mb-3">
+								{{-- Use the new route to serve the wallpaper image --}}
+								<img src="{{ route('assets.wallpaper', ['filename' => $wallpaper]) }}"
+								     alt="{{ $wallpaper }}"
+								     class="img-fluid rounded wallpaper-preview"
+								     data-filename="{{ $wallpaper }}">
+							</div>
+						@empty
+							<p class="text-center">No wallpapers found in <code>resources/wallpapers/</code>.</p>
+						@endforelse
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	{{-- END MODIFICATION --}}
 @endsection
+
+{{-- START MODIFICATION: Add JavaScript for interactive form elements --}}
+@section('scripts')
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			// --- Text Background Color Logic ---
+			const useBgCheckbox = document.getElementById('use_text_background');
+			const bgColorInput = document.getElementById('text_background_color');
+			
+			function toggleBgColorInput() {
+				bgColorInput.disabled = !useBgCheckbox.checked;
+			}
+			
+			useBgCheckbox.addEventListener('change', toggleBgColorInput);
+			toggleBgColorInput(); // Set initial state on page load
+			
+			// --- Wallpaper Modal Logic ---
+			const wallpaperModalEl = document.getElementById('wallpaperModal');
+			const wallpaperModal = new bootstrap.Modal(wallpaperModalEl);
+			const wallpaperInput = document.getElementById('wallpaperInput');
+			const selectedWallpaperName = document.getElementById('selectedWallpaperName');
+			const previews = document.querySelectorAll('.wallpaper-preview');
+			
+			function updateSelectedVisuals(filename) {
+				previews.forEach(p => {
+					if (p.dataset.filename === filename) {
+						p.classList.add('selected');
+					} else {
+						p.classList.remove('selected');
+					}
+				});
+			}
+			
+			previews.forEach(preview => {
+				preview.addEventListener('click', function () {
+					const filename = this.dataset.filename;
+					wallpaperInput.value = filename;
+					selectedWallpaperName.textContent = filename;
+					updateSelectedVisuals(filename);
+					wallpaperModal.hide();
+				});
+			});
+			
+			document.getElementById('clearWallpaper').addEventListener('click', function() {
+				wallpaperInput.value = '';
+				selectedWallpaperName.textContent = 'No wallpaper selected';
+				updateSelectedVisuals('');
+				wallpaperModal.hide();
+			});
+			
+			// Set initial selected state on page load
+			updateSelectedVisuals(wallpaperInput.value);
+		});
+	</script>
+@endsection
+{{-- END MODIFICATION --}}

@@ -1,5 +1,3 @@
-# python/storybook-html2pdf.py
-
 import argparse
 import base64
 import html
@@ -148,33 +146,49 @@ def generate_css(args):
     }}
 
     .story-text-page {{
-        page: main-content; /* Apply the page style with the footer */
-        /* Use padding to create the trim box. The wallpaper will fill the whole page. */
+        page: main-content;
         padding: {args.bleed_mm}mm;
         display: flex;
         justify-content: center;
         align-items: center;
-        text-align: center;
         background-size: cover;
         background-position: center;
         {f'background-image: url("{wallpaper_uri}");' if wallpaper_uri else ''}
     }}
 
+  .story-text-page .text-background {{
+        background-color: {args.text_background_color};
+        border-radius: 10mm;
+        padding: 3px;
+        width: {args.text_box_width}%;
+        height: {args.text_box_width}%;
+        box-sizing: border-box;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }}
+
     .story-text-page .text-container {{
         color: {args.color_main};
-        background-color: rgb(255, 255, 255);
         font-size: {args.font_size_main}pt;
-        /* The container's width is now calculated based on the trim width,
-           and it will be centered within the padded area of the page. */
-        width: calc({args.width_mm}mm - 2 * {args.margin_horizontal_main_mm}mm);
-        height: calc({args.height_mm}mm - 2 * {args.margin_horizontal_main_mm}mm);
-        border: 1px dotted #999;
+        background-color: {args.text_background_color};
+        width: 100%;
+        height: 100%;
+        border: 5px dashed #333;
         border-radius: 10mm;
         display: flex;
         justify-content: center;
         align-items: center;
         padding: 10mm;
         box-sizing: border-box;
+    }}
+
+    .content-box {{
+        width: 100%;
+        box-sizing: border-box;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        text-align: center;
     }}
     """
 
@@ -206,13 +220,14 @@ def generate_html(args, story_data, image_uris):
         text = page_data.get("text", "")
         image_uri = image_uris[i]
 
-        # Text Page
         html_parts.append(f"""
-        <div class="page story-text-page">
-            <div class="text-container">
-                <div class="content-box">{html.escape(text)}</div>
-            </div>
-        </div>""")
+            <div class="page story-text-page">
+                <div class="text-background">
+                    <div class="text-container">
+                        <div class="content-box">{html.escape(text)}</div>
+                    </div>
+                </div>
+            </div>""")
 
         # Image Page
         html_parts.append(f"""
@@ -261,8 +276,11 @@ def main():
     parser.add_argument("--margin-horizontal-copyright-mm", type=float, default=25.4, help="Horizontal margin for the copyright page in mm.")
     parser.add_argument("--valign-introduction", choices=['top', 'middle', 'bottom'], default='top', help="Vertical alignment for the introduction page.")
     parser.add_argument("--margin-horizontal-introduction-mm", type=float, default=25.4, help="Horizontal margin for the introduction page in mm.")
-    parser.add_argument("--margin-horizontal-main-mm", type=float, default=19, help="Horizontal margin for main story text pages in mm.")
     parser.add_argument("--page-number-margin-bottom-mm", type=float, default=12.7, help="Bottom margin for page numbers in mm.")
+    # START MODIFICATION: Add new arguments for text page styling.
+    parser.add_argument("--text-box-width", type=float, default=80, help="Width of the text box as a percentage.")
+    parser.add_argument("--text-background-color", default="transparent", help="Background color for the text box (hex or 'transparent').")
+    # END MODIFICATION
 
     args = parser.parse_args()
 

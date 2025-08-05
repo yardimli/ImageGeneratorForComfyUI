@@ -175,4 +175,9 @@
 			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
 			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');
 		});
+
+		// START MODIFICATION: Add routes to serve assets for the PDF setup page.
+		Route::get('/assets/fonts/{filename}', [StoryPdfController::class, 'serveFont'])->name('assets.font');
+		Route::get('/assets/wallpapers/{filename}', [StoryPdfController::class, 'serveWallpaper'])->name('assets.wallpaper');
+		// END MODIFICATION
 	});
