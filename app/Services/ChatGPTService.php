@@ -206,7 +206,7 @@
 			];
 
 			$data = [
-				'model' => env('OPEN_AI_VISION_MODEL', 'gpt-4-vision-preview'),
+				'model' => env('OPEN_AI_VISION_MODEL', 'gpt-4o'),
 				'messages' => $messages,
 				'max_tokens' => 300,
 				'temperature' => 0.5,

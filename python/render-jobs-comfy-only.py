@@ -235,7 +235,7 @@ def generate_images_from_api():
                             print("Could not find the required path or the 'images' list was empty.")
                             output_filename = "kontext-not-ready.png"
                             output_file = str(Path(COMFY_DEFAULT_OUTPUT_DIR) / output_filename)
-                    if prompt_history and generation_type == "kontext-lora":
+                    elif prompt_history and generation_type == "kontext-lora":
                         node_info = prompt_history.get(prompt_id_str, {})
                         outputs = node_info.get('outputs', {})
                         output_180 = outputs.get('180', {})
