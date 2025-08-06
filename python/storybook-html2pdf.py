@@ -223,8 +223,6 @@ def generate_css(args):
     /* --- Special Pages (Copyright, Intro) --- */
     .copyright-page, .introduction-page {{
         padding: {args.bleed_mm}mm;
-        margin-top: 5em;
-        margin-bottom: 5em;
     }}
 
     .copyright-page .content-box {{
@@ -234,8 +232,8 @@ def generate_css(args):
         line-height: {args.line_height_copyright};
         text-align: center;
         padding: 0 {args.margin_horizontal_copyright_mm}mm;
-        margin-top: 5em;
-        margin-bottom: 5em;
+        margin-top: 50px;
+        margin-bottom: 50px;
     }}
 
     .introduction-page .content-box {{
