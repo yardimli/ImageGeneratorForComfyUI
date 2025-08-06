@@ -235,8 +235,9 @@
 							$originalFilename = $pathInfo['filename'];
 							$originalExtension = strtolower($pathInfo['extension'] ?? '');
 
-							// Determine if it's a PNG by checking the extension.
-							$isPng = $originalExtension === 'png';
+							$finfo = new \finfo(FILEINFO_MIME_TYPE);
+							$mimeType = $finfo->buffer($imageContents);
+							$isPng = $mimeType === 'image/png';
 
 							if ($isPng) {
 								// Convert PNG to JPG
