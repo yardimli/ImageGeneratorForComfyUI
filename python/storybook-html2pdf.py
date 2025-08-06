@@ -7,6 +7,8 @@ import os
 import requests
 import sys
 from pathlib import Path
+from io import BytesIO  # MODIFICATION: Add for in-memory image processing
+from PIL import Image   # MODIFICATION: Add for image conversion
 
 from weasyprint import HTML, CSS
 
@@ -28,7 +30,10 @@ def file_to_data_uri(filepath):
 # END MODIFICATION
 
 def download_image_as_data_uri(url, page_num):
-    """Downloads an image and returns it as a base64 data URI."""
+    """
+    Downloads an image, converts it to JPG if it's a PNG,
+    and returns it as a base64 data URI.
+    """
     if not url:
         print(f"Warning: No image URL for page {page_num}.", file=sys.stderr)
         return None
@@ -37,9 +42,33 @@ def download_image_as_data_uri(url, page_num):
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
         response = requests.get(url, timeout=30, headers=headers)
         response.raise_for_status()
+
+        image_content = response.content  # MODIFICATION: Store content in a variable for potential conversion
         mime_type = response.headers.get('Content-Type', 'image/jpeg')
-        encoded_string = base64.b64encode(response.content).decode('utf-8')
-        print(f"Successfully downloaded image for page {page_num}.")
+
+        # START MODIFICATION: Convert PNG to JPG before embedding
+        # This can reduce PDF file size and improve compatibility.
+        if 'png' in mime_type.lower():
+            print(f"Info: Converting PNG image to JPG for page {page_num}.", file=sys.stderr)
+            try:
+                with Image.open(BytesIO(image_content)) as img:
+                    # Convert to RGB to remove alpha channel, which JPG doesn't support.
+                    # This prevents potential errors with some PNG formats (e.g., paletted with transparency).
+                    if img.mode in ('RGBA', 'P'):
+                        img = img.convert('RGB')
+
+                    # Save to an in-memory buffer as JPEG
+                    buffer = BytesIO()
+                    img.save(buffer, format='JPEG', quality=95)  # Quality can be adjusted
+                    image_content = buffer.getvalue()
+                    mime_type = 'image/jpeg'
+            except Exception as e:
+                # If conversion fails, use the original image and log a warning
+                print(f"Warning: Could not convert PNG to JPG for page {page_num}. Using original. Error: {e}", file=sys.stderr)
+        # END MODIFICATION
+
+        encoded_string = base64.b64encode(image_content).decode('utf-8')
+        print(f"Successfully processed image for page {page_num}.") # MODIFICATION: Updated log message
         return f"data:{mime_type};base64,{encoded_string}"
     except requests.exceptions.RequestException as e:
         print(f"Error downloading image for page {page_num} from {url}: {e}", file=sys.stderr)
@@ -223,6 +252,8 @@ def generate_css(args):
     /* --- Special Pages (Copyright, Intro) --- */
     .copyright-page, .introduction-page {{
         padding: {args.bleed_mm}mm;
+        margin-top: 5em;
+        margin-bottom: 5em;
     }}
 
     .copyright-page .content-box {{
@@ -232,6 +263,8 @@ def generate_css(args):
         line-height: {args.line_height_copyright};
         text-align: center;
         padding: 0 {args.margin_horizontal_copyright_mm}mm;
+        margin-top: 5em;
+        margin-bottom: 5em;
     }}
 
     .introduction-page .content-box {{
@@ -241,6 +274,8 @@ def generate_css(args):
         line-height: {args.line_height_introduction};
         text-align: justify;
         padding: 0 {args.margin_horizontal_introduction_mm}mm;
+        margin-top: 5em;
+        margin-bottom: 5em;
     }}
 
     /* --- Story Content Pages --- */
@@ -456,7 +491,7 @@ def main():
         sys.exit(0)
 
     # 2. Download all images and convert to data URIs
-    print("Downloading images...")
+    print("Downloading and processing images...")
     image_uris = [download_image_as_data_uri(p.get("image_url"), i + 1) for i, p in enumerate(story_data["pages"])]
 
     # 3. Generate the full HTML content with embedded CSS
