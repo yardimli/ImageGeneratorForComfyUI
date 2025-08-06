@@ -31,45 +31,57 @@ def file_to_data_uri(filepath):
 
 def download_image_as_data_uri(url, page_num):
     """
-    Downloads an image, converts it to JPG if it's a PNG,
+    Downloads an image, converts it to an optimized JPG if it's a PNG,
     and returns it as a base64 data URI.
     """
     if not url:
         print(f"Warning: No image URL for page {page_num}.", file=sys.stderr)
         return None
     try:
-        # Some servers block requests without a user-agent
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
         response = requests.get(url, timeout=30, headers=headers)
         response.raise_for_status()
 
-        image_content = response.content  # MODIFICATION: Store content in a variable for potential conversion
+        image_content = response.content
         mime_type = response.headers.get('Content-Type', 'image/jpeg')
 
-        # START MODIFICATION: Convert PNG to JPG before embedding
-        # This can reduce PDF file size and improve compatibility.
+        # Convert PNG to an OPTIMIZED JPG to reduce file size.
         if 'png' in mime_type.lower():
-            print(f"Info: Converting PNG image to JPG for page {page_num}.", file=sys.stderr)
+            print(f"Info: Converting PNG image to optimized JPG for page {page_num}.", file=sys.stderr)
             try:
                 with Image.open(BytesIO(image_content)) as img:
                     # Convert to RGB to remove alpha channel, which JPG doesn't support.
-                    # This prevents potential errors with some PNG formats (e.g., paletted with transparency).
                     if img.mode in ('RGBA', 'P'):
                         img = img.convert('RGB')
 
-                    # Save to an in-memory buffer as JPEG
+                    # Save to an in-memory buffer as an optimized JPEG
                     buffer = BytesIO()
-                    img.save(buffer, format='JPEG', quality=95)  # Quality can be adjusted
-                    image_content = buffer.getvalue()
-                    mime_type = 'image/jpeg'
+
+                    # --- KEY MODIFICATION ---
+                    # quality: 75-85 is a good balance for size and quality.
+                    # optimize=True: Makes an extra pass to reduce file size.
+                    # subsampling=0: Enables 4:2:0 chroma subsampling (HUGE size reduction).
+                    img.save(buffer, format='JPEG', quality=85, optimize=True, subsampling=0)
+
+                    # --- END MODIFICATION ---
+
+                    # Optional: Only use the converted JPG if it's actually smaller
+                    converted_content = buffer.getvalue()
+                    if len(converted_content) < len(image_content):
+                        image_content = converted_content
+                        mime_type = 'image/jpeg'
+                        print(f"Info: PNG->JPG conversion resulted in a smaller file for page {page_num}.", file=sys.stderr)
+                    else:
+                        print(f"Warning: Converted JPG was larger than original PNG for page {page_num}. Using original.", file=sys.stderr)
+
             except Exception as e:
                 # If conversion fails, use the original image and log a warning
                 print(f"Warning: Could not convert PNG to JPG for page {page_num}. Using original. Error: {e}", file=sys.stderr)
-        # END MODIFICATION
 
         encoded_string = base64.b64encode(image_content).decode('utf-8')
-        print(f"Successfully processed image for page {page_num}.") # MODIFICATION: Updated log message
+        print(f"Successfully processed image for page {page_num}.")
         return f"data:{mime_type};base64,{encoded_string}"
+
     except requests.exceptions.RequestException as e:
         print(f"Error downloading image for page {page_num} from {url}: {e}", file=sys.stderr)
         return None
