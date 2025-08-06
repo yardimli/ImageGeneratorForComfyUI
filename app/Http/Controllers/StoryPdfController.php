@@ -185,39 +185,111 @@
 
 			$validated = $validator->validated();
 
-			$tempDir = storage_path('app/temp/pdfgen_' . uniqid());
-			File::makeDirectory($tempDir, 0755, true, true);
+			// START MODIFICATION: Create a public temporary directory for images.
+			// This allows the Python script to download the processed images via a public URL.
+			$publicTempDirName = 'temp/pdfgen_' . uniqid();
+			$publicTempDir = storage_path('app/public/' . $publicTempDirName);
+			File::makeDirectory($publicTempDir, 0755, true, true);
+			// END MODIFICATION
 
 			try {
 				$story->load('pages', 'user');
 
+				// START MODIFICATION: Process images, converting PNGs to JPGs and making them publicly accessible.
+				$processedPages = $story->pages->map(function ($page) use ($publicTempDir, $publicTempDirName) {
+					$sourceUrl = null;
+					$finalImageUrl = null;
+
+					if (!empty($page->image_path)) {
+						// Check for an upscaled version first
+						$prompt = Prompt::where('filename', $page->image_path)
+							->where('upscale_status', '2')
+							->whereNotNull('upscale_url')
+							->first();
+
+						if ($prompt) {
+							// Upscaled image URL
+							$sourceUrl = asset('storage/upscaled/' . $prompt->upscale_url);
+						} else {
+							// Original image URL (could be absolute or relative)
+							$sourceUrl = $page->image_path;
+						}
+					}
+
+					if ($sourceUrl) {
+						try {
+							// Use a stream context to handle potential SSL issues with file_get_contents
+							$context = stream_context_create([
+								"ssl" => [
+									"verify_peer" => false,
+									"verify_peer_name" => false,
+								],
+							]);
+							$imageContents = @file_get_contents($sourceUrl, false, $context);
+
+							if ($imageContents === false) {
+								throw new \Exception("Failed to download image from {$sourceUrl}");
+							}
+
+							$pathInfo = pathinfo(parse_url($sourceUrl, PHP_URL_PATH));
+							$originalFilename = $pathInfo['filename'];
+							$originalExtension = strtolower($pathInfo['extension'] ?? '');
+
+							// Determine if it's a PNG by checking the extension.
+							$isPng = $originalExtension === 'png';
+
+							if ($isPng) {
+								// Convert PNG to JPG
+								$newFilename = Str::slug($originalFilename) . '.jpg';
+								$destinationPath = $publicTempDir . '/' . $newFilename;
+
+								$image = @imagecreatefromstring($imageContents);
+								if ($image !== false) {
+									// Create a white background to handle PNG transparency
+									$bg = imagecreatetruecolor(imagesx($image), imagesy($image));
+									$white = imagecolorallocate($bg, 255, 255, 255);
+									imagefill($bg, 0, 0, $white);
+									imagecopy($bg, $image, 0, 0, 0, 0, imagesx($image), imagesy($image));
+
+									imagejpeg($bg, $destinationPath, 90); // 90% quality
+									imagedestroy($image);
+									imagedestroy($bg);
+									// Generate a full public URL for the new JPG image
+									$finalImageUrl = asset('storage/' . $publicTempDirName . '/' . $newFilename);
+								} else {
+									Log::warning("Could not create image from string for PNG: {$sourceUrl}");
+								}
+							} else {
+								// For non-PNG images (e.g., JPG), just copy them to the public temp dir
+								$newFilename = Str::slug($originalFilename) . '.' . ($originalExtension ?: 'jpg');
+								$destinationPath = $publicTempDir . '/' . $newFilename;
+								File::put($destinationPath, $imageContents);
+								// Generate a full public URL for the image
+								$finalImageUrl = asset('storage/' . $publicTempDirName . '/' . $newFilename);
+							}
+						} catch (\Exception $e) {
+							Log::warning("Could not process image for PDF generation: {$sourceUrl}. Error: " . $e->getMessage());
+							$finalImageUrl = null; // Set to null if download/conversion fails
+						}
+					}
+
+					return [
+						'text' => $page->story_text ?? '',
+						'image_url' => $finalImageUrl,
+					];
+				});
+
 				$storyData = [
 					'title' => $story->title,
 					'author' => $story->user->name,
-					'pages' => $story->pages->map(function ($page) {
-						$imageUrl = $page->image_path;
-
-						if (!empty($page->image_path)) {
-							$prompt = Prompt::where('filename', $page->image_path)
-								->where('upscale_status', '2')
-								->whereNotNull('upscale_url')
-								->first();
-
-							if ($prompt) {
-								$imageUrl = asset('storage/upscaled/' . $prompt->upscale_url);
-							}
-						}
-
-						return [
-							'text' => $page->story_text ?? '',
-							'image_url' => $imageUrl,
-						];
-					})->toArray(),
+					'pages' => $processedPages->toArray(),
 				];
-				$dataFile = $tempDir . '/data.json';
+				// END MODIFICATION
+
+				$dataFile = $publicTempDir . '/data.json';
 				File::put($dataFile, json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
 
-				$outputFile = $tempDir . '/' . Str::slug($story->title) . '.pdf';
+				$outputFile = $publicTempDir . '/' . Str::slug($story->title) . '.pdf';
 				$pythonScriptPath = base_path('python/storybook-html2pdf.py');
 
 				$fontTypes = ['main', 'title', 'copyright', 'introduction'];
@@ -386,9 +458,11 @@
 				Log::error('PDF Generation Failed: ' . $e->getMessage());
 				return back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
 			} finally {
-				if (File::isDirectory($tempDir)) {
-					// File::deleteDirectory($tempDir);
+				// START MODIFICATION: Clean up both temporary directories
+				if (isset($publicTempDir) && File::isDirectory($publicTempDir)) {
+//					File::deleteDirectory($publicTempDir);
 				}
+				// END MODIFICATION
 			}
 		}
 

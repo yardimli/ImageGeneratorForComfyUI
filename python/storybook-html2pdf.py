@@ -7,8 +7,6 @@ import os
 import requests
 import sys
 from pathlib import Path
-from io import BytesIO  # MODIFICATION: Add for in-memory image processing
-from PIL import Image   # MODIFICATION: Add for image conversion
 
 from weasyprint import HTML, CSS
 
@@ -30,58 +28,19 @@ def file_to_data_uri(filepath):
 # END MODIFICATION
 
 def download_image_as_data_uri(url, page_num):
-    """
-    Downloads an image, converts it to an optimized JPG if it's a PNG,
-    and returns it as a base64 data URI.
-    """
+    """Downloads an image and returns it as a base64 data URI."""
     if not url:
         print(f"Warning: No image URL for page {page_num}.", file=sys.stderr)
         return None
     try:
+        # Some servers block requests without a user-agent
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}
         response = requests.get(url, timeout=30, headers=headers)
         response.raise_for_status()
-
-        image_content = response.content
         mime_type = response.headers.get('Content-Type', 'image/jpeg')
-
-        # Convert PNG to an OPTIMIZED JPG to reduce file size.
-        if 'png' in mime_type.lower():
-            print(f"Info: Converting PNG image to optimized JPG for page {page_num}.", file=sys.stderr)
-            try:
-                with Image.open(BytesIO(image_content)) as img:
-                    # Convert to RGB to remove alpha channel, which JPG doesn't support.
-                    if img.mode in ('RGBA', 'P'):
-                        img = img.convert('RGB')
-
-                    # Save to an in-memory buffer as an optimized JPEG
-                    buffer = BytesIO()
-
-                    # --- KEY MODIFICATION ---
-                    # quality: 75-85 is a good balance for size and quality.
-                    # optimize=True: Makes an extra pass to reduce file size.
-                    # subsampling=0: Enables 4:2:0 chroma subsampling (HUGE size reduction).
-                    img.save(buffer, format='JPEG', quality=85, optimize=True, subsampling=0)
-
-                    # --- END MODIFICATION ---
-
-                    # Optional: Only use the converted JPG if it's actually smaller
-                    converted_content = buffer.getvalue()
-                    if len(converted_content) < len(image_content):
-                        image_content = converted_content
-                        mime_type = 'image/jpeg'
-                        print(f"Info: PNG->JPG conversion resulted in a smaller file for page {page_num}.", file=sys.stderr)
-                    else:
-                        print(f"Warning: Converted JPG was larger than original PNG for page {page_num}. Using original.", file=sys.stderr)
-
-            except Exception as e:
-                # If conversion fails, use the original image and log a warning
-                print(f"Warning: Could not convert PNG to JPG for page {page_num}. Using original. Error: {e}", file=sys.stderr)
-
-        encoded_string = base64.b64encode(image_content).decode('utf-8')
-        print(f"Successfully processed image for page {page_num}.")
+        encoded_string = base64.b64encode(response.content).decode('utf-8')
+        print(f"Successfully downloaded image for page {page_num}.")
         return f"data:{mime_type};base64,{encoded_string}"
-
     except requests.exceptions.RequestException as e:
         print(f"Error downloading image for page {page_num} from {url}: {e}", file=sys.stderr)
         return None
@@ -374,7 +333,7 @@ def generate_html(args, story_data, image_uris):
                     <div class="title-page-footer">
                         {f'<div class="title-bottom-text">{html.escape(args.title_bottom_text)}</div>' if args.title_bottom_text else ''}
 
-                        {
+                        { # MODIFICATION: Add sticker container and images
                           '<div class="title-stickers-container">' +
                           ''.join([f'<img src="{uri}" class="title-sticker-img">' for uri in sticker_uris]) +
                           '</div>' if sticker_uris else ''
@@ -503,7 +462,7 @@ def main():
         sys.exit(0)
 
     # 2. Download all images and convert to data URIs
-    print("Downloading and processing images...")
+    print("Downloading images...")
     image_uris = [download_image_as_data_uri(p.get("image_url"), i + 1) for i, p in enumerate(story_data["pages"])]
 
     # 3. Generate the full HTML content with embedded CSS
