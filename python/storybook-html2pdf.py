@@ -10,7 +10,7 @@ from pathlib import Path
 
 from weasyprint import HTML, CSS
 
-# START MODIFICATION: Add helper to convert local files to data URI
+# convert local files to data URI
 def file_to_data_uri(filepath):
     """Reads a local file and returns it as a base64 data URI."""
     if not filepath or not os.path.exists(filepath):
@@ -25,7 +25,6 @@ def file_to_data_uri(filepath):
     except Exception as e:
         print(f"Error converting file to data URI: {filepath}, {e}", file=sys.stderr)
         return None
-# END MODIFICATION
 
 def download_image_as_data_uri(url, page_num):
     """Downloads an image and returns it as a base64 data URI."""
@@ -134,7 +133,7 @@ def generate_css(args):
     .valign-middle {{ justify-content: center; }}
     .valign-bottom {{ justify-content: flex-end; }}
 
-    /* START MODIFICATION: New Title Page Styling */
+    /* Title Page Styling */
     .title-page-container {{
         justify-content: center;
         align-items: center;
@@ -218,7 +217,6 @@ def generate_css(args):
         font-size: {args.font_size_footer}pt;
         color: {args.color_footer};
     }}
-    /* END MODIFICATION */
 
     /* --- Special Pages (Copyright, Intro) --- */
     .copyright-page, .introduction-page {{
@@ -310,10 +308,10 @@ def generate_html(args, story_data, image_uris):
     """Generates the full HTML document string."""
     html_parts = []
 
-    # START MODIFICATION: Generate new title page
+    # Generate new title page
     title_wallpaper_uri = file_to_data_uri(args.title_wallpaper_file)
     title_logo_uri = file_to_data_uri(args.title_logo_file)
-    sticker_uris = [file_to_data_uri(f) for f in args.sticker_file if f] # MODIFICATION: Convert sticker files to data URIs
+    sticker_uris = [file_to_data_uri(f) for f in args.sticker_file if f] # Convert sticker files to data URIs
 
     # Only create a title page if there's some content for it
     if any([args.title_top_text, args.title_main_text, args.title_author_text, args.title_bottom_text, title_logo_uri]):
@@ -344,7 +342,6 @@ def generate_html(args, story_data, image_uris):
         </div>
         """
         html_parts.append(title_page_html)
-    # END MODIFICATION
 
     # --- Copyright & Intro Pages ---
     if args.copyright_text:
@@ -396,15 +393,15 @@ def main():
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing (Note: Not directly used by WeasyPrint, but kept for interface compatibility).")
     parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF.")
     # Content
-    # START MODIFICATION: Add new title page arguments
+    # title page arguments
     parser.add_argument("--title-wallpaper-file", help="Optional path to the wallpaper image for the title page.")
     parser.add_argument("--title-logo-file", help="Optional path to the logo image for the title page.")
-    parser.add_argument("--sticker-file", action="append", default=[], help="Path to a sticker file to be placed on the title page.") # MODIFICATION: Add sticker argument
+    parser.add_argument("--sticker-file", action="append", default=[], help="Path to a sticker file to be placed on the title page.")
     parser.add_argument("--title-top-text", default="", help="Text for the top of the title page.")
     parser.add_argument("--title-main-text", default="", help="Main title text.")
     parser.add_argument("--title-author-text", default="", help="Author text for the title page.")
     parser.add_argument("--title-bottom-text", default="", help="Text for the bottom of the title page.")
-    # END MODIFICATION
+
     parser.add_argument("--copyright-text", default="", help="Text for the copyright page.")
     parser.add_argument("--introduction-text", default="", help="Text for the introduction page.")
     parser.add_argument("--wallpaper-file", help="Optional path to the wallpaper image for text pages.")
@@ -426,14 +423,14 @@ def main():
     parser.add_argument("--color-title", default="#1E1E64", help="Hex color for the title page text.")
     parser.add_argument("--color-copyright", default="#000000", help="Hex color for the copyright page text.")
     parser.add_argument("--color-introduction", default="#000000", help="Hex color for the introduction page text.")
+
     # Margin and Alignment Arguments
-    # START MODIFICATION: Removed title page valign/margin args
-    # END MODIFICATION
     parser.add_argument("--valign-copyright", choices=['top', 'middle', 'bottom'], default='bottom', help="Vertical alignment for the copyright page.")
     parser.add_argument("--margin-horizontal-copyright-mm", type=float, default=25.4, help="Horizontal margin for the copyright page in mm.")
     parser.add_argument("--valign-introduction", choices=['top', 'middle', 'bottom'], default='top', help="Vertical alignment for the introduction page.")
     parser.add_argument("--margin-horizontal-introduction-mm", type=float, default=25.4, help="Horizontal margin for the introduction page in mm.")
     parser.add_argument("--page-number-margin-bottom-mm", type=float, default=12.7, help="Bottom margin for page numbers in mm.")
+
     # Text Page Styling
     parser.add_argument("--text-box-width", type=float, default=80, help="Width of the text box as a percentage.")
     parser.add_argument("--text-background-color", default="transparent", help="Background color for the text box (hex or 'transparent').")
