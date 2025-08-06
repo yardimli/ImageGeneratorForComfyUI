@@ -333,7 +333,7 @@ def generate_html(args, story_data, image_uris):
                     <div class="title-page-footer">
                         {f'<div class="title-bottom-text">{html.escape(args.title_bottom_text)}</div>' if args.title_bottom_text else ''}
 
-                        { # MODIFICATION: Add sticker container and images
+                        {
                           '<div class="title-stickers-container">' +
                           ''.join([f'<img src="{uri}" class="title-sticker-img">' for uri in sticker_uris]) +
                           '</div>' if sticker_uris else ''
