@@ -1,3 +1,4 @@
+{{-- resources/views/story/pdf/setup.blade.php --}}
 @extends('layouts.bootstrap-app')
 
 {{-- START MODIFICATION: Add styles for font previews and new logo modal --}}
@@ -443,10 +444,85 @@
 	{{-- END MODIFICATION --}}
 @endsection
 
-{{-- START MODIFICATION: Add JavaScript for interactive form elements --}}
+{{-- START MODIFICATION: Add JavaScript for interactive form elements and localStorage persistence --}}
 @section('scripts')
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
+			// --- START: LOCALSTORAGE PERSISTENCE ---
+			const storyId = {{ $story->id }};
+			const storageKey = `pdf_settings_${storyId}`;
+			const form = document.querySelector('form');
+			// We assume validation errors exist if the error alert is present.
+			// This means Laravel's `old()` helper has populated the form.
+			const hasServerProvidedData = document.querySelector('.alert-danger') !== null;
+			
+			/**
+			 * Saves all form settings to localStorage.
+			 */
+			function saveSettings() {
+				const settings = {};
+				
+				form.querySelectorAll('input, textarea, select').forEach(el => {
+					if (!el.name || el.type === 'submit' || el.type === 'button' || el.name === '_token') {
+						return; // Skip elements without a name, buttons, or the CSRF token
+					}
+					
+					if (el.type === 'checkbox') {
+						settings[el.name] = el.checked;
+					} else if (el.name.endsWith('[]')) { // Handle array inputs like stickers
+						const key = el.name.slice(0, -2);
+						if (!settings[key]) {
+							settings[key] = [];
+						}
+						settings[key].push(el.value);
+					} else {
+						settings[el.name] = el.value;
+					}
+				});
+				
+				localStorage.setItem(storageKey, JSON.stringify(settings));
+			}
+			
+			/**
+			 * Loads all form settings from localStorage.
+			 */
+			function loadSettings() {
+				const savedSettings = localStorage.getItem(storageKey);
+				if (!savedSettings) {
+					return; // No settings saved, do nothing.
+				}
+				
+				const settings = JSON.parse(savedSettings);
+				
+				for (const key in settings) {
+					const value = settings[key];
+					
+					if (key === 'stickers' && Array.isArray(value)) {
+						// For stickers, we just mark the previews as selected.
+						// The `updateStickerSelection` function will handle creating the inputs.
+						document.querySelectorAll('.asset-preview[data-asset-type="sticker"]').forEach(p => p.classList.remove('selected'));
+						value.forEach(filename => {
+							const preview = document.querySelector(`.asset-preview[data-filename="${filename}"][data-asset-type="sticker"]`);
+							if (preview) {
+								preview.classList.add('selected');
+							}
+						});
+						continue; // Handled, move to next key
+					}
+					
+					const el = form.querySelector(`[name="${key}"]`);
+					if (el) {
+						if (el.type === 'checkbox') {
+							el.checked = value;
+						} else {
+							el.value = value;
+						}
+					}
+				}
+				console.log('PDF settings loaded from localStorage.');
+			}
+			// --- END: LOCALSTORAGE PERSISTENCE ---
+			
 			// --- Text Background Color Logic ---
 			const useBgCheckbox = document.getElementById('use_text_background');
 			const bgColorInput = document.getElementById('text_background_color');
@@ -456,7 +532,6 @@
 			}
 			
 			useBgCheckbox.addEventListener('change', toggleBgColorInput);
-			toggleBgColorInput(); // Set initial state on page load
 			
 			// --- Dashed Border Logic ---
 			const useBorderCheckbox = document.getElementById('enable_dashed_border');
@@ -470,7 +545,6 @@
 			}
 			
 			useBorderCheckbox.addEventListener('change', toggleBorderInputs);
-			toggleBorderInputs(); // Set initial state
 			
 			// --- Asset Modal Logic (Unified for all asset types) ---
 			const modals = {
@@ -499,16 +573,11 @@
 			
 			function updateSelectedVisuals(assetType, filename) {
 				document.querySelectorAll(`.asset-preview[data-asset-type="${assetType}"]`).forEach(p => {
-					if (p.dataset.filename === filename) {
-						p.classList.add('selected');
-					} else {
-						p.classList.remove('selected');
-					}
+					p.classList.toggle('selected', p.dataset.filename === filename);
 				});
 			}
 			
 			document.querySelectorAll('.asset-preview').forEach(preview => {
-				// Sticker logic is handled separately below
 				if (preview.dataset.assetType === 'sticker') {
 					return;
 				}
@@ -544,12 +613,7 @@
 				modals['wallpaper'].hide();
 			});
 			
-			// Set initial selected states on page load
-			for (const assetType in inputs) {
-				updateSelectedVisuals(assetType, inputs[assetType].value);
-			}
-			
-			// START MODIFICATION: Add logic for multi-select sticker modal
+			// --- Multi-select sticker modal logic ---
 			const stickerModal = new bootstrap.Modal(document.getElementById('stickerModal'));
 			const stickerPreviews = document.querySelectorAll('.asset-preview[data-asset-type="sticker"]');
 			const stickerInputsContainer = document.getElementById('stickerInputs');
@@ -559,7 +623,6 @@
 			function updateStickerSelection() {
 				const selectedPreviews = document.querySelectorAll('.asset-preview[data-asset-type="sticker"].selected');
 				
-				// Update hidden inputs
 				stickerInputsContainer.innerHTML = '';
 				const selectedFilenames = [];
 				selectedPreviews.forEach(preview => {
@@ -572,12 +635,7 @@
 					stickerInputsContainer.appendChild(input);
 				});
 				
-				// Update display text
-				if (selectedFilenames.length > 0) {
-					selectedStickersNameSpan.textContent = selectedFilenames.join(', ');
-				} else {
-					selectedStickersNameSpan.textContent = 'None';
-				}
+				selectedStickersNameSpan.textContent = selectedFilenames.length > 0 ? selectedFilenames.join(', ') : 'None';
 			}
 			
 			stickerPreviews.forEach(preview => {
@@ -601,16 +659,54 @@
 				stickerModal.hide();
 			});
 			
-			// Set initial state from old input on page load after validation failure
+			// --- INITIALIZATION LOGIC ---
+			
+			// If the server did not provide data (i.e., no validation errors), load from localStorage.
+			// Otherwise, the form is already populated by Laravel's `old()` helper.
+			if (!hasServerProvidedData) {
+				loadSettings();
+			}
+			
+			// The `old()` helper in Blade populates most fields.
+			// The sticker selection is a special case that needs JS to set the 'selected' class.
+			// This will correctly override any selection from localStorage if `old` data exists.
 			const initialStickers = {!! json_encode(old('stickers', [])) !!};
-			initialStickers.forEach(filename => {
-				const preview = document.querySelector(`.asset-preview[data-filename="${filename}"][data-asset-type="sticker"]`);
-				if (preview) {
-					preview.classList.add('selected');
+			if (initialStickers.length > 0) {
+				document.querySelectorAll('.asset-preview[data-asset-type="sticker"]').forEach(p => p.classList.remove('selected'));
+				initialStickers.forEach(filename => {
+					const preview = document.querySelector(`.asset-preview[data-filename="${filename}"][data-asset-type="sticker"]`);
+					if (preview) {
+						preview.classList.add('selected');
+					}
+				});
+			}
+			
+			// Now, synchronize the entire UI based on the current state of the form,
+			// which is now populated either by `old()` or `localStorage`.
+			
+			// Sync enabled/disabled state of conditional inputs.
+			toggleBgColorInput();
+			toggleBorderInputs();
+			
+			// Sync visual selection for single-select modals.
+			for (const assetType in inputs) {
+				const filename = inputs[assetType].value;
+				nameSpans[assetType].textContent = filename || noAssetTexts[assetType];
+				updateSelectedVisuals(assetType, filename);
+			}
+			
+			// Sync sticker inputs and display text based on 'selected' classes.
+			updateStickerSelection();
+			
+			// Finally, attach event listeners to save any future changes.
+			form.addEventListener('change', saveSettings);
+			form.addEventListener('input', (event) => {
+				// Save on input for text/number fields for a more responsive feel
+				const targetType = event.target.type;
+				if (targetType === 'text' || targetType === 'textarea' || targetType === 'number') {
+					saveSettings();
 				}
 			});
-			updateStickerSelection(); // Call once to set up initial inputs and text
-			// END MODIFICATION
 		});
 	</script>
 @endsection

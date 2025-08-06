@@ -74,6 +74,63 @@ def generate_css(args):
     else:
         dashed_border_style = "border: none;"
 
+    # MODIFICATION: Generate CSS for bleed marks if requested
+    bleed_marks_css = ""
+    if args.show_bleed_marks and args.bleed_mm > 0:
+        bleed_marks_css = f"""
+    /* --- Bleed/Crop Marks --- */
+    /* These pseudo-elements draw L-shaped crop marks in the outer corners of the page. */
+    .page::before, .page::after {{
+        content: "";
+        position: absolute;
+        /* The size of the box that contains the L-shaped mark. */
+        /* The lines will extend this far into the bleed area. */
+        width: {args.bleed_mm * 0.75}mm;
+        height: {args.bleed_mm * 0.75}mm;
+        z-index: 100; /* Ensure marks are on top */
+    }}
+
+    /* EVEN pages (left-hand pages in a spread) get marks on their left edge. */
+    /* Top-left mark */
+    .page:nth-child(even)::before {{
+        top: {args.bleed_mm}mm;
+        left: {args.bleed_mm}mm;
+        transform: translate(-100%, -100%);
+        border-width: 0 0.5pt 0.5pt 0; /* Draws bottom and right borders */
+        border-style: solid;
+        border-color: black;
+    }}
+    /* Bottom-left mark */
+    .page:nth-child(even)::after {{
+        bottom: {args.bleed_mm}mm;
+        left: {args.bleed_mm}mm;
+        transform: translate(-100%, 100%);
+        border-width: 0.5pt 0.5pt 0 0; /* Draws top and right borders */
+        border-style: solid;
+        border-color: black;
+    }}
+
+    /* ODD pages (right-hand pages in a spread) get marks on their right edge. */
+    /* Top-right mark */
+    .page:nth-child(odd)::before {{
+        top: {args.bleed_mm}mm;
+        right: {args.bleed_mm}mm;
+        transform: translate(100%, -100%);
+        border-width: 0 0 0.5pt 0.5pt; /* Draws bottom and left borders */
+        border-style: solid;
+        border-color: black;
+    }}
+    /* Bottom-right mark */
+    .page:nth-child(odd)::after {{
+        bottom: {args.bleed_mm}mm;
+        right: {args.bleed_mm}mm;
+        transform: translate(100%, 100%);
+        border-width: 0.5pt 0 0 0.5pt; /* Draws top and left borders */
+        border-style: solid;
+        border-color: black;
+    }}
+    """
+
     return f"""
     /* --- Base Setup & Font Configuration --- */
     {font_face_css}
@@ -82,6 +139,8 @@ def generate_css(args):
         size: {bleed_width_mm}mm {bleed_height_mm}mm;
         margin: 0;
     }}
+
+    {bleed_marks_css}
 
     body {{
         font-family: '{args.font_name_main}', sans-serif;
@@ -391,7 +450,8 @@ def main():
     parser.add_argument("--height-mm", required=True, type=float, help="Page trim height in millimeters.")
     parser.add_argument("--bleed-mm", default=0.0, type=float, help="Bleed in millimeters for each outer edge.")
     parser.add_argument("--dpi", required=True, type=int, help="DPI for image processing (Note: Not directly used by WeasyPrint, but kept for interface compatibility).")
-    parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF.")
+    # MODIFICATION: Updated help text for clarity
+    parser.add_argument("--show-bleed-marks", action="store_true", help="If set, draw crop marks on the PDF. Requires --bleed-mm to be > 0.")
     # Content
     # title page arguments
     parser.add_argument("--title-wallpaper-file", help="Optional path to the wallpaper image for the title page.")
