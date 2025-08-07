@@ -331,6 +331,9 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+				// START MODIFICATION
+				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
+				// END MODIFICATION
 			];
 
 			return view('story.edit', compact('story', 'models', 'imageModels'));
@@ -548,6 +551,9 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+				// START MODIFICATION
+				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
+				// END MODIFICATION
 			];
 
 			return view('story.characters', compact('story', 'models', 'imageModels'));
@@ -624,6 +630,9 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
+				// START MODIFICATION
+				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
+				// END MODIFICATION
 			];
 
 			return view('story.places', compact('story', 'models', 'imageModels'));

@@ -120,6 +120,11 @@ document.addEventListener('DOMContentLoaded', function () {
 				document.querySelector('input[name="create_ideogram_v2a"]').checked = data.create_ideogram_v2a;
 				document.querySelector('input[name="create_luma_photon"]').checked = data.create_luma_photon;
 				document.querySelector('input[name="create_recraft_20b"]').checked = data.create_recraft_20b;
+				// START MODIFICATION
+				if (document.querySelector('input[name="create_fal_qwen_image"]')) {
+					document.querySelector('input[name="create_fal_qwen_image"]').checked = data.create_fal_qwen_image;
+				}
+				// END MODIFICATION
 				
 				
 				displayPrompts(data.prompts, settingId);
@@ -451,4 +456,3 @@ document.addEventListener('DOMContentLoaded', function () {
 		saveTemplate();
 	});
 });
-

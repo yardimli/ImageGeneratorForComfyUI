@@ -49,6 +49,9 @@
 					'create_ideogram_v2a' => 'required|in:0,1,true,false',
 					'create_luma_photon' => 'required|in:0,1,true,false',
 					'create_recraft_20b' => 'required|in:0,1,true,false',
+					// START MODIFICATION
+					'create_fal_qwen_image' => 'required|in:0,1,true,false',
+					// END MODIFICATION
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -136,6 +139,9 @@
 					'create_ideogram_v2a' => filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_luma_photon' => filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_recraft_20b' => filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					// START MODIFICATION
+					'create_fal_qwen_image' => filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN),
+					// END MODIFICATION
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
@@ -248,6 +254,21 @@
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
 						}
+						// START MODIFICATION
+						if (filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'fal-ai/qwen-image',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
+						// END MODIFICATION
 
 					}
 				}
@@ -295,6 +316,9 @@
 				'create_ideogram_v2a' => $settings->create_ideogram_v2a,
 				'create_luma_photon' => $settings->create_luma_photon,
 				'create_recraft_20b' => $settings->create_recraft_20b,
+				// START MODIFICATION
+				'create_fal_qwen_image' => $settings->create_fal_qwen_image,
+				// END MODIFICATION
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,

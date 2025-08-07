@@ -21,10 +21,8 @@
 			'strength_model',
 			'guidance',
 			'story_page_id',
-			// START MODIFICATION
 			'story_character_id',
 			'story_place_id',
-			// END MODIFICATION
 			'upload_to_s3',
 			'create_minimax',
 			'create_imagen',
@@ -32,6 +30,9 @@
 			'create_ideogram_v2a',
 			'create_luma_photon',
 			'create_recraft_20b',
+			// START MODIFICATION
+			'create_fal_qwen_image',
+			// END MODIFICATION
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -55,10 +56,13 @@
 			'upload_to_s3' => 'boolean',
 			'create_minimax' => 'boolean',
 			'create_imagen' => 'boolean',
-			'create_aura' => 'boolean',
+			// START MODIFICATION: Fix typo and add new model
+			'create_aura_flow' => 'boolean',
 			'create_ideogram_v2a' => 'boolean',
 			'create_luma_photon' => 'boolean',
 			'create_recraft_20b' => 'boolean',
+			'create_fal_qwen_image' => 'boolean',
+			// END MODIFICATION
 		];
 
 

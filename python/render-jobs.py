@@ -164,7 +164,9 @@ def generate_images_from_api():
             generation_type = prompt['generation_type']
             model = prompt['model']
 
-            if generation_type in ["prompt"] and model in ["imagen3", "aura-flow", "ideogram-v2a", "luma-photon", "recraft-20b", "minimax", "minimax-expand"]:
+            # START MODIFICATION: Add new model to the list of processed models
+            if generation_type in ["prompt"] and model in ["imagen3", "aura-flow", "ideogram-v2a", "luma-photon", "recraft-20b", "minimax", "minimax-expand", "fal-ai/qwen-image"]:
+            # END MODIFICATION
                 pass
             else:
                 print(f"Skipping prompt {prompt_id} - local model")
@@ -173,7 +175,7 @@ def generate_images_from_api():
             print(f"Processing prompt {idx + 1} id: {prompt_id} - type: {prompt['generation_type']} - model: {prompt['model']} - status: {render_status} - user id: {prompt['user_id']}")
 
             try:
-                output_filename = f"{generation_type}_{model}_{prompt_id}_{prompt['user_id']}.png"
+                output_filename = f"{generation_type}_{model.replace('/', '-')}_{prompt_id}_{prompt['user_id']}.png" # MODIFICATION: Sanitize model name for filename
                 output_file = str(Path(OUTPUT_DIR) / output_filename)
                 s3_file_path = f"images/{output_filename}"
 
@@ -347,7 +349,29 @@ def generate_images_from_api():
                         else:
                             print(f"Failed to download image: {image_response.status_code}")
                         time.sleep(6)
+                    # START MODIFICATION
+                    elif model == "fal-ai/qwen-image":
+                        print(f"Sending to Fal/qwen-image: {prompt['generated_prompt']}...")
 
+                        fal_result = fal_client.subscribe(
+                            "fal-ai/qwen-image",
+                            arguments={
+                                "prompt": prompt['generated_prompt']
+                            },
+                            with_logs=False,
+                        )
+                        print(fal_result)
+                        first_image_url = fal_result["images"][0]["url"]
+                        image_response = requests.get(first_image_url)
+                        if image_response.status_code == 200:
+                            # Save the image to file
+                            with open(output_file, 'wb') as f:
+                                f.write(image_response.content)
+                            print(f"Image saved to {output_file}")
+                        else:
+                            print(f"Failed to download image: {image_response.status_code}")
+                        time.sleep(6)
+                    # END MODIFICATION
                     elif model == "minimax":
                         print(f"Sending to Minimax: {prompt['generated_prompt']}...")
 
