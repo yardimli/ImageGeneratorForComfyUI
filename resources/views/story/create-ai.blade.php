@@ -27,7 +27,6 @@
 				<form action="{{ route('stories.store-ai') }}" method="POST" id="ai-story-form">
 					@csrf
 					
-					{{-- START MODIFICATION: Add a dropdown for story summaries. --}}
 					@if(!empty($summaries))
 						<div class="mb-3">
 							<label for="summary_file" class="form-label">Story Summary (Optional)</label>
@@ -40,7 +39,6 @@
 							<div class="form-text">Select a pre-written summary to prepend to your instructions below.</div>
 						</div>
 					@endif
-					{{-- END MODIFICATION --}}
 					
 					<div class="mb-3">
 						<label for="instructions" class="form-label">Story Instructions</label>
@@ -161,14 +159,13 @@
 				});
 			}
 			
-			// START MODIFICATION: Handle prepending summary text to the instructions textarea.
-			const summarySelect = document.getElementById('summary_file');
+			// Get the instructions textarea at a higher scope to be used by multiple listeners.
 			const instructionsTextarea = document.getElementById('instructions');
 			
+			// Handle prepending summary text to the instructions textarea.
+			const summarySelect = document.getElementById('summary_file');
 			if (summarySelect && instructionsTextarea) {
-				// Safely embed the summaries data from PHP into a JavaScript variable.
 				const summaries = @json($summaries ?? []);
-				// Create a Map for efficient lookup of summary content by filename.
 				const summaryMap = new Map(summaries.map(s => [s.filename, s.content]));
 				
 				summarySelect.addEventListener('change', function () {
@@ -177,12 +174,26 @@
 						const summaryContent = summaryMap.get(selectedFilename);
 						const currentInstructions = instructionsTextarea.value;
 						
-						// Prepend the summary content, separated by a line, to the existing instructions.
 						instructionsTextarea.value = summaryContent + "\n\n---\n\n" + currentInstructions;
-						
-						// Reset the dropdown. This allows the user to select the same summary again
-						// if they edit the textarea and want to re-prepend the text.
 						this.value = '';
+					}
+				});
+			}
+			
+			// START MODIFICATION: Handle appending CEFR level to the instructions textarea.
+			const levelSelect = document.getElementById('level');
+			if (levelSelect && instructionsTextarea) {
+				levelSelect.addEventListener('change', function () {
+					const selectedLevel = this.value;
+					if (selectedLevel) {
+						// Add a newline before appending to separate it from existing text.
+						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel}`;
+						
+						// Append the text.
+						instructionsTextarea.value += textToAppend;
+						
+						// Scroll the textarea to the bottom to make the new text visible.
+						instructionsTextarea.scrollTop = instructionsTextarea.scrollHeight;
 					}
 				});
 			}
