@@ -146,7 +146,7 @@
 		{
 			// MODIFICATION: Reverted to original validation, as summary is handled by frontend.
 			$validated = $request->validate([
-				'instructions' => 'required|string|max:4000',
+				'instructions' => 'required|string|max:14000',
 				'num_pages' => 'required|integer|min:1|max:99',
 				'model' => 'required|string',
 				'level' => 'required|string|max:50',
