@@ -356,7 +356,11 @@ def generate_images_from_api():
                         fal_result = fal_client.subscribe(
                             "fal-ai/qwen-image",
                             arguments={
-                                "prompt": prompt['generated_prompt']
+                                "prompt": prompt['generated_prompt'],
+                                "image_size": {
+                                  "width": prompt['width'],
+                                  "height": prompt['height']
+                                }
                             },
                             with_logs=False,
                         )
