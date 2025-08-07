@@ -330,7 +330,9 @@
 							
 							<div class="d-flex justify-content-end mt-4">
 								<a href="{{ route('stories.show', $story) }}" class="btn btn-secondary me-2">Cancel</a>
-								<button type="submit" class="btn btn-primary">Generate PDF</button>
+								{{-- START MODIFICATION: Add an ID to the submit button for easier selection in JS --}}
+								<button type="submit" class="btn btn-primary" id="generate-pdf-btn">Generate PDF</button>
+								{{-- END MODIFICATION --}}
 							</div>
 						</form>
 					</div>
@@ -444,7 +446,6 @@
 	{{-- END MODIFICATION --}}
 @endsection
 
-{{-- START MODIFICATION: Add JavaScript for interactive form elements and localStorage persistence --}}
 @section('scripts')
 	<script>
 		document.addEventListener('DOMContentLoaded', function () {
@@ -481,6 +482,7 @@
 				});
 				
 				localStorage.setItem(storageKey, JSON.stringify(settings));
+				console.log('PDF settings saved to localStorage.');
 			}
 			
 			/**
@@ -698,16 +700,17 @@
 			// Sync sticker inputs and display text based on 'selected' classes.
 			updateStickerSelection();
 			
-			// Finally, attach event listeners to save any future changes.
-			form.addEventListener('change', saveSettings);
-			form.addEventListener('input', (event) => {
-				// Save on input for text/number fields for a more responsive feel
-				const targetType = event.target.type;
-				if (targetType === 'text' || targetType === 'textarea' || targetType === 'number') {
+			// START MODIFICATION: Attach an event listener to the submit button's click event.
+			// This is more reliable than the form's 'submit' event when the response is a file download,
+			// as the click event fires just before the form submission is initiated.
+			const submitButton = document.getElementById('generate-pdf-btn');
+			if (submitButton) {
+				submitButton.addEventListener('click', function() {
 					saveSettings();
-				}
-			});
+					// The button's default action (submitting the form) will proceed after this handler runs.
+				});
+			}
+			// END MODIFICATION
 		});
 	</script>
 @endsection
-{{-- END MODIFICATION --}}
