@@ -10,6 +10,7 @@
 	use App\Models\StoryPlace;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
+	use Illuminate\Support\Facades\File; // MODIFICATION: Add File facade.
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Validator;
 	use Illuminate\Validation\ValidationException;
@@ -86,7 +87,27 @@
 					->sortBy('name')
 					->all();
 
-				return view('story.create-ai', compact('models'));
+				// START MODIFICATION: Get summary files and their content.
+				$summaries = [];
+				$summaryPath = resource_path('summaries');
+				if (File::isDirectory($summaryPath)) {
+					$files = File::files($summaryPath);
+					foreach ($files as $file) {
+						if ($file->getExtension() === 'txt') {
+							$summaries[] = [
+								'filename' => $file->getFilename(),
+								'name' => pathinfo($file->getFilename(), PATHINFO_FILENAME),
+								'content' => File::get($file->getRealPath()),
+							];
+						}
+					}
+					// Sort by name for consistent ordering in the dropdown.
+					usort($summaries, fn ($a, $b) => strcmp($a['name'], $b['name']));
+				}
+				// END MODIFICATION
+
+				// MODIFICATION: Pass summaries to the view.
+				return view('story.create-ai', compact('models', 'summaries'));
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for AI Story Creator: ' . $e->getMessage());
 				return redirect()->route('stories.index')->with('error', 'Could not fetch AI models at this time. Please try again later.');
@@ -123,6 +144,7 @@
 		 */
 		public function storeWithAi(Request $request, LlmController $llmController)
 		{
+			// MODIFICATION: Reverted to original validation, as summary is handled by frontend.
 			$validated = $request->validate([
 				'instructions' => 'required|string|max:4000',
 				'num_pages' => 'required|integer|min:1|max:99',
@@ -331,9 +353,7 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				// START MODIFICATION
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-				// END MODIFICATION
 			];
 
 			return view('story.edit', compact('story', 'models', 'imageModels'));
@@ -551,9 +571,7 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				// START MODIFICATION
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-				// END MODIFICATION
 			];
 
 			return view('story.characters', compact('story', 'models', 'imageModels'));
@@ -630,9 +648,7 @@ PROMPT;
 				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
 				['id' => 'luma-photon', 'name' => 'Luma Photon'],
 				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				// START MODIFICATION
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-				// END MODIFICATION
 			];
 
 			return view('story.places', compact('story', 'models', 'imageModels'));

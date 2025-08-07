@@ -26,6 +26,22 @@
 			<div class="card-body">
 				<form action="{{ route('stories.store-ai') }}" method="POST" id="ai-story-form">
 					@csrf
+					
+					{{-- START MODIFICATION: Add a dropdown for story summaries. --}}
+					@if(!empty($summaries))
+						<div class="mb-3">
+							<label for="summary_file" class="form-label">Story Summary (Optional)</label>
+							<select class="form-select" id="summary_file">
+								<option value="">-- Prepend a summary --</option>
+								@foreach($summaries as $summary)
+									<option value="{{ $summary['filename'] }}">{{ $summary['name'] }}</option>
+								@endforeach
+							</select>
+							<div class="form-text">Select a pre-written summary to prepend to your instructions below.</div>
+						</div>
+					@endif
+					{{-- END MODIFICATION --}}
+					
 					<div class="mb-3">
 						<label for="instructions" class="form-label">Story Instructions</label>
 						<textarea class="form-control @error('instructions') is-invalid @enderror" id="instructions" name="instructions" rows="6" placeholder="e.g., A story about a brave knight who befriends a shy dragon to save a kingdom from an evil sorcerer. Include a wise old owl as a character." required>{{ old('instructions') }}</textarea>
@@ -35,7 +51,6 @@
 						@enderror
 					</div>
 					
-					{{-- START MODIFICATION: Restructure row to include Level and use 3 columns. --}}
 					<div class="row">
 						<div class="col-md-4 mb-3">
 							<label for="num_pages" class="form-label">Number of Pages</label>
@@ -48,7 +63,7 @@
 							<div class="invalid-feedback">{{ $message }}</div>
 							@enderror
 						</div>
-						<div class="mb-3">
+						<div class="col-md-4 mb-3">
 							<label for="level" class="form-label">English Proficiency Level (CEFR)</label>
 							<select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
 								<option value="" disabled {{ old('level') ? '' : 'selected' }}>Select a level...</option>
@@ -102,7 +117,6 @@
 							@enderror
 						</div>
 					</div>
-					{{-- END MODIFICATION --}}
 					
 					<div class="d-flex justify-content-end align-items-center gap-3">
 						<a href="{{ route('stories.index') }}" class="btn btn-secondary">Cancel</a>
@@ -133,21 +147,43 @@
 				});
 			}
 			
-			// START MODIFICATION: Remember the selected AI model in localStorage.
 			const modelSelect = document.getElementById('model');
 			const modelStorageKey = 'storyCreateAi_model';
 			
-			// On page load, try to set the model from localStorage, but only if
-			// a value hasn't already been set by the server (e.g., from an old() helper).
 			const savedModel = localStorage.getItem(modelStorageKey);
 			if (savedModel && modelSelect && !modelSelect.value) {
 				modelSelect.value = savedModel;
 			}
 			
-			// When the user changes the model, save it to localStorage.
 			if (modelSelect) {
 				modelSelect.addEventListener('change', function () {
 					localStorage.setItem(modelStorageKey, this.value);
+				});
+			}
+			
+			// START MODIFICATION: Handle prepending summary text to the instructions textarea.
+			const summarySelect = document.getElementById('summary_file');
+			const instructionsTextarea = document.getElementById('instructions');
+			
+			if (summarySelect && instructionsTextarea) {
+				// Safely embed the summaries data from PHP into a JavaScript variable.
+				const summaries = @json($summaries ?? []);
+				// Create a Map for efficient lookup of summary content by filename.
+				const summaryMap = new Map(summaries.map(s => [s.filename, s.content]));
+				
+				summarySelect.addEventListener('change', function () {
+					const selectedFilename = this.value;
+					if (selectedFilename && summaryMap.has(selectedFilename)) {
+						const summaryContent = summaryMap.get(selectedFilename);
+						const currentInstructions = instructionsTextarea.value;
+						
+						// Prepend the summary content, separated by a line, to the existing instructions.
+						instructionsTextarea.value = summaryContent + "\n\n---\n\n" + currentInstructions;
+						
+						// Reset the dropdown. This allows the user to select the same summary again
+						// if they edit the textarea and want to re-prepend the text.
+						this.value = '';
+					}
 				});
 			}
 			// END MODIFICATION
