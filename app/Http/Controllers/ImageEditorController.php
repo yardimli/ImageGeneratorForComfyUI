@@ -104,43 +104,153 @@
 		 * @param  \Illuminate\Http\Request  $request
 		 * @return \Illuminate\Http\JsonResponse
 		 */
+		/**
+		 * Fetches an image from an external URL or a data URL, saves it locally, and returns the local URL.
+		 * This is used to bypass browser CORS restrictions (tainted canvas).
+		 */
 		public function proxyImage(Request $request)
 		{
 			$validated = $request->validate([
-				'url' => 'required|url',
+				// Accept either a standard URL or a data URL
+				'url' => ['required', 'string'],
 			]);
 
-			$imageUrl = $validated['url'];
+			$input = $validated['url'];
 
 			try {
-				$response = Http::timeout(30)->get($imageUrl);
+				if ($this->isDataUrl($input)) {
+					// Handle data:image/...;base64,....
+					[$binary, $mime] = $this->decodeDataUrl($input);
+					if (!$binary) {
+						return response()->json(['success' => false, 'message' => 'Invalid base64 data URL.'], 422);
+					}
+
+					// Verify it is an image and normalize MIME/ext
+					[$ok, $mimeVerified] = $this->verifyImageBytes($binary, $mime);
+					if (!$ok) {
+						return response()->json(['success' => false, 'message' => 'Provided data is not a valid image.'], 422);
+					}
+					$extension = $this->extensionFromMime($mimeVerified) ?? 'jpg';
+
+					$filename = 'proxied_' . uniqid() . '.' . $extension;
+					$tempPath = 'temp/' . $filename;
+					Storage::disk('public')->put($tempPath, $binary);
+
+					return response()->json([
+						'success'   => true,
+						'local_url' => Storage::disk('public')->url($tempPath),
+					]);
+				}
+
+				// Otherwise treat as HTTP(S) URL
+				if (!filter_var($input, FILTER_VALIDATE_URL)) {
+					return response()->json(['success' => false, 'message' => 'Invalid URL.'], 422);
+				}
+
+				$response = Http::timeout(30)
+					->accept('image/avif,image/webp,image/apng,image/*;q=0.8,*/*;q=0.5')
+					->get($input);
 
 				if ($response->failed()) {
 					return response()->json(['success' => false, 'message' => 'Failed to download image from the provided URL.'], 400);
 				}
 
-				// Generate a unique filename.
-				$originalExtension = pathinfo(parse_url($imageUrl, PHP_URL_PATH), PATHINFO_EXTENSION);
-				$extension = in_array($originalExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp']) ? $originalExtension : 'jpg';
+				$body = $response->body();
+				if ($body === '' || $body === null) {
+					return response()->json(['success' => false, 'message' => 'Empty response body.'], 400);
+				}
+
+				// Verify bytes are an image
+				[$ok, $mimeVerified] = $this->verifyImageBytes($body, $response->header('Content-Type'));
+				if (!$ok) {
+					return response()->json(['success' => false, 'message' => 'Downloaded content is not a valid image.'], 415);
+				}
+
+				// Prefer MIME from bytes; fall back to path extension
+				$extension = $this->extensionFromMime($mimeVerified);
+				if (!$extension) {
+					$originalExtension = strtolower(pathinfo(parse_url($input, PHP_URL_PATH) ?? '', PATHINFO_EXTENSION));
+					$extension = in_array($originalExtension, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'avif', 'apng'], true)
+						? ($originalExtension === 'jpeg' ? 'jpg' : $originalExtension)
+						: 'jpg';
+				}
+
 				$filename = 'proxied_' . uniqid() . '.' . $extension;
-
-				// Save the image to a temporary public directory.
 				$tempPath = 'temp/' . $filename;
-				Storage::disk('public')->put($tempPath, $response->body());
-
-				// Get the full public URL of the temporary local image.
-				$localUrl = Storage::disk('public')->url($tempPath);
+				Storage::disk('public')->put($tempPath, $body);
 
 				return response()->json([
-					'success' => true,
-					'local_url' => $localUrl,
+					'success'   => true,
+					'local_url' => Storage::disk('public')->url($tempPath),
 				]);
-			} catch (\Exception $e) {
-				Log::error('Image proxy error for URL ' . $imageUrl . ': ' . $e->getMessage());
+			} catch (\Throwable $e) {
+				Log::error('Image proxy error for input ' . Str::limit($input, 200) . ': ' . $e->getMessage());
 				return response()->json([
 					'success' => false,
 					'message' => 'An error occurred while processing the image.',
 				], 500);
 			}
+		}
+
+		private function isDataUrl(string $s): bool
+		{
+			return Str::startsWith($s, 'data:image/');
+		}
+
+		/**
+		 * @return array{0:string|false,1:string|null} [binary, declared mime]
+		 */
+		private function decodeDataUrl(string $dataUrl): array
+		{
+			// Example: data:image/png;base64,AAAA...
+			if (!preg_match('#^data:(image/[a-zA-Z0-9.+-]+);base64,(.+)$#', $dataUrl, $m)) {
+				return [false, null];
+			}
+			$mime = strtolower($m[1]);
+			$binary = base64_decode($m[2], true);
+			return [$binary, $mime];
+		}
+
+		/**
+		 * Verify bytes are an image; prefer MIME detected from bytes.
+		 * @return array{0:bool,1:string|null} [ok, normalized mime]
+		 */
+		private function verifyImageBytes(string $bytes, ?string $hintMime): array
+		{
+			$info = @getimagesizefromstring($bytes);
+			if ($info === false) {
+				return [false, null];
+			}
+			// getimagesizefromstring() returns 'mime' like 'image/png'
+			$mimeDetected = isset($info['mime']) ? strtolower($info['mime']) : null;
+
+			// Normalize
+			$mime = $mimeDetected ?: ($hintMime ? strtolower(trim(explode(';', $hintMime)[0])) : null);
+			// Keep only common/allowed image mimes
+			$allowed = [
+				'image/jpeg', 'image/jpg', 'image/png', 'image/gif',
+				'image/webp', 'image/bmp', 'image/avif', 'image/apng',
+			];
+			if ($mime && in_array($mime, $allowed, true)) {
+				// Normalize jpg
+				if ($mime === 'image/jpg') $mime = 'image/jpeg';
+				return [true, $mime];
+			}
+			// If mime not in allowed but getimagesize succeeded, treat as jpeg fallback
+			return [true, $mime ?: 'image/jpeg'];
+		}
+
+		private function extensionFromMime(?string $mime): ?string
+		{
+			return match ($mime) {
+				'image/jpeg' => 'jpg',
+				'image/png'  => 'png',
+				'image/gif'  => 'gif',
+				'image/webp' => 'webp',
+				'image/bmp'  => 'bmp',
+				'image/avif' => 'avif',
+				'image/apng' => 'png', // save APNG as PNG (keeps first frame)
+				default      => null,
+			};
 		}
 	}
