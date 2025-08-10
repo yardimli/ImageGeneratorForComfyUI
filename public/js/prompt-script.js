@@ -285,7 +285,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		resultContainer.classList.remove('d-none');
 		
 		try {
-			const response = await fetch('/generate', {
+			const response = await fetch('/prompts/generate', {
 				method: 'POST',
 				body: formData
 			});
