@@ -316,7 +316,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`;
 					
 					try {
-						const storeResponse = await fetch('/store-generated-prompts', {
+						const storeResponse = await fetch('/prompts/store-generated-prompts', {
 							method: 'POST',
 							headers: {
 								'Content-Type': 'application/json',
