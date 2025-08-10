@@ -49,7 +49,7 @@
 		// --- Prompt Generation & Management ---
 		Route::prefix('prompts')->name('prompts.')->group(function () {
 			Route::get('/', [PromptController::class, 'index'])->name('index');
-			Route::post('/', [PromptController::class, 'generate'])->name('generate');
+			Route::post('/generate', [PromptController::class, 'generate'])->name('generate');
 			Route::post('/store-generated', [PromptController::class, 'storeGeneratedPrompts'])->name('store-generated');
 			Route::post('/bulk-delete', [PromptController::class, 'bulkDelete'])->name('bulk-delete');
 			Route::delete('/{prompt}', [PromptController::class, 'deletePrompt'])->name('delete');
