@@ -238,26 +238,6 @@
 				<!-- Results will be inserted here -->
 			</div>
 		</div>
-		
-		
-		<div class="card mb-4">
-			<div class="card-header">
-				<h3 class="mb-0">Saved Settings</h3>
-			</div>
-			<div class="card-body">
-				<select class="form-select" id="savedSettings">
-					<option value="">Select saved settings</option>
-					@foreach($settings as $setting)
-						<option value="{{ $setting->id }}">
-							{{ $setting->created_at->format('Y-m-d H:i') }} -
-							{{ $setting->width }}x{{ $setting->height }} -
-							{{ basename($setting->template_path) }} -
-							{{ $setting->count * $setting->render_each_prompt_times }} images
-						</option>
-					@endforeach
-				</select>
-			</div>
-		</div>
 	</div>
 	
 	<!-- Image Modal -->

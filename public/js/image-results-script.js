@@ -212,9 +212,6 @@ function attachButtonEventListeners(settingId) {
 				});
 				const data = await response.json();
 				if (data.success) {
-					// Remove the setting from the dropdown and clear the result container
-					const option = document.querySelector(`#savedSettings option[value="${settingId}"]`);
-					if (option) option.remove();
 					document.getElementById('resultContainer').classList.add('d-none');
 					alert('Settings and all images deleted successfully');
 				} else {
