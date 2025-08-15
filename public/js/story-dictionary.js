@@ -14,7 +14,10 @@ document.addEventListener('DOMContentLoaded', function () {
 			row.querySelectorAll('[name]').forEach(input => {
 				const name = input.getAttribute('name');
 				if (name) {
-					input.setAttribute('name', name.replace(/\[\d+|__INDEX__\]/, `[${index}]`));
+					// MODIFICATION: Corrected regex to properly group the OR condition with parentheses.
+					// This prevents malformed input names like 'dictionary[0]][word]' or 'dictionary[[1][word]'
+					// by ensuring the entire index '[<number>]' or '[__INDEX__]' is replaced correctly.
+					input.setAttribute('name', name.replace(/\[(\d+|__INDEX__)\]/, `[${index}]`));
 				}
 			});
 		});
