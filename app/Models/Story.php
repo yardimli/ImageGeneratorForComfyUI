@@ -106,4 +106,14 @@
 		{
 			return $this->hasManyThrough(Prompt::class, StoryPlace::class);
 		}
+
+		// START MODIFICATION: Add relationship to dictionary entries.
+		/**
+		 * Get the dictionary entries for the story.
+		 */
+		public function dictionary()
+		{
+			return $this->hasMany(StoryDictionary::class);
+		}
+		// END MODIFICATION
 	}

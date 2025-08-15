@@ -52,10 +52,13 @@
 									{{-- END MODIFICATION --}}
 								</div>
 								@auth
-									<div class="d-flex gap-2">
+									<div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 250px;">
 										<a href="{{ route('stories.pdf.setup', $story) }}" class="btn btn-sm btn-outline-primary">PDF</a>
 										<a href="{{ route('stories.show', $story) }}" class="btn btn-sm btn-outline-primary">Read</a>
 										<a href="{{ route('stories.edit', $story) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+										{{-- START MODIFICATION: Add Dictionary button. --}}
+										<a href="{{ route('stories.dictionary', $story) }}" class="btn btn-sm btn-outline-secondary">Dictionary</a>
+										{{-- END MODIFICATION --}}
 										<form action="{{ route('stories.destroy', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story and all its content?');">
 											@csrf
 											@method('DELETE')

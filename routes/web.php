@@ -1,6 +1,7 @@
 <?php
 
 	use App\Http\Controllers\AlbumCoverController;
+	use App\Http\Controllers\DictionaryController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
@@ -172,14 +173,16 @@
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
 
+			Route::get('/{story}/dictionary', [DictionaryController::class, 'dictionary'])->name('dictionary');
+			Route::post('/{story}/dictionary/generate', [DictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
+			Route::post('/{story}/dictionary', [DictionaryController::class, 'updateDictionary'])->name('dictionary.update');
+
 			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
 			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');
 		});
 
-		// START MODIFICATION: Add routes to serve assets for the PDF setup page.
 		Route::get('/assets/fonts/{filename}', [StoryPdfController::class, 'serveFont'])->name('assets.font');
 		Route::get('/assets/wallpapers/{filename}', [StoryPdfController::class, 'serveWallpaper'])->name('assets.wallpaper');
 		Route::get('/assets/logos/{filename}', [StoryPdfController::class, 'serveLogo'])->name('assets.logo');
-		Route::get('/assets/stickers/{filename}', [StoryPdfController::class, 'serveSticker'])->name('assets.sticker'); // MODIFICATION: Add sticker route
-		// END MODIFICATION
+		Route::get('/assets/stickers/{filename}', [StoryPdfController::class, 'serveSticker'])->name('assets.sticker');
 	});
