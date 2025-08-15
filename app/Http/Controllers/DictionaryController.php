@@ -5,8 +5,8 @@
 	use App\Http\Controllers\LlmController;
 	use App\Models\Prompt;
 	use App\Models\Story;
-	use App\Models\StoryPage;
 	use App\Models\StoryDictionary;
+	use App\Models\StoryPage;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
 	use Illuminate\Support\Facades\File;
@@ -26,11 +26,19 @@
 		 */
 		public function dictionary(Story $story, LlmController $llmController)
 		{
-			$story->load(['pages', 'dictionary']);
+			// MODIFICATION: Load pages and dictionary entries, sorting dictionary by word.
+			$story->load(['pages', 'dictionary' => function ($query) {
+				$query->orderBy('word', 'asc');
+			}]);
 
 			// Prepare the prompt text
 			$storyText = $story->pages->pluck('story_text')->implode("\n\n");
-			$initialUserRequest = "Create 10 dictionary entries for the story above. Explain the words in a manner that is understandable for the story's level.";
+
+			// MODIFICATION: Get existing words to avoid duplicates in AI generation.
+			$existingWords = $story->dictionary->pluck('word')->implode(', ');
+			$existingWordsPrompt = !empty($existingWords) ? "The following words already have entries, so do not add them again: {$existingWords}." : '';
+
+			$initialUserRequest = "Create 10 dictionary entries for the story above. Explain the words in a manner that is understandable for the story's level. {$existingWordsPrompt}";
 			$promptText = "Story Title: {$story->title}\nLevel: {$story->level}\n\n---\n\n{$storyText}\n\n---\n\n{$initialUserRequest}";
 
 			// Fetch models for the AI generator
@@ -157,6 +165,4 @@ The JSON object must follow this exact structure:
 Now, generate the dictionary based on the provided text and user request.
 PROMPT;
 		}
-
-
 	}
