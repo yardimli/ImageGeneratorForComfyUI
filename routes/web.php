@@ -153,6 +153,9 @@
 			// START MODIFICATION: Add route for AI text rewriting.
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
 			// END MODIFICATION
+			// START MODIFICATION: Add route for AI asset description rewriting.
+			Route::post('/rewrite-asset-description', [StoryController::class, 'rewriteAssetDescription'])->name('rewrite-asset-description');
+			// END MODIFICATION
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
 			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
 			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');

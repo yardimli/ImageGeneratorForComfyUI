@@ -718,6 +718,48 @@ PROMPT;
 		}
 		// END MODIFICATION
 
+		// START MODIFICATION: Add a new method to handle AI asset description rewriting.
+		/**
+		 * Rewrite an asset's (character/place) description using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function rewriteAssetDescription(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'prompt' => 'required|string',
+				'model' => 'required|string',
+			]);
+
+			try {
+				$response = $llmController->callLlmSync(
+					$validated['prompt'],
+					$validated['model'],
+					'AI Asset Description Rewrite',
+					0.7,
+					'json_object'
+				);
+
+				$rewrittenText = $response['rewritten_text'] ?? null;
+
+				if (!$rewrittenText) {
+					Log::error('AI Asset Description Rewrite failed to return valid text.', ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'rewritten_text' => trim($rewrittenText)
+				]);
+			} catch (\Exception $e) {
+				Log::error('AI Asset Description Rewrite Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the description. Please try again.'], 500);
+			}
+		}
+		// END MODIFICATION
+
 		/**
 		 * Generate an image prompt for a story page using AI.
 		 *

@@ -317,6 +317,182 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
+	// START MODIFICATION: Add logic for AI Asset Description Rewrite Modal.
+	const rewriteModalEl = document.getElementById('rewriteAssetDescriptionModal');
+	if (rewriteModalEl) {
+		const rewriteModal = new bootstrap.Modal(rewriteModalEl);
+		const rewriteStyleSelect = document.getElementById('rewrite-asset-style');
+		const rewriteFullPromptTextarea = document.getElementById('rewrite-asset-full-prompt');
+		const rewriteModelSelect = document.getElementById('rewrite-asset-model');
+		const rewriteBtn = document.getElementById('rewrite-asset-btn');
+		const rewriteResultArea = document.getElementById('rewrite-asset-result-area');
+		const rewrittenTextTextarea = document.getElementById('rewritten-asset-text');
+		const replaceTextBtn = document.getElementById('replace-asset-text-btn');
+		let activeDescriptionTextarea = null;
+		let originalDescription = '';
+		
+		const rewriteModelKey = 'storyCreateAi_model'; // Reuse same key
+		
+		// Define different rewrite instructions for characters and places.
+		const styleOptions = {
+			character: {
+				'detailed_appearance': "Rewrite the following character description to be more visually detailed. Focus on specific physical features, facial expressions, and their overall presence.",
+				'focus_clothing': "Expand on the character's clothing and accessories. Describe the style, fabric, color, and condition of what they are wearing in detail.",
+				'add_personality': "Rewrite the description to hint at the character's personality through their appearance and posture. Show, don't just tell, their traits (e.g., nervous, confident, kind).",
+				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction.",
+				'poetic': "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood.",
+				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
+			},
+			place: {
+				'atmospheric': "Rewrite the following place description to be more atmospheric. Focus on the mood, lighting, weather, and overall feeling of the location.",
+				'focus_architecture': "Expand on the architectural details of the place. Describe the buildings, materials, shapes, and style in greater detail.",
+				'add_sensory': "Enrich the description by adding sensory details. What does it smell, sound, or feel like to be in this place?",
+				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick overview.",
+				'historical': "Rewrite the description to include hints of its history or past events. Suggest a sense of age, use, or abandonment.",
+				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
+			}
+		};
+		
+		/**
+		 * Builds the full prompt for rewriting an asset's description.
+		 * @param {string} text - The original description text.
+		 * @param {string} styleInstruction - The specific instruction for rewriting.
+		 * @returns {string} The full prompt for the LLM.
+		 */
+		function buildAssetRewritePrompt(text, styleInstruction) {
+			const jsonStructure = `{
+  "rewritten_text": "The rewritten text goes here."
+}`;
+			
+			return `You are an expert story editor. Your task is to rewrite a description for a story asset based on a specific instruction.
+Instruction: "${styleInstruction}"
+
+Original Text:
+"${text}"
+
+Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+The JSON object must follow this exact structure:
+${jsonStructure}
+
+Now, rewrite the text based on the instruction.`;
+		}
+		
+		/**
+		 * Updates the live preview of the full prompt sent to the AI.
+		 */
+		function updateRewritePromptPreview() {
+			if (!originalDescription) return;
+			const selectedStyleKey = rewriteStyleSelect.value;
+			const instruction = styleOptions[config.assetType][selectedStyleKey];
+			const fullPrompt = buildAssetRewritePrompt(originalDescription, instruction);
+			rewriteFullPromptTextarea.value = fullPrompt;
+		}
+		
+		// Event listener to capture the active textarea when the modal is triggered.
+		container.addEventListener('click', (e) => {
+			const rewriteButton = e.target.closest('.rewrite-asset-description-btn');
+			if (rewriteButton) {
+				const card = rewriteButton.closest(config.cardSelector);
+				activeDescriptionTextarea = card.querySelector('.asset-description');
+				originalDescription = activeDescriptionTextarea.value;
+			}
+		});
+		
+		// Logic for when the modal is shown.
+		rewriteModalEl.addEventListener('shown.bs.modal', () => {
+			if (!activeDescriptionTextarea) {
+				alert('Could not find the description text. Please close this and try again.');
+				rewriteModal.hide();
+				return;
+			}
+			
+			// Populate the style dropdown based on the asset type (character or place).
+			rewriteStyleSelect.innerHTML = '';
+			const currentStyles = styleOptions[config.assetType];
+			for (const key in currentStyles) {
+				const option = document.createElement('option');
+				option.value = key;
+				// Capitalize and format the key for display (e.g., 'detailed_appearance' -> 'Detailed Appearance').
+				option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+				rewriteStyleSelect.appendChild(option);
+			}
+			
+			// Load saved AI model from local storage.
+			const savedModel = localStorage.getItem(rewriteModelKey);
+			if (savedModel) rewriteModelSelect.value = savedModel;
+			
+			// Update the prompt preview.
+			updateRewritePromptPreview();
+		});
+		
+		// Reset the modal to its initial state when hidden.
+		rewriteModalEl.addEventListener('hidden.bs.modal', () => {
+			activeDescriptionTextarea = null;
+			originalDescription = '';
+			rewriteResultArea.classList.add('d-none');
+			replaceTextBtn.classList.add('d-none');
+			rewrittenTextTextarea.value = '';
+			rewriteFullPromptTextarea.value = '';
+			rewriteBtn.disabled = false;
+			rewriteBtn.querySelector('.spinner-border').classList.add('d-none');
+		});
+		
+		// Add event listeners for user interactions within the modal.
+		rewriteStyleSelect.addEventListener('change', updateRewritePromptPreview);
+		rewriteModelSelect.addEventListener('change', (e) => localStorage.setItem(rewriteModelKey, e.target.value));
+		
+		// Handle the "Rewrite with AI" button click.
+		rewriteBtn.addEventListener('click', async () => {
+			const prompt = rewriteFullPromptTextarea.value;
+			const model = rewriteModelSelect.value;
+			
+			if (!prompt || !model) {
+				alert('Prompt and model are required.');
+				return;
+			}
+			
+			rewriteBtn.disabled = true;
+			rewriteBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			try {
+				const response = await fetch('/stories/rewrite-asset-description', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': csrfToken,
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({ prompt, model }),
+				});
+				
+				const data = await response.json();
+				
+				if (response.ok && data.success) {
+					rewrittenTextTextarea.value = data.rewritten_text;
+					rewriteResultArea.classList.remove('d-none');
+					replaceTextBtn.classList.remove('d-none');
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				console.error('Rewrite error:', error);
+				alert('A network error occurred.');
+			} finally {
+				rewriteBtn.disabled = false;
+				rewriteBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+		
+		// Handle the "Replace Description" button click.
+		replaceTextBtn.addEventListener('click', () => {
+			if (activeDescriptionTextarea) {
+				activeDescriptionTextarea.value = rewrittenTextTextarea.value;
+				rewriteModal.hide();
+			}
+		});
+	}
+	// END MODIFICATION
+	
 	// Logic for AI Image Prompt and Image Generation
 	function decodeHtmlEntities(str) {
 		return str
