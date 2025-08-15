@@ -18,16 +18,12 @@
 			'width',
 			'height',
 			'model',
-			// START MODIFICATION
 			'lora_name',
 			'strength_model',
 			'guidance',
-			// START NEW MODIFICATION
 			'story_page_id',
 			'story_character_id',
 			'story_place_id',
-			// END NEW MODIFICATION
-			// END MODIFICATION
 			'upload_to_s3',
 			'generation_type',
 			'input_image_1',

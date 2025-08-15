@@ -128,12 +128,9 @@
 		 */
 		public function getUpscaleQueueCount()
 		{
-			$count = 0;
-			if (auth()->check()) {
-				$count = Prompt::where('user_id', auth()->id())
-					->where('upscale_status', 1)
-					->count();
-			}
+			$count = Prompt::where('user_id', auth()->id())
+				->where('upscale_status', 1)
+				->count();
 			return response()->json(['count' => $count]);
 		}
 		// END MODIFICATION
