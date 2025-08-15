@@ -430,6 +430,61 @@ PROMPT;
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
 
+		// START MODIFICATION: Add methods for inserting empty pages.
+		/**
+		 * Inserts an empty page above the specified page.
+		 *
+		 * @param Story $story
+		 * @param StoryPage $storyPage
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function insertPageAbove(Story $story, StoryPage $storyPage)
+		{
+			if ($storyPage->story_id !== $story->id) {
+				abort(404);
+			}
+			$this->insertEmptyPage($story, $storyPage->page_number);
+			return redirect()->route('stories.edit', $story)->with('success', 'New page inserted successfully.');
+		}
+
+		/**
+		 * Inserts an empty page below the specified page.
+		 *
+		 * @param Story $story
+		 * @param StoryPage $storyPage
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function insertPageBelow(Story $story, StoryPage $storyPage)
+		{
+			if ($storyPage->story_id !== $story->id) {
+				abort(404);
+			}
+			$this->insertEmptyPage($story, $storyPage->page_number + 1);
+			return redirect()->route('stories.edit', $story)->with('success', 'New page inserted successfully.');
+		}
+
+		/**
+		 * Helper function to insert a page and re-order subsequent pages.
+		 *
+		 * @param Story $story
+		 * @param int $pageNumber
+		 */
+		private function insertEmptyPage(Story $story, int $pageNumber): void
+		{
+			DB::transaction(function () use ($story, $pageNumber) {
+				// Increment page numbers of subsequent pages.
+				$story->pages()->where('page_number', '>=', $pageNumber)->increment('page_number');
+
+				// Create the new empty page.
+				StoryPage::create([
+					'story_id' => $story->id,
+					'page_number' => $pageNumber,
+					'story_text' => null,
+				]);
+			});
+		}
+		// END MODIFICATION
+
 		// START MODIFICATION: Add a new method to handle AI text rewriting.
 		/**
 		 * Rewrite story text using AI.

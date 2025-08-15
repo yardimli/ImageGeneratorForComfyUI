@@ -157,6 +157,11 @@
 			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
 			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');
 
+			// START MODIFICATION: Add routes for inserting empty pages.
+			Route::post('/{story}/pages/{storyPage}/insert-above', [StoryController::class, 'insertPageAbove'])->name('pages.insert-above');
+			Route::post('/{story}/pages/{storyPage}/insert-below', [StoryController::class, 'insertPageBelow'])->name('pages.insert-below');
+			// END MODIFICATION
+
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
