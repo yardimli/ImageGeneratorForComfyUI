@@ -56,7 +56,11 @@
 				</div>
 			</div>
 			<div class="col-md-4">
-				<label class="form-label">Page Image</label>
+				<label class="form-label">Page Image
+					@if ($page && $page->prompt_data->upscale_url)
+						<span class="badge bg-success" title="Image has been upscaled">Upscaled</span>
+					@endif
+				</label>
 				<div class="image-upload-container mb-2 position-relative" style="min-height: 400px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 					<img src="{{ $page->image_path ?? 'https://picsum.photos/200' }}"
 					     class="page-image-preview"
@@ -80,7 +84,6 @@
 				<input type="hidden" name="pages[{{ $index }}][image_path]" class="image-path-input" value="{{ $page->image_path ?? '' }}">
 				<button type="button" class="btn btn-sm btn-primary select-image-btn">Upload/Select Image</button>
 				
-				{{-- START MODIFICATION: Add Kontext Lora button --}}
 				@php
 					// Gather character image URLs for the current page, filtering out any null/empty paths.
 					$characterImageUrls = $page ? $page->characters->pluck('image_path')->filter()->all() : [];
@@ -97,7 +100,6 @@
 				   title="Open in Image Editor to compose for Kontext Lora">
 					Kontext Lora
 				</a>
-				{{-- END MODIFICATION --}}
 			
 			</div>
 		</div>
