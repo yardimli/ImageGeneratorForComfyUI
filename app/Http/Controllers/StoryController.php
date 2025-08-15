@@ -152,19 +152,55 @@
 				'level' => 'required|string|max:50',
 			]);
 
-			$prompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
-
+			// START MODIFICATION: Implement 3-step story generation process within a database transaction.
 			try {
-				$storyData = $llmController->callLlmSync(
-					$prompt,
-					$validated['model'],
-					'AI Story Generation',
-					0.7,
-					'json_object'
-				);
+				$story = DB::transaction(function () use ($validated, $llmController) {
+					// --- STEP 1: Generate Story Core (title, pages, character/place names) ---
+					$corePrompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
+					$storyData = $llmController->callLlmSync(
+						$corePrompt,
+						$validated['model'],
+						'AI Story Generation - Core',
+						0.7,
+						'json_object'
+					);
 
-				$this->validateStoryData($storyData);
-				$story = $this->saveStoryFromAiData($storyData, $validated);
+					$this->validateStoryData($storyData);
+					// Save the initial story structure with empty character/place descriptions.
+					$story = $this->saveStoryFromAiData($storyData, $validated);
+
+					$fullStoryText = implode("\n\n", array_column($storyData['pages'], 'content'));
+					$characterNames = array_column($storyData['characters'] ?? [], 'name');
+					$placeNames = array_column($storyData['places'] ?? [], 'name');
+
+					// --- STEP 2: Generate Character Descriptions ---
+					if (!empty($characterNames)) {
+						$charPrompt = $this->buildCharacterDescriptionPrompt($fullStoryText, $characterNames);
+						$characterDescriptionData = $llmController->callLlmSync(
+							$charPrompt,
+							$validated['model'],
+							'AI Story Generation - Characters',
+							0.7,
+							'json_object'
+						);
+						$this->updateCharactersFromAiData($story, $characterDescriptionData);
+					}
+
+					// --- STEP 3: Generate Place Descriptions ---
+					if (!empty($placeNames)) {
+						$placePrompt = $this->buildPlaceDescriptionPrompt($fullStoryText, $placeNames);
+						$placeDescriptionData = $llmController->callLlmSync(
+							$placePrompt,
+							$validated['model'],
+							'AI Story Generation - Places',
+							0.7,
+							'json_object'
+						);
+						$this->updatePlacesFromAiData($story, $placeDescriptionData);
+					}
+
+					return $story;
+				});
 
 				return redirect()->route('stories.edit', $story)->with('success', 'Your AI-generated story has been created successfully!');
 			} catch (ValidationException $e) {
@@ -173,6 +209,7 @@
 				Log::error('AI Story Generation Failed: ' . $e->getMessage());
 				return back()->withInput()->with('error', 'An error occurred while generating the story with AI. Please try again. Error: ' . $e->getMessage());
 			}
+			// END MODIFICATION
 		}
 
 		/**
@@ -184,6 +221,7 @@
 		 */
 		private function buildStoryPrompt(string $instructions, int $numPages): string
 		{
+			// MODIFICATION: Changed JSON structure to request empty descriptions for characters and places.
 			$jsonStructure = <<<'JSON'
 {
   "title": "A string for the story title.",
@@ -191,13 +229,13 @@
   "characters": [
     {
       "name": "Character Name",
-      "description": "A description of the character."
+      "description": ""
     }
   ],
   "places": [
     {
       "name": "Place Name",
-      "description": "A description of the place."
+      "description": ""
     }
   ],
   "pages": [
@@ -210,10 +248,12 @@
 }
 JSON;
 
+			// MODIFICATION: Added instruction to leave character/place descriptions empty.
 			return <<<PROMPT
 You are a creative storyteller. Based on the following instructions, create a complete story.
 The story must have a title, a short description, a list of characters, a list of places, and a series of pages.
 The number of pages must be exactly {$numPages}.
+IMPORTANT: For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
 
 Instructions from the user: "{$instructions}"
 
@@ -224,6 +264,92 @@ The JSON object must follow this exact structure:
 Now, generate the story based on the user's instructions.
 PROMPT;
 		}
+
+		// START MODIFICATION: Add new prompt builder for character descriptions.
+		/**
+		 * Builds the prompt for the LLM to generate character descriptions.
+		 *
+		 * @param string $fullStoryText
+		 * @param array $characterNames
+		 * @return string
+		 */
+		private function buildCharacterDescriptionPrompt(string $fullStoryText, array $characterNames): string
+		{
+			$characterList = implode('", "', $characterNames);
+
+			$jsonStructure = <<<'JSON'
+{
+  "characters": [
+    {
+      "name": "Character Name",
+      "description": "A detailed description of the character's appearance, including their clothes and physique."
+    }
+  ]
+}
+JSON;
+
+			return <<<PROMPT
+You are a character designer. Based on the full story text provided below, create a detailed visual description for each of the following characters: "{$characterList}".
+Focus on their physical appearance, clothing, and physique with attention to detail.
+
+Full Story Text:
+---
+{$fullStoryText}
+---
+
+Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+The JSON object must contain a 'characters' array, and each object in the array must have a 'name' and 'description' key.
+The 'name' must exactly match one of the names from the provided list.
+The JSON object must follow this exact structure:
+{$jsonStructure}
+
+Now, generate the character descriptions.
+PROMPT;
+		}
+		// END MODIFICATION
+
+		// START MODIFICATION: Add new prompt builder for place descriptions.
+		/**
+		 * Builds the prompt for the LLM to generate place descriptions.
+		 *
+		 * @param string $fullStoryText
+		 * @param array $placeNames
+		 * @return string
+		 */
+		private function buildPlaceDescriptionPrompt(string $fullStoryText, array $placeNames): string
+		{
+			$placeList = implode('", "', $placeNames);
+
+			$jsonStructure = <<<'JSON'
+{
+  "places": [
+    {
+      "name": "Place Name",
+      "description": "A detailed description of the place's appearance and atmosphere."
+    }
+  ]
+}
+JSON;
+
+			return <<<PROMPT
+You are a world builder. Based on the full story text provided below, create a detailed visual description for each of the following places: "{$placeList}".
+Focus on the appearance, atmosphere, and key features of each location.
+
+Full Story Text:
+---
+{$fullStoryText}
+---
+
+Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+The JSON object must contain a 'places' array, and each object in the array must have a 'name' and 'description' key.
+The 'name' must exactly match one of the names from the provided list.
+The JSON object must follow this exact structure:
+{$jsonStructure}
+
+Now, generate the place descriptions.
+PROMPT;
+		}
+		// END MODIFICATION
 
 		/**
 		 * Validates the structure of the data returned from the LLM.
@@ -238,10 +364,12 @@ PROMPT;
 				'description' => 'required|string',
 				'characters' => 'present|array',
 				'characters.*.name' => 'required|string',
-				'characters.*.description' => 'required|string',
+				// MODIFICATION: Allow description to be an empty string during initial creation.
+				'characters.*.description' => 'present|string',
 				'places' => 'present|array',
 				'places.*.name' => 'required|string',
-				'places.*.description' => 'required|string',
+				// MODIFICATION: Allow description to be an empty string during initial creation.
+				'places.*.description' => 'present|string',
 				'pages' => 'required|array|min:1',
 				'pages.*.content' => 'required|string',
 				'pages.*.characters' => 'present|array',
@@ -264,54 +392,117 @@ PROMPT;
 		 */
 		private function saveStoryFromAiData(array $data, array $validatedRequestData): Story
 		{
-			return DB::transaction(function () use ($data, $validatedRequestData) {
-				$story = Story::create([
-					'user_id' => auth()->id(),
-					'title' => $data['title'],
-					'short_description' => $data['description'],
-					'level' => $validatedRequestData['level'],
-					'initial_prompt' => $validatedRequestData['instructions'],
-					'model' => $validatedRequestData['model'],
+			// MODIFICATION: Removed DB::transaction as it's now handled in the calling storeWithAi method.
+			$story = Story::create([
+				'user_id' => auth()->id(),
+				'title' => $data['title'],
+				'short_description' => $data['description'],
+				'level' => $validatedRequestData['level'],
+				'initial_prompt' => $validatedRequestData['instructions'],
+				'model' => $validatedRequestData['model'],
+			]);
+
+			$characterMap = [];
+			foreach ($data['characters'] as $charData) {
+				$character = $story->characters()->create([
+					'name' => $charData['name'],
+					'description' => $charData['description'], // This will be an empty string initially
+				]);
+				$characterMap[$character->name] = $character->id;
+			}
+
+			$placeMap = [];
+			foreach ($data['places'] as $placeData) {
+				$place = $story->places()->create([
+					'name' => $placeData['name'],
+					'description' => $placeData['description'], // This will be an empty string initially
+				]);
+				$placeMap[$place->name] = $place->id;
+			}
+
+			foreach ($data['pages'] as $index => $pageData) {
+				$page = $story->pages()->create([
+					'page_number' => $index + 1,
+					'story_text' => $pageData['content'],
 				]);
 
-				$characterMap = [];
-				foreach ($data['characters'] as $charData) {
-					$character = $story->characters()->create([
-						'name' => $charData['name'],
-						'description' => $charData['description'],
-					]);
-					$characterMap[$character->name] = $character->id;
+				$charIds = collect($pageData['characters'])->map(fn ($name) => $characterMap[$name] ?? null)->filter()->all();
+				$placeIds = collect($pageData['places'])->map(fn ($name) => $placeMap[$name] ?? null)->filter()->all();
+
+				if (!empty($charIds)) {
+					$page->characters()->sync($charIds);
 				}
-
-				$placeMap = [];
-				foreach ($data['places'] as $placeData) {
-					$place = $story->places()->create([
-						'name' => $placeData['name'],
-						'description' => $placeData['description'],
-					]);
-					$placeMap[$place->name] = $place->id;
+				if (!empty($placeIds)) {
+					$page->places()->sync($placeIds);
 				}
+			}
 
-				foreach ($data['pages'] as $index => $pageData) {
-					$page = $story->pages()->create([
-						'page_number' => $index + 1,
-						'story_text' => $pageData['content'],
-					]);
-
-					$charIds = collect($pageData['characters'])->map(fn ($name) => $characterMap[$name] ?? null)->filter()->all();
-					$placeIds = collect($pageData['places'])->map(fn ($name) => $placeMap[$name] ?? null)->filter()->all();
-
-					if (!empty($charIds)) {
-						$page->characters()->sync($charIds);
-					}
-					if (!empty($placeIds)) {
-						$page->places()->sync($placeIds);
-					}
-				}
-
-				return $story;
-			});
+			return $story;
 		}
+
+		// START MODIFICATION: Add new method to update characters from AI data.
+		/**
+		 * Updates character descriptions from the validated AI data.
+		 *
+		 * @param Story $story
+		 * @param array|null $characterData
+		 * @throws ValidationException
+		 */
+		private function updateCharactersFromAiData(Story $story, ?array $characterData): void
+		{
+			$validator = Validator::make($characterData ?? [], [
+				'characters' => 'present|array',
+				'characters.*.name' => 'required|string',
+				'characters.*.description' => 'required|string',
+			]);
+
+			if ($validator->fails()) {
+				Log::error('AI Character Description Validation Failed: ', $validator->errors()->toArray());
+				Log::error('Invalid AI Character Data: ', $characterData ?? []);
+				throw new ValidationException($validator);
+			}
+
+			$validated = $validator->validated();
+
+			foreach ($validated['characters'] as $charUpdate) {
+				$story->characters()
+					->where('name', $charUpdate['name'])
+					->update(['description' => $charUpdate['description']]);
+			}
+		}
+		// END MODIFICATION
+
+		// START MODIFICATION: Add new method to update places from AI data.
+		/**
+		 * Updates place descriptions from the validated AI data.
+		 *
+		 * @param Story $story
+		 * @param array|null $placeData
+		 * @throws ValidationException
+		 */
+		private function updatePlacesFromAiData(Story $story, ?array $placeData): void
+		{
+			$validator = Validator::make($placeData ?? [], [
+				'places' => 'present|array',
+				'places.*.name' => 'required|string',
+				'places.*.description' => 'required|string',
+			]);
+
+			if ($validator->fails()) {
+				Log::error('AI Place Description Validation Failed: ', $validator->errors()->toArray());
+				Log::error('Invalid AI Place Data: ', $placeData ?? []);
+				throw new ValidationException($validator);
+			}
+
+			$validated = $validator->validated();
+
+			foreach ($validated['places'] as $placeUpdate) {
+				$story->places()
+					->where('name', $placeUpdate['name'])
+					->update(['description' => $placeUpdate['description']]);
+			}
+		}
+		// END MODIFICATION
 
 		/**
 		 * Show the form for editing the specified story.
