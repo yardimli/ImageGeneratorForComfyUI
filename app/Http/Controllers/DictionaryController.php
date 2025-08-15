@@ -58,7 +58,8 @@
 			$validated = $request->validate([
 				'dictionary' => 'nullable|array',
 				'dictionary.*.word' => 'required_with:dictionary.*.explanation|string|max:255',
-				'dictionary.*.explanation' => 'required_with:dictionary.*.explanation|string',
+				// MODIFICATION: Corrected validation rule to be co-dependent with the 'word' field.
+				'dictionary.*.explanation' => 'required_with:dictionary.*.word|string',
 			]);
 
 			DB::transaction(function () use ($story, $validated) {
