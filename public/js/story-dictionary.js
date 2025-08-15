@@ -86,10 +86,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 				
 				if (data.dictionary && Array.isArray(data.dictionary)) {
-					// Clear existing entries before adding new ones
-					container.innerHTML = '';
-					
-					// MODIFICATION: Add all new rows first without re-indexing each one.
 					data.dictionary.forEach(entry => {
 						addDictionaryRow(entry.word, entry.explanation, false);
 					});
