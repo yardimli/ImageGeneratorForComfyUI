@@ -86,16 +86,20 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 				
 				if (data.dictionary && Array.isArray(data.dictionary)) {
-					data.dictionary.forEach(entry => {
-						addDictionaryRow(entry.word, entry.explanation, false);
-					});
-					
-					// MODIFICATION: Perform a single, efficient re-index after all rows are in the DOM.
-					reindexRows();
-					
-					if (data.dictionary.length === 0) {
-						container.innerHTML = '<p id="no-entries-message" class="text-muted">The AI did not return any entries. Please try adjusting your prompt.</p>';
+					// START MODIFICATION: Append new entries instead of replacing existing ones.
+					if (data.dictionary.length > 0) {
+						// Add all new rows to the end of the list.
+						data.dictionary.forEach(entry => {
+							addDictionaryRow(entry.word, entry.explanation, false);
+						});
+						
+						// Re-index all rows to ensure form submission is correct.
+						reindexRows();
+					} else {
+						// If the AI returns no entries, alert the user without clearing the list.
+						alert('The AI did not return any new entries. Please try adjusting your prompt.');
 					}
+					// END MODIFICATION
 				} else {
 					throw new Error('The AI returned data in an unexpected format.');
 				}
