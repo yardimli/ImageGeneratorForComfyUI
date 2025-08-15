@@ -279,11 +279,11 @@ The story must have a title, a short description, a list of characters, a list o
 The number of pages must be exactly {$numPages}.
 
 VERY IMPORTANT INSTRUCTIONS:
-1.  For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
-2.  If a character's or place's appearance or state changes significantly during the story, you MUST create a separate entry for each version with a descriptive name (e.g., "Cinderella (in rags)", "Cinderella (in a ballgown)", "The Castle (daytime)", "The Castle (under siege)").
-3.  In the 'pages' array, you MUST reference the specific version of the character or place that appears on that page.
+1.  Instructions from the user: "{$instructions}"
+2.  For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
+3.  If a character's or place's appearance, clothing, age or state changes during the story, you MUST create a separate entry for each version with a descriptive name (e.g., "Cinderella (in rags)", "Cinderella (in a ballgown)", "Arthur (Young)", "Arthur (Old)", "The Castle (daytime)", "The Castle (under siege)").
+4.  In the 'pages' array, you MUST reference the specific version of the character or place that appears on that page.
 
-Instructions from the user: "{$instructions}"
 
 Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
 The JSON object must follow this exact structure (the example shows how to handle character variations):
