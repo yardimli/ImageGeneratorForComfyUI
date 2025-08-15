@@ -738,6 +738,7 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 		const modalImage = document.getElementById('modalDetailImage');
 		const upscaleBtnContainer = document.getElementById('upscale-button-container');
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
+		let activeImageTrigger = null; // MODIFICATION: Add variable to store the image element that triggered the modal.
 		
 		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
 			const triggerElement = event.relatedTarget; // The image that was clicked
@@ -746,6 +747,8 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 				event.preventDefault();
 				return;
 			}
+			
+			activeImageTrigger = triggerElement; // MODIFICATION: Store the trigger element.
 			
 			const imageUrl = triggerElement.dataset.imageUrl;
 			const promptId = triggerElement.dataset.promptId;
@@ -792,6 +795,31 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 					
 					if (data.prediction_id) {
 						upscaleStatusContainer.innerHTML = 'Upscale in progress. You can close this modal; the page will update on reload.';
+						
+						// START MODIFICATION: Add the 'Upscaling...' badge to the page label.
+						if (activeImageTrigger) {
+							console.log('Adding upscaling badge to image container');
+							const imageContainer = activeImageTrigger.closest('.image-upload-container');
+							if (imageContainer) {
+								console.log('Found image container:', imageContainer);
+								const label = imageContainer.previousElementSibling;
+								if (label && label.tagName === 'LABEL') {
+									console.log('Found label:', label);
+									// Remove any existing status badges to prevent duplicates.
+									label.querySelectorAll('.badge').forEach(b => b.remove());
+									// Add the new 'Upscaling...' badge.
+									const newBadge = document.createElement('span');
+									newBadge.className = 'badge bg-warning ms-2';
+									newBadge.title = 'Image is being upscaled';
+									newBadge.textContent = 'Upscaling...';
+									label.appendChild(newBadge);
+								}
+							}
+						} else
+						{
+							console.log('No active image trigger found for upscaling badge.');
+						}
+						// END MODIFICATION
 						
 						// Simple polling for the modal
 						const checkStatus = async () => {
