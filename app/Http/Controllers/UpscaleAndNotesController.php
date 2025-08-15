@@ -105,7 +105,9 @@
 		}
 		public function checkUpscaleStatus(Request $request, Prompt $prompt, $prediction_id)
 		{
+			Log::info("Checking upscale status for prompt ID: {$prompt->id} with prediction ID: {$prediction_id}");
 			$response = self::checkUpscaleStatusOperation($prompt, $prediction_id);
+			Log::info("Upscale status response: " . json_encode($response));
 			response()->json($response);
 		}
 
