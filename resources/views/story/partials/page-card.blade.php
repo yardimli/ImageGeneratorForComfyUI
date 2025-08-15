@@ -5,13 +5,13 @@
 			{{-- These buttons only appear for pages that have been saved to the database. --}}
 			@if(isset($page->id))
 				<div class="btn-group btn-group-sm" role="group" aria-label="Page Actions">
-					{{-- START MODIFICATION: Added formmethod="POST" to override the parent form's PUT method. --}}
-					<button type="submit" formaction="{{ route('stories.pages.insert-above', ['story' => $story, 'storyPage' => $page]) }}" formmethod="POST" class="btn btn-outline-secondary" title="Insert new page above">
+					{{-- START MODIFICATION: Removed formmethod attribute. The buttons now inherit the form's PUT method, which the routes now accept. --}}
+					<button type="submit" formaction="{{ route('stories.pages.insert-above', ['story' => $story, 'storyPage' => $page]) }}" class="btn btn-outline-secondary" title="Insert new page above">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-up" viewBox="0 0 16 16">
 							<path fill-rule="evenodd" d="M3.646 11.854a.5.5 0 0 0 .708 0L8 8.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
 						</svg>
 					</button>
-					<button type="submit" formaction="{{ route('stories.pages.insert-below', ['story' => $story, 'storyPage' => $page]) }}" formmethod="POST" class="btn btn-outline-secondary" title="Insert new page below">
+					<button type="submit" formaction="{{ route('stories.pages.insert-below', ['story' => $story, 'storyPage' => $page]) }}" class="btn btn-outline-secondary" title="Insert new page below">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-down" viewBox="0 0 16 16">
 							<path fill-rule="evenodd" d="M3.646 4.146a.5.5 0 0 1 .708 0L8 7.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
 						</svg>
