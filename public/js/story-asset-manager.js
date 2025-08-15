@@ -690,10 +690,13 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 						
 						// START MODIFICATION: Add the 'Upscaling...' badge to the page label.
 						if (activeImageTrigger) {
+							console.log('Adding upscaling badge to image container');
 							const imageContainer = activeImageTrigger.closest('.image-upload-container');
 							if (imageContainer) {
+								console.log('Found image container:', imageContainer);
 								const label = imageContainer.previousElementSibling;
 								if (label && label.tagName === 'LABEL') {
+									console.log('Found label:', label);
 									// Remove any existing status badges to prevent duplicates.
 									label.querySelectorAll('.badge').forEach(b => b.remove());
 									// Add the new 'Upscaling...' badge.
