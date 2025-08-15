@@ -336,20 +336,20 @@ document.addEventListener('DOMContentLoaded', function () {
 		// Define different rewrite instructions for characters and places.
 		const styleOptions = {
 			character: {
-				'detailed_appearance': "Rewrite the following character description to be more visually detailed. Focus on specific physical features, facial expressions, and their overall presence.",
-				'focus_clothing': "Expand on the character's clothing and accessories. Describe the style, fabric, color, and condition of what they are wearing in detail.",
-				'add_personality': "Rewrite the description to hint at the character's personality through their appearance and posture. Show, don't just tell, their traits (e.g., nervous, confident, kind).",
-				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction.",
-				'poetic': "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood.",
-				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
+				'detailed_appearance': "Rewrite the following character description to be more visually detailed. Focus on specific physical features, facial expressions, and their overall presence. Also remove any instructions or notes from the original text.",
+				'focus_clothing': "Expand on the character's clothing and accessories. Describe the style, fabric, color, and condition of what they are wearing in detail. Also remove any instructions or notes from the original text.",
+				'add_personality': "Rewrite the description to hint at the character's personality through their appearance and posture. Show, don't just tell, their traits (e.g., nervous, confident, kind). Also remove any instructions or notes from the original text.",
+				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction. Also remove any instructions or notes from the original text.",
+				'poetic': "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood. Also remove any instructions or notes from the original text.",
+				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.'
 			},
 			place: {
-				'atmospheric': "Rewrite the following place description to be more atmospheric. Focus on the mood, lighting, weather, and overall feeling of the location.",
-				'focus_architecture': "Expand on the architectural details of the place. Describe the buildings, materials, shapes, and style in greater detail.",
-				'add_sensory': "Enrich the description by adding sensory details. What does it smell, sound, or feel like to be in this place?",
-				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick overview.",
-				'historical': "Rewrite the description to include hints of its history or past events. Suggest a sense of age, use, or abandonment.",
-				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
+				'atmospheric': "Rewrite the following place description to be more atmospheric. Focus on the mood, lighting, weather, and overall feeling of the location. Also remove any instructions or notes from the original text.",
+				'focus_architecture': "Expand on the architectural details of the place. Describe the buildings, materials, shapes, and style in greater detail. Also remove any instructions or notes from the original text.",
+				'add_sensory': "Enrich the description by adding sensory details. What does it smell, sound, or feel like to be in this place? Also remove any instructions or notes from the original text.",
+				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick overview. Also remove any instructions or notes from the original text.",
+				'historical': "Rewrite the description to include hints of its history or past events. Suggest a sense of age, use, or abandonment. Also remove any instructions or notes from the original text.",
+				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.'
 			}
 		};
 		

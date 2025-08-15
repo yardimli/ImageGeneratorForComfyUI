@@ -10,7 +10,7 @@
 	use App\Models\StoryPlace;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
-	use Illuminate\Support\Facades\File; // MODIFICATION: Add File facade.
+	use Illuminate\Support\Facades\File;
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Validator;
 	use Illuminate\Validation\ValidationException;
@@ -87,7 +87,6 @@
 					->sortBy('name')
 					->all();
 
-				// START MODIFICATION: Get summary files and their content.
 				$summaries = [];
 				$summaryPath = resource_path('summaries');
 				if (File::isDirectory($summaryPath)) {
@@ -104,9 +103,7 @@
 					// Sort by name for consistent ordering in the dropdown.
 					usort($summaries, fn ($a, $b) => strcmp($a['name'], $b['name']));
 				}
-				// END MODIFICATION
 
-				// MODIFICATION: Pass summaries to the view.
 				return view('story.create-ai', compact('models', 'summaries'));
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for AI Story Creator: ' . $e->getMessage());
@@ -144,7 +141,6 @@
 		 */
 		public function storeWithAi(Request $request, LlmController $llmController)
 		{
-			// MODIFICATION: Reverted to original validation, as summary is handled by frontend.
 			$validated = $request->validate([
 				'instructions' => 'required|string|max:14000',
 				'num_pages' => 'required|integer|min:1|max:99',
@@ -152,7 +148,6 @@
 				'level' => 'required|string|max:50',
 			]);
 
-			// START MODIFICATION: Implement 3-step story generation process within a database transaction.
 			try {
 				$story = DB::transaction(function () use ($validated, $llmController) {
 					// --- STEP 1: Generate Story Core (title, pages, character/place names) ---
@@ -169,13 +164,39 @@
 					// Save the initial story structure with empty character/place descriptions.
 					$story = $this->saveStoryFromAiData($storyData, $validated);
 
+					// START MODIFICATION: Create a map of characters/places to the text of the pages they appear on.
+					$characterPageTextMap = [];
+					$placePageTextMap = [];
+					foreach ($storyData['pages'] as $index => $page) {
+						// We include the page number for better context for the LLM.
+						$pageContentWithNumber = "Page " . ($index + 1) . ": " . $page['content'];
+						if (!empty($page['characters'])) {
+							foreach ($page['characters'] as $charName) {
+								if (!isset($characterPageTextMap[$charName])) {
+									$characterPageTextMap[$charName] = [];
+								}
+								$characterPageTextMap[$charName][] = $pageContentWithNumber;
+							}
+						}
+						if (!empty($page['places'])) {
+							foreach ($page['places'] as $placeName) {
+								if (!isset($placePageTextMap[$placeName])) {
+									$placePageTextMap[$placeName] = [];
+								}
+								$placePageTextMap[$placeName][] = $pageContentWithNumber;
+							}
+						}
+					}
+					// END MODIFICATION
+
 					$fullStoryText = implode("\n\n", array_column($storyData['pages'], 'content'));
 					$characterNames = array_column($storyData['characters'] ?? [], 'name');
 					$placeNames = array_column($storyData['places'] ?? [], 'name');
 
 					// --- STEP 2: Generate Character Descriptions ---
 					if (!empty($characterNames)) {
-						$charPrompt = $this->buildCharacterDescriptionPrompt($fullStoryText, $characterNames);
+						// MODIFICATION: Pass the map to the prompt builder.
+						$charPrompt = $this->buildCharacterDescriptionPrompt($fullStoryText, $characterNames, $characterPageTextMap);
 						$characterDescriptionData = $llmController->callLlmSync(
 							$charPrompt,
 							$validated['model'],
@@ -188,7 +209,8 @@
 
 					// --- STEP 3: Generate Place Descriptions ---
 					if (!empty($placeNames)) {
-						$placePrompt = $this->buildPlaceDescriptionPrompt($fullStoryText, $placeNames);
+						// MODIFICATION: Pass the map to the prompt builder.
+						$placePrompt = $this->buildPlaceDescriptionPrompt($fullStoryText, $placeNames, $placePageTextMap);
 						$placeDescriptionData = $llmController->callLlmSync(
 							$placePrompt,
 							$validated['model'],
@@ -209,7 +231,6 @@
 				Log::error('AI Story Generation Failed: ' . $e->getMessage());
 				return back()->withInput()->with('error', 'An error occurred while generating the story with AI. Please try again. Error: ' . $e->getMessage());
 			}
-			// END MODIFICATION
 		}
 
 		/**
@@ -221,62 +242,69 @@
 		 */
 		private function buildStoryPrompt(string $instructions, int $numPages): string
 		{
-			// MODIFICATION: Changed JSON structure to request empty descriptions for characters and places.
+			// START MODIFICATION: Changed JSON structure to show variants and updated prompt instructions.
 			$jsonStructure = <<<'JSON'
 {
   "title": "A string for the story title.",
   "description": "A short description of the story.",
   "characters": [
     {
-      "name": "Character Name",
+      "name": "Character Name (Appearance 1)",
+      "description": ""
+    },
+    {
+      "name": "Character Name (Appearance 2)",
       "description": ""
     }
   ],
   "places": [
     {
-      "name": "Place Name",
+      "name": "Place Name (State 1)",
       "description": ""
     }
   ],
   "pages": [
     {
       "content": "The text for this page of the story.",
-      "characters": ["Character Name 1", "Character Name 2"],
-      "places": ["Place Name 1"]
+      "characters": ["Character Name (Appearance 1)"],
+      "places": ["Place Name (State 1)"]
     }
   ]
 }
 JSON;
 
-			// MODIFICATION: Added instruction to leave character/place descriptions empty.
 			return <<<PROMPT
 You are a creative storyteller. Based on the following instructions, create a complete story.
 The story must have a title, a short description, a list of characters, a list of places, and a series of pages.
 The number of pages must be exactly {$numPages}.
-IMPORTANT: For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
+
+VERY IMPORTANT INSTRUCTIONS:
+1.  For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
+2.  If a character's or place's appearance or state changes significantly during the story, you MUST create a separate entry for each version with a descriptive name (e.g., "Cinderella (in rags)", "Cinderella (in a ballgown)", "The Castle (daytime)", "The Castle (under siege)").
+3.  In the 'pages' array, you MUST reference the specific version of the character or place that appears on that page.
 
 Instructions from the user: "{$instructions}"
 
 Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure:
+The JSON object must follow this exact structure (the example shows how to handle character variations):
 {$jsonStructure}
 
 Now, generate the story based on the user's instructions.
 PROMPT;
+			// END MODIFICATION
 		}
 
-		// START MODIFICATION: Add new prompt builder for character descriptions.
 		/**
 		 * Builds the prompt for the LLM to generate character descriptions.
 		 *
 		 * @param string $fullStoryText
 		 * @param array $characterNames
+		 * @param array $characterPageTextMap // MODIFICATION: Add parameter for page context.
 		 * @return string
 		 */
-		private function buildCharacterDescriptionPrompt(string $fullStoryText, array $characterNames): string
+		// START MODIFICATION: Add $characterPageTextMap parameter and use it to build context.
+		private function buildCharacterDescriptionPrompt(string $fullStoryText, array $characterNames, array $characterPageTextMap): string
 		{
-			$characterList = implode('", "', $characterNames);
-
 			$jsonStructure = <<<'JSON'
 {
   "characters": [
@@ -288,13 +316,31 @@ PROMPT;
 }
 JSON;
 
-			return <<<PROMPT
-You are a character designer. Based on the full story text provided below, create a detailed visual description for each of the following characters: "{$characterList}".
-Focus on their physical appearance, clothing, and physique with attention to detail.
+			// Build a string with context for each character.
+			$characterContext = '';
+			foreach ($characterNames as $name) {
+				$characterContext .= "Character: \"{$name}\"\n";
+				if (isset($characterPageTextMap[$name]) && !empty($characterPageTextMap[$name])) {
+					$characterContext .= "Appears in:\n";
+					foreach ($characterPageTextMap[$name] as $pageText) {
+						$characterContext .= "- " . trim($pageText) . "\n";
+					}
+				}
+				$characterContext .= "\n";
+			}
 
-Full Story Text:
+			return <<<PROMPT
+You are a character designer. Based on the full story text and the specific page contexts provided below, create a detailed visual description for each of the listed characters.
+Focus on their physical appearance, clothing, and physique with attention to detail, as they appear in the pages they are mentioned in.
+
+Full Story Text (for overall context):
 ---
 {$fullStoryText}
+---
+
+Character Appearances by Page:
+---
+{$characterContext}
 ---
 
 Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
@@ -303,23 +349,22 @@ The 'name' must exactly match one of the names from the provided list.
 The JSON object must follow this exact structure:
 {$jsonStructure}
 
-Now, generate the character descriptions.
+Now, generate the character descriptions based on their specific appearances in the story.
 PROMPT;
 		}
 		// END MODIFICATION
 
-		// START MODIFICATION: Add new prompt builder for place descriptions.
 		/**
 		 * Builds the prompt for the LLM to generate place descriptions.
 		 *
 		 * @param string $fullStoryText
 		 * @param array $placeNames
+		 * @param array $placePageTextMap // MODIFICATION: Add parameter for page context.
 		 * @return string
 		 */
-		private function buildPlaceDescriptionPrompt(string $fullStoryText, array $placeNames): string
+		// START MODIFICATION: Add $placePageTextMap parameter and use it to build context.
+		private function buildPlaceDescriptionPrompt(string $fullStoryText, array $placeNames, array $placePageTextMap): string
 		{
-			$placeList = implode('", "', $placeNames);
-
 			$jsonStructure = <<<'JSON'
 {
   "places": [
@@ -331,13 +376,31 @@ PROMPT;
 }
 JSON;
 
-			return <<<PROMPT
-You are a world builder. Based on the full story text provided below, create a detailed visual description for each of the following places: "{$placeList}".
-Focus on the appearance, atmosphere, and key features of each location.
+			// Build a string with context for each place.
+			$placeContext = '';
+			foreach ($placeNames as $name) {
+				$placeContext .= "Place: \"{$name}\"\n";
+				if (isset($placePageTextMap[$name]) && !empty($placePageTextMap[$name])) {
+					$placeContext .= "Appears in:\n";
+					foreach ($placePageTextMap[$name] as $pageText) {
+						$placeContext .= "- " . trim($pageText) . "\n";
+					}
+				}
+				$placeContext .= "\n";
+			}
 
-Full Story Text:
+			return <<<PROMPT
+You are a world builder. Based on the full story text and the specific page contexts provided below, create a detailed visual description for each of the listed places.
+Focus on the appearance, atmosphere, and key features of each location as it appears in the pages it is mentioned in.
+
+Full Story Text (for overall context):
 ---
 {$fullStoryText}
+---
+
+Place Appearances by Page:
+---
+{$placeContext}
 ---
 
 Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
@@ -346,7 +409,7 @@ The 'name' must exactly match one of the names from the provided list.
 The JSON object must follow this exact structure:
 {$jsonStructure}
 
-Now, generate the place descriptions.
+Now, generate the place descriptions based on their specific appearances in the story.
 PROMPT;
 		}
 		// END MODIFICATION
@@ -364,11 +427,9 @@ PROMPT;
 				'description' => 'required|string',
 				'characters' => 'present|array',
 				'characters.*.name' => 'required|string',
-				// MODIFICATION: Allow description to be an empty string during initial creation.
 				'characters.*.description' => 'present|string',
 				'places' => 'present|array',
 				'places.*.name' => 'required|string',
-				// MODIFICATION: Allow description to be an empty string during initial creation.
 				'places.*.description' => 'present|string',
 				'pages' => 'required|array|min:1',
 				'pages.*.content' => 'required|string',
@@ -392,7 +453,6 @@ PROMPT;
 		 */
 		private function saveStoryFromAiData(array $data, array $validatedRequestData): Story
 		{
-			// MODIFICATION: Removed DB::transaction as it's now handled in the calling storeWithAi method.
 			$story = Story::create([
 				'user_id' => auth()->id(),
 				'title' => $data['title'],
@@ -440,7 +500,6 @@ PROMPT;
 			return $story;
 		}
 
-		// START MODIFICATION: Add new method to update characters from AI data.
 		/**
 		 * Updates character descriptions from the validated AI data.
 		 *
@@ -470,9 +529,7 @@ PROMPT;
 					->update(['description' => $charUpdate['description']]);
 			}
 		}
-		// END MODIFICATION
 
-		// START MODIFICATION: Add new method to update places from AI data.
 		/**
 		 * Updates place descriptions from the validated AI data.
 		 *
@@ -502,7 +559,6 @@ PROMPT;
 					->update(['description' => $placeUpdate['description']]);
 			}
 		}
-		// END MODIFICATION
 
 		/**
 		 * Show the form for editing the specified story.
@@ -621,7 +677,6 @@ PROMPT;
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
 
-		// START MODIFICATION: Add methods for inserting empty pages.
 		/**
 		 * Inserts an empty page above the specified page.
 		 *
@@ -674,9 +729,7 @@ PROMPT;
 				]);
 			});
 		}
-		// END MODIFICATION
 
-		// START MODIFICATION: Add a new method to handle AI text rewriting.
 		/**
 		 * Rewrite story text using AI.
 		 *
@@ -716,9 +769,7 @@ PROMPT;
 				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the text. Please try again.'], 500);
 			}
 		}
-		// END MODIFICATION
 
-		// START MODIFICATION: Add a new method to handle AI asset description rewriting.
 		/**
 		 * Rewrite an asset's (character/place) description using AI.
 		 *
@@ -758,7 +809,6 @@ PROMPT;
 				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the description. Please try again.'], 500);
 			}
 		}
-		// END MODIFICATION
 
 		/**
 		 * Generate an image prompt for a story page using AI.
