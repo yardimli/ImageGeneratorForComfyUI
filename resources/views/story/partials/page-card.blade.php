@@ -6,22 +6,17 @@
 			{{-- These buttons only appear for pages that have been saved to the database. --}}
 			@if(isset($page->id))
 				<div class="btn-group btn-group-sm" role="group" aria-label="Page Actions">
-					<form action="{{ route('stories.pages.insert-above', ['story' => $story, 'storyPage' => $page]) }}" method="POST" class="d-inline">
-						@csrf
-						<button type="submit" class="btn btn-outline-secondary" title="Insert new page above">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-up" viewBox="0 0 16 16">
-								<path fill-rule="evenodd" d="M3.646 11.854a.5.5 0 0 0 .708 0L8 8.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
-							</svg>
-						</button>
-					</form>
-					<form action="{{ route('stories.pages.insert-below', ['story' => $story, 'storyPage' => $page]) }}" method="POST" class="d-inline">
-						@csrf
-						<button type="submit" class="btn btn-outline-secondary" title="Insert new page below">
-							<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-down" viewBox="0 0 16 16">
-								<path fill-rule="evenodd" d="M3.646 4.146a.5.5 0 0 1 .708 0L8 7.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
-							</svg>
-						</button>
-					</form>
+					{{-- MODIFICATION: Replaced nested forms with formaction/formmethod attributes on buttons to prevent breaking the main form. --}}
+					<button type="submit" formaction="{{ route('stories.pages.insert-above', ['story' => $story, 'storyPage' => $page]) }}" formmethod="POST" class="btn btn-outline-secondary" title="Insert new page above">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-up" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="M3.646 11.854a.5.5 0 0 0 .708 0L8 8.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
+						</svg>
+					</button>
+					<button type="submit" formaction="{{ route('stories.pages.insert-below', ['story' => $story, 'storyPage' => $page]) }}" formmethod="POST" class="btn btn-outline-secondary" title="Insert new page below">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-down" viewBox="0 0 16 16">
+							<path fill-rule="evenodd" d="M3.646 4.146a.5.5 0 0 1 .708 0L8 7.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
+						</svg>
+					</button>
 				</div>
 			@endif
 		</div>
