@@ -707,6 +707,9 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 									label.appendChild(newBadge);
 								}
 							}
+						} else
+						{
+							console.log('No active image trigger found for upscaling badge.');
 						}
 						// END MODIFICATION
 						
