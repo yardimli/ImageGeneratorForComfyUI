@@ -23,5 +23,6 @@
 	Route::post('/prompts/update-filename', [PromptApiController::class, 'updateFilename']);
 	Route::post('/prompts/update-status', [PromptApiController::class, 'updateRenderStatus']);
 	Route::get('/prompts/queue-count', [PromptApiController::class, 'getQueueCount']);
+	Route::get('/prompts/upscale-queue-count', [UpscaleAndNotesController::class, 'getUpscaleQueueCount']);
 
 

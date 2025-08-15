@@ -107,6 +107,16 @@
 							Queue Management <span class="badge bg-primary" id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
 						</a>
 					</li>
+					{{-- START MODIFICATION --}}
+					@php
+						$upscaleCount = \App\Models\Prompt::where('user_id', auth()->id())->where('upscale_status', 1)->count();
+					@endphp
+					<li class="nav-item">
+						<a class="nav-link" href="#">
+							Upscaling <span class="badge bg-warning @if($upscaleCount == 0) d-none @endif" id="navUpscaleQueueCount">{{ $upscaleCount }}</span>
+						</a>
+					</li>
+					{{-- END MODIFICATION --}}
 				</ul>
 				
 				<!-- Right Side Of Navbar -->

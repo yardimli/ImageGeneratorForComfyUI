@@ -1,7 +1,7 @@
 <?php
 	namespace App\Http\Controllers;
 
-	use App\Models\Prompt;
+	use App\Models\Prompt; // MODIFICATION: Add Prompt model.
 	use App\Models\PromptSetting;
 	use App\Models\UserTemplate;
 	use App\Services\ChatGPTService;
@@ -105,10 +105,8 @@
 		}
 		public function checkUpscaleStatus(Request $request, Prompt $prompt, $prediction_id)
 		{
-			Log::info("Checking upscale status for prompt ID: {$prompt->id} with prediction ID: {$prediction_id}");
 			$response = self::checkUpscaleStatusOperation($prompt, $prediction_id);
-			Log::info("Upscale status response: " . json_encode($response));
-			return response()->json($response);
+			response()->json($response);
 		}
 
 		public function updateNotes(Request $request, Prompt $prompt)
@@ -122,5 +120,21 @@
 			]);
 		}
 
-
+		// START MODIFICATION
+		/**
+		 * Get the number of images currently being upscaled by the user.
+		 *
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function getUpscaleQueueCount()
+		{
+			$count = 0;
+			if (auth()->check()) {
+				$count = Prompt::where('user_id', auth()->id())
+					->where('upscale_status', 1)
+					->count();
+			}
+			return response()->json(['count' => $count]);
+		}
+		// END MODIFICATION
 	}
