@@ -181,6 +181,7 @@
 @endsection
 
 @section('scripts')
+	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	<script src="{{ asset('js/story-asset-manager.js') }}"></script>
 @endsection
