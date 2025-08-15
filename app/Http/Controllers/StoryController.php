@@ -430,6 +430,48 @@ PROMPT;
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
 
+		// START MODIFICATION: Add a new method to handle AI text rewriting.
+		/**
+		 * Rewrite story text using AI.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function rewriteText(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'prompt' => 'required|string',
+				'model' => 'required|string',
+			]);
+
+			try {
+				$response = $llmController->callLlmSync(
+					$validated['prompt'],
+					$validated['model'],
+					'AI Story Text Rewrite',
+					0.7,
+					'json_object'
+				);
+
+				$rewrittenText = $response['rewritten_text'] ?? null;
+
+				if (!$rewrittenText) {
+					Log::error('AI Text Rewrite failed to return a valid text.', ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'rewritten_text' => trim($rewrittenText)
+				]);
+			} catch (\Exception $e) {
+				Log::error('AI Text Rewrite Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the text. Please try again.'], 500);
+			}
+		}
+		// END MODIFICATION
+
 		/**
 		 * Generate an image prompt for a story page using AI.
 		 *

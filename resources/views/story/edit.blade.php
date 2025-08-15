@@ -161,6 +161,10 @@
 	</div>
 	{{-- END MODIFICATION --}}
 	
+	{{-- START MODIFICATION: Include the new rewrite text modal. --}}
+	@include('story.partials.modals.rewrite-text-modal', ['models' => $models])
+	{{-- END MODIFICATION --}}
+	
 	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $imageModels])
 	
 	@include('story.partials.modals.image-detail-modal')

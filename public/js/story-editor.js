@@ -515,6 +515,155 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 		});
 	}
 	
+	// START MODIFICATION: Add logic for the new Rewrite Text modal.
+	const rewriteTextModalEl = document.getElementById('rewriteTextModal');
+	if (rewriteTextModalEl) {
+		const rewriteTextModal = new bootstrap.Modal(rewriteTextModalEl);
+		const rewriteStyleSelect = document.getElementById('rewrite-style');
+		const rewriteFullPromptTextarea = document.getElementById('rewrite-full-prompt');
+		const rewriteModelSelect = document.getElementById('rewrite-model');
+		const rewriteTextBtn = document.getElementById('rewrite-text-btn');
+		const rewriteResultArea = document.getElementById('rewrite-result-area');
+		const rewrittenTextTextarea = document.getElementById('rewritten-text');
+		const replaceTextBtn = document.getElementById('replace-text-btn');
+		let activeStoryTextarea = null;
+		let originalText = '';
+		
+		const rewriteModelKey = 'storyCreateAi_model'; // As requested, use the same key.
+		
+		/**
+		 * Builds the full prompt for rewriting story text.
+		 * @param {string} text - The original text.
+		 * @param {string} style - The selected rewrite style.
+		 * @returns {string} The full prompt for the LLM.
+		 */
+		function buildRewritePrompt(text, style) {
+			const styleInstructions = {
+				simplify: 'Simplify the following text for a younger audience (around A2-B1 CEFR level). Make the sentences shorter and use simpler vocabulary, but keep the original meaning.',
+				descriptive: 'Rewrite the following text to be more descriptive and poetic. Use vivid imagery, sensory details, and figurative language to paint a richer picture for the reader.',
+				dramatic: 'Rewrite the following text to be more dramatic and suspenseful. Build tension, use shorter, impactful sentences, and focus on the emotional stakes.',
+				perspective: 'Rewrite the following text from the perspective of one of the characters. You will need to infer which character to use or add a note about it. Use "I" and focus on their internal thoughts and feelings.',
+				dialogue: 'Expand the following text by adding more dialogue between the characters. Make the conversation feel natural and reveal character or advance the plot.',
+				concise: 'Rewrite the following text to be more concise and to the point. Remove any unnecessary words, filler, or redundant phrases without losing the core meaning.',
+				thoughts: 'Expand on the following text by delving into the character\'s inner thoughts and feelings. Show, don\'t just tell, what they are experiencing emotionally and mentally.',
+				present_tense: 'Rewrite the following text in the present tense.',
+				past_tense: 'Rewrite the following text in the past tense.',
+				grammar: 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
+			};
+			
+			const instruction = styleInstructions[style] || styleInstructions['grammar'];
+			
+			const jsonStructure = `{
+  "rewritten_text": "The rewritten text goes here."
+}`;
+			
+			return `You are an expert story editor. Your task is to rewrite a piece of text based on a specific instruction.
+Instruction: "${instruction}"
+
+Original Text:
+"${text}"
+
+Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
+The JSON object must follow this exact structure:
+${jsonStructure}
+
+Now, rewrite the text based on the instruction.`;
+		}
+		
+		function updateRewritePromptPreview() {
+			if (!originalText) return;
+			const style = rewriteStyleSelect.value;
+			const fullPrompt = buildRewritePrompt(originalText, style);
+			rewriteFullPromptTextarea.value = fullPrompt;
+		}
+		
+		if (pagesContainer) {
+			pagesContainer.addEventListener('click', (e) => {
+				if (e.target.closest('.rewrite-story-text-btn')) {
+					const pageCard = e.target.closest('.page-card');
+					activeStoryTextarea = pageCard.querySelector('.story-text-textarea');
+					originalText = activeStoryTextarea.value;
+				}
+			});
+		}
+		
+		rewriteTextModalEl.addEventListener('shown.bs.modal', () => {
+			if (!activeStoryTextarea) {
+				alert('Could not find the story text. Please close this and try again.');
+				rewriteTextModal.hide();
+				return;
+			}
+			const savedModel = localStorage.getItem(rewriteModelKey);
+			if (savedModel) {
+				rewriteModelSelect.value = savedModel;
+			}
+			updateRewritePromptPreview();
+		});
+		
+		rewriteTextModalEl.addEventListener('hidden.bs.modal', () => {
+			activeStoryTextarea = null;
+			originalText = '';
+			rewriteResultArea.classList.add('d-none');
+			replaceTextBtn.classList.add('d-none');
+			rewrittenTextTextarea.value = '';
+			rewriteFullPromptTextarea.value = '';
+			rewriteTextBtn.disabled = false;
+			rewriteTextBtn.querySelector('.spinner-border').classList.add('d-none');
+		});
+		
+		rewriteStyleSelect.addEventListener('change', updateRewritePromptPreview);
+		rewriteModelSelect.addEventListener('change', (e) => localStorage.setItem(rewriteModelKey, e.target.value));
+		
+		rewriteTextBtn.addEventListener('click', async () => {
+			const prompt = rewriteFullPromptTextarea.value;
+			const model = rewriteModelSelect.value;
+			
+			if (!prompt || !model) {
+				alert('Prompt and model are required.');
+				return;
+			}
+			
+			rewriteTextBtn.disabled = true;
+			rewriteTextBtn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			try {
+				const response = await fetch('/stories/rewrite-text', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': csrfToken,
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({ prompt, model }),
+				});
+				
+				const data = await response.json();
+				
+				if (response.ok && data.success) {
+					rewrittenTextTextarea.value = data.rewritten_text;
+					rewriteResultArea.classList.remove('d-none');
+					replaceTextBtn.classList.remove('d-none');
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				console.error('Rewrite error:', error);
+				alert('A network error occurred.');
+			} finally {
+				rewriteTextBtn.disabled = false;
+				rewriteTextBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+		
+		replaceTextBtn.addEventListener('click', () => {
+			if (activeStoryTextarea) {
+				activeStoryTextarea.value = rewrittenTextTextarea.value;
+				rewriteTextModal.hide();
+			}
+		});
+	}
+	// END MODIFICATION
+	
 	// Logic for "Draw with AI" Modal
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {

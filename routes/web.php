@@ -150,6 +150,9 @@
 			// Custom routes
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
+			// START MODIFICATION: Add route for AI text rewriting.
+			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
+			// END MODIFICATION
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
 			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
 			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');
