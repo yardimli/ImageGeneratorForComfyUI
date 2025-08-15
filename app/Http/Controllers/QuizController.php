@@ -26,7 +26,13 @@
 			// Prepare the prompt text
 			$storyText = $story->pages->pluck('story_text')->implode("\n\n");
 
-			$initialUserRequest = "Create 5 multiple-choice quiz questions for the story above. Provide 4 answers for each question. Mark the correct answer with an asterisk (*). Explain the questions in a manner that is understandable for the story's level.";
+			// START MODIFICATION: Get existing questions to avoid duplicates in AI generation.
+			$existingQuestions = $story->quiz->pluck('question')->implode("\n");
+			$existingQuestionsPrompt = !empty($existingQuestions) ? "The following questions already exist, so do not add them again:\n{$existingQuestions}" : '';
+			// END MODIFICATION
+
+			// MODIFICATION: Update the initial user request to include the existing questions prompt.
+			$initialUserRequest = "Create 5 multiple-choice quiz questions for the story above. Provide 4 answers for each question. Mark the correct answer with an asterisk (*). Explain the questions in a manner that is understandable for the story's level. {$existingQuestionsPrompt}";
 			$promptText = "Story Title: {$story->title}\nLevel: {$story->level}\n\n---\n\n{$storyText}\n\n---\n\n{$initialUserRequest}";
 
 			// Fetch models for the AI generator
