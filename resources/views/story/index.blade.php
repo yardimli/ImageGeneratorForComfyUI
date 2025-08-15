@@ -53,6 +53,8 @@
 								</div>
 								@auth
 									<div class="d-flex gap-2">
+										<a href="{{ route('stories.pdf.setup', $story) }}" class="btn btn-sm btn-outline-primary">PDF</a>
+										<a href="{{ route('stories.show', $story) }}" class="btn btn-sm btn-outline-primary">Read</a>
 										<a href="{{ route('stories.edit', $story) }}" class="btn btn-sm btn-outline-primary">Edit</a>
 										<form action="{{ route('stories.destroy', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story and all its content?');">
 											@csrf
