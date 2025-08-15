@@ -38,7 +38,6 @@
 										<h5 class="mb-1">{{ $story->title }}</h5>
 									</a>
 									<p class="mb-1">{{ $story->short_description }}</p>
-									{{-- START MODIFICATION: Display cost using the pre-calculated attribute. --}}
 									<small>
 										By: {{ $story->user->name ?? 'Unknown Author' }} |
 										Level: {{ $story->level ?? 'N/A' }} |
@@ -49,14 +48,16 @@
 										Images: {{ $imageCount }} (${{ number_format($cost, 2) }}) |
 										Last updated: {{ $story->updated_at->format('M d, Y') }}
 									</small>
-									{{-- END MODIFICATION --}}
 								</div>
 								@auth
-									<div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 250px;">
+									<div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 320px;">
 										<a href="{{ route('stories.pdf.setup', $story) }}" class="btn btn-sm btn-outline-primary">PDF</a>
 										<a href="{{ route('stories.show', $story) }}" class="btn btn-sm btn-outline-primary">Read</a>
 										<a href="{{ route('stories.edit', $story) }}" class="btn btn-sm btn-outline-primary">Edit</a>
 										<a href="{{ route('stories.dictionary', $story) }}" class="btn btn-sm btn-outline-secondary">Dictionary</a>
+										{{-- START MODIFICATION: Add Quiz button. --}}
+										<a href="{{ route('stories.quiz', $story) }}" class="btn btn-sm btn-outline-secondary">Quiz</a>
+										{{-- END MODIFICATION --}}
 										<div class="w-100"></div>
 										<form action="{{ route('stories.destroy', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story and all its content?');">
 											@csrf

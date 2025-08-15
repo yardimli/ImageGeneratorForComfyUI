@@ -10,6 +10,7 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
+	use App\Http\Controllers\QuizController; // MODIFICATION: Add QuizController.
 	use App\Http\Controllers\StoryPdfController;
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
@@ -176,6 +177,12 @@
 			Route::get('/{story}/dictionary', [DictionaryController::class, 'dictionary'])->name('dictionary');
 			Route::post('/{story}/dictionary/generate', [DictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
 			Route::post('/{story}/dictionary', [DictionaryController::class, 'updateDictionary'])->name('dictionary.update');
+
+			// START MODIFICATION: Add routes for quiz management.
+			Route::get('/{story}/quiz', [QuizController::class, 'quiz'])->name('quiz');
+			Route::post('/{story}/quiz/generate', [QuizController::class, 'generateQuiz'])->name('quiz.generate');
+			Route::post('/{story}/quiz', [QuizController::class, 'updateQuiz'])->name('quiz.update');
+			// END MODIFICATION
 
 			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
 			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');

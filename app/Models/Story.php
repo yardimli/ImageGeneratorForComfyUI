@@ -24,7 +24,6 @@
 			'model',
 		];
 
-		// START MODIFICATION: Add cast for the calculated image_cost attribute.
 		/**
 		 * The attributes that should be cast.
 		 *
@@ -33,7 +32,6 @@
 		protected $casts = [
 			'image_cost' => 'float',
 		];
-		// END MODIFICATION
 
 		/**
 		 * Get the total number of images generated for the story.
@@ -107,13 +105,21 @@
 			return $this->hasManyThrough(Prompt::class, StoryPlace::class);
 		}
 
-		// START MODIFICATION: Add relationship to dictionary entries.
 		/**
 		 * Get the dictionary entries for the story.
 		 */
 		public function dictionary()
 		{
 			return $this->hasMany(StoryDictionary::class);
+		}
+
+		// START MODIFICATION: Add relationship to quiz entries.
+		/**
+		 * Get the quiz questions for the story.
+		 */
+		public function quiz()
+		{
+			return $this->hasMany(StoryQuiz::class);
 		}
 		// END MODIFICATION
 	}
