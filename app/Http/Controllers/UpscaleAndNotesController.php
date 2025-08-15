@@ -106,7 +106,7 @@
 		public function checkUpscaleStatus(Request $request, Prompt $prompt, $prediction_id)
 		{
 			$response = self::checkUpscaleStatusOperation($prompt, $prediction_id);
-			response()->json($response);
+			return response()->json($response);
 		}
 
 		public function updateNotes(Request $request, Prompt $prompt)
