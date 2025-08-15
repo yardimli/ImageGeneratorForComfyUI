@@ -57,7 +57,7 @@
 										<a href="{{ route('stories.show', $story) }}" class="btn btn-sm btn-outline-primary">Read</a>
 										<a href="{{ route('stories.edit', $story) }}" class="btn btn-sm btn-outline-primary">Edit</a>
 										<a href="{{ route('stories.dictionary', $story) }}" class="btn btn-sm btn-outline-secondary">Dictionary</a>
-										<br>
+										<div class="w-100"></div>
 										<form action="{{ route('stories.destroy', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story and all its content?');">
 											@csrf
 											@method('DELETE')
