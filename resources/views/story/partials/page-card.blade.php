@@ -1,12 +1,11 @@
 <div class="card mb-3 page-card" data-id="{{ $page->id ?? '' }}">
-	{{-- START MODIFICATION: Restructure header to include new action buttons. --}}
 	<div class="card-header d-flex justify-content-between align-items-center">
 		<div class="d-flex align-items-center gap-2">
 			<h5 class="mb-0">Page <span class="page-number">{{ $page->page_number ?? 'New' }}</span></h5>
 			{{-- These buttons only appear for pages that have been saved to the database. --}}
 			@if(isset($page->id))
 				<div class="btn-group btn-group-sm" role="group" aria-label="Page Actions">
-					{{-- MODIFICATION: Replaced nested forms with formaction/formmethod attributes on buttons to prevent breaking the main form. --}}
+					{{-- START MODIFICATION: Added formmethod="POST" to override the parent form's PUT method. --}}
 					<button type="submit" formaction="{{ route('stories.pages.insert-above', ['story' => $story, 'storyPage' => $page]) }}" formmethod="POST" class="btn btn-outline-secondary" title="Insert new page above">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-chevron-bar-up" viewBox="0 0 16 16">
 							<path fill-rule="evenodd" d="M3.646 11.854a.5.5 0 0 0 .708 0L8 8.207l3.646 3.647a.5.5 0 0 0 .708-.708l-4-4a.5.5 0 0 0-.708 0l-4 4a.5.5 0 0 0 0 .708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
@@ -17,28 +16,24 @@
 							<path fill-rule="evenodd" d="M3.646 4.146a.5.5 0 0 1 .708 0L8 7.793l3.646-3.647a.5.5 0 0 1 .708.708l-4 4a.5.5 0 0 1-.708 0l-4-4a.5.5 0 0 1 0-.708zM1 8a.5.5 0 0 1 .5-.5h13a.5.5 0 0 1 0 1h-13A.5.5 0 0 1 1 8z"/>
 						</svg>
 					</button>
+					{{-- END MODIFICATION --}}
 				</div>
 			@endif
 		</div>
 		<button type="button" class="btn-close remove-page-btn"></button>
 	</div>
-	{{-- END MODIFICATION --}}
 	<div class="card-body">
 		<input type="hidden" name="pages[{{ $index }}][id]" value="{{ $page->id ?? '' }}">
 		<div class="row">
 			<div class="col-md-8">
 				<div class="mb-3">
 					<label class="form-label">Story Text</label>
-					{{-- START MODIFICATION: Add class to textarea for JS targeting. --}}
 					<textarea name="pages[{{ $index }}][story_text]" class="form-control story-text-textarea" rows="8">{{ $page->story_text ?? '' }}</textarea>
-					{{-- END MODIFICATION --}}
 					
-					{{-- START MODIFICATION: Add rewrite button. --}}
 					<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-story-text-btn" data-bs-toggle="modal" data-bs-target="#rewriteTextModal">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 						Rewrite
 					</button>
-					{{-- END MODIFICATION --}}
 				</div>
 				<div class="mb-3">
 					<label class="form-label">Image Prompt</label>
@@ -86,7 +81,6 @@
 			</div>
 			<div class="col-md-4">
 				<label class="form-label">Page Image
-					{{-- START MODIFICATION: Add badges for upscaled and upscaling status. --}}
 					@if ($page && isset($page->prompt_data))
 						@if ($page->prompt_data->upscale_status == 2 && $page->prompt_data->upscale_url)
 							<span class="badge bg-success ms-2" title="Image has been upscaled">Upscaled</span>
@@ -94,7 +88,6 @@
 							<span class="badge bg-warning ms-2" title="Image is being upscaled">Upscaling...</span>
 						@endif
 					@endif
-					{{-- END MODIFICATION --}}
 				</label>
 				<div class="image-upload-container mb-2 position-relative" style="min-height: 400px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 					<img src="{{ $page->image_path ?? 'https://picsum.photos/200' }}"
