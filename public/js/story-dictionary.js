@@ -14,9 +14,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			row.querySelectorAll('[name]').forEach(input => {
 				const name = input.getAttribute('name');
 				if (name) {
-					// MODIFICATION: Corrected regex to properly group the OR condition with parentheses.
-					// This prevents malformed input names like 'dictionary[0]][word]' or 'dictionary[[1][word]'
-					// by ensuring the entire index '[<number>]' or '[__INDEX__]' is replaced correctly.
+					// Replace the first occurrence of a number index or the placeholder index.
 					input.setAttribute('name', name.replace(/\[(\d+|__INDEX__)\]/, `[${index}]`));
 				}
 			});
@@ -26,7 +24,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	};
 	
-	function addDictionaryRow (word = '', explanation = '') {
+	// MODIFICATION: Add an optional parameter to control when re-indexing occurs.
+	// This prevents the function from being called unnecessarily inside a loop.
+	function addDictionaryRow (word = '', explanation = '', shouldReindex = true) {
 		if (!template) return;
 		
 		const newRow = template.content.cloneNode(true);
@@ -37,10 +37,15 @@ document.addEventListener('DOMContentLoaded', function () {
 		if (explanationTextarea) explanationTextarea.value = explanation;
 		
 		container.appendChild(newRow);
-		reindexRows();
+		
+		// MODIFICATION: Only re-index if the flag is true.
+		if (shouldReindex) {
+			reindexRows();
+		}
 	};
 	
 	if (addRowBtn) {
+		// For manual additions, the default behavior of re-indexing immediately is correct.
 		addRowBtn.addEventListener('click', () => addDictionaryRow());
 	}
 	
@@ -83,9 +88,15 @@ document.addEventListener('DOMContentLoaded', function () {
 				if (data.dictionary && Array.isArray(data.dictionary)) {
 					// Clear existing entries before adding new ones
 					container.innerHTML = '';
+					
+					// MODIFICATION: Add all new rows first without re-indexing each one.
 					data.dictionary.forEach(entry => {
-						addDictionaryRow(entry.word, entry.explanation);
+						addDictionaryRow(entry.word, entry.explanation, false);
 					});
+					
+					// MODIFICATION: Perform a single, efficient re-index after all rows are in the DOM.
+					reindexRows();
+					
 					if (data.dictionary.length === 0) {
 						container.innerHTML = '<p id="no-entries-message" class="text-muted">The AI did not return any entries. Please try adjusting your prompt.</p>';
 					}
