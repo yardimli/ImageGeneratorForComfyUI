@@ -645,6 +645,7 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 		const modalImage = document.getElementById('modalDetailImage');
 		const upscaleBtnContainer = document.getElementById('upscale-button-container');
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
+		let activeImageTrigger = null; // MODIFICATION: Add variable to store the image element that triggered the modal.
 		
 		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
 			const trigger = event.relatedTarget;
@@ -652,6 +653,8 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 				event.preventDefault();
 				return;
 			}
+			
+			activeImageTrigger = trigger; // MODIFICATION: Store the trigger element.
 			
 			modalImage.src = trigger.dataset.imageUrl;
 			upscaleStatusContainer.innerHTML = '';
@@ -684,6 +687,26 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 					const data = await response.json();
 					if (data.prediction_id) {
 						upscaleStatusContainer.innerHTML = 'Upscale in progress...';
+						
+						// START MODIFICATION: Add the 'Upscaling...' badge to the page label.
+						if (activeImageTrigger) {
+							const imageContainer = activeImageTrigger.closest('.image-upload-container');
+							if (imageContainer) {
+								const label = imageContainer.previousElementSibling;
+								if (label && label.tagName === 'LABEL') {
+									// Remove any existing status badges to prevent duplicates.
+									label.querySelectorAll('.badge').forEach(b => b.remove());
+									// Add the new 'Upscaling...' badge.
+									const newBadge = document.createElement('span');
+									newBadge.className = 'badge bg-warning ms-2';
+									newBadge.title = 'Image is being upscaled';
+									newBadge.textContent = 'Upscaling...';
+									label.appendChild(newBadge);
+								}
+							}
+						}
+						// END MODIFICATION
+						
 					} else {
 						throw new Error(data.message || 'Failed to start upscale.');
 					}

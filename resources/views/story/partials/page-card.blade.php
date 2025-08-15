@@ -57,9 +57,15 @@
 			</div>
 			<div class="col-md-4">
 				<label class="form-label">Page Image
-					@if ($page && $page->prompt_data->upscale_url)
-						<span class="badge bg-success" title="Image has been upscaled">Upscaled</span>
+					{{-- START MODIFICATION: Add badges for upscaled and upscaling status. --}}
+					@if ($page && isset($page->prompt_data))
+						@if ($page->prompt_data->upscale_status == 2 && $page->prompt_data->upscale_url)
+							<span class="badge bg-success ms-2" title="Image has been upscaled">Upscaled</span>
+						@elseif ($page->prompt_data->upscale_status == 1)
+							<span class="badge bg-warning ms-2" title="Image is being upscaled">Upscaling...</span>
+						@endif
 					@endif
+					{{-- END MODIFICATION --}}
 				</label>
 				<div class="image-upload-container mb-2 position-relative" style="min-height: 400px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 					<img src="{{ $page->image_path ?? 'https://picsum.photos/200' }}"
