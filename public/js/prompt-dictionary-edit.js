@@ -396,6 +396,9 @@ document.addEventListener('DOMContentLoaded', function () {
 			const card = activeImagePromptTextarea.closest(config.cardSelector);
 			const description = card.querySelector('.asset-description').value;
 			const instructions = document.getElementById('prompt-instructions').value;
+			
+			localStorage.setItem(promptInstructionsKey, instructions);
+			
 			const fullPrompt = buildAssetImageGenerationPrompt(description, config.assetType, instructions);
 			fullPromptTextarea.value = fullPrompt;
 		}
