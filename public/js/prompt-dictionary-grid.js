@@ -15,17 +15,25 @@ document.addEventListener('DOMContentLoaded', function () {
 		const fullPromptTextarea = document.getElementById('generate-entries-full-prompt');
 		let generatedEntriesCache = [];
 		
-		function buildGenerateEntriesPrompt (userRequest, count) {
+		// START MODIFICATION: Updated prompt builder to include category
+		function buildGenerateEntriesPrompt (userRequest, count, category) {
 			const jsonStructure = `{\n  "entries": [\n    { "name": "Entry Name 1", "description": "Description 1" },\n    { "name": "Entry Name 2", "description": "Description 2" }\n  ]\n}`;
-			return `You are an AI assistant that generates lists of dictionary entries based on a user's request. The user will provide a topic and a desired number of entries. Your task is to generate that many entries, each with a 'name' and a 'description'. The description should be optimized for AI image generation, focusing on visual, descriptive terms.\n\nUser's request: "${userRequest}"\n\nPlease generate exactly ${count} entries based on this request.\n\nProvide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.\nThe JSON object must follow this exact structure:\n${jsonStructure}`;
+			const categoryContext = category
+				? `All entries should belong to the category: "${category}".`
+				: 'The entries can be of various types.';
+			
+			return `You are an AI assistant that generates lists of dictionary entries based on a user's request. The user will provide a topic and a desired number of entries. Your task is to generate that many entries, each with a 'name' and a 'description'. The description should be optimized for AI image generation, focusing on visual, descriptive terms.\n\nUser's request: "${userRequest}"\n\n${categoryContext}\n\nPlease generate exactly ${count} entries based on this request.\n\nProvide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.\nThe JSON object must follow this exact structure:\n${jsonStructure}`;
 		}
 		
 		function updateFullGenerateEntriesPrompt () {
 			const userRequest = promptTextarea.value;
 			const count = countSelect.value;
-			fullPromptTextarea.value = buildGenerateEntriesPrompt(userRequest, count);
+			const category = document.getElementById('generate-entries-category').value; // Added category
+			fullPromptTextarea.value = buildGenerateEntriesPrompt(userRequest, count, category);
 		}
+		// END MODIFICATION
 		
+		// START MODIFICATION: Updated preview rendering to show category
 		function renderPreview (entries) {
 			if (!entries || entries.length === 0) {
 				previewArea.innerHTML = '<p class="text-danger">The AI did not return any entries. Please try again or adjust your prompt.</p>';
@@ -34,8 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 			let html = '<ul class="list-group">';
 			entries.forEach(entry => {
+				const categoryBadge = entry.word_category ? `<span class="badge bg-secondary">${entry.word_category}</span>` : '';
 				html += `<li class="list-group-item">
-					<h6 class="mb-1">${entry.name || '<em>No Name Provided</em>'}</h6>
+					<div class="d-flex justify-content-between align-items-center">
+						<h6 class="mb-1">${entry.name || '<em>No Name Provided</em>'}</h6>
+						${categoryBadge}
+					</div>
 					<p class="mb-0 small">${entry.description || '<em>No Description Provided</em>'}</p>
 				</li>`;
 			});
@@ -43,6 +55,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			previewArea.innerHTML = html;
 			addBtn.classList.remove('d-none');
 		}
+		// END MODIFICATION
 		
 		generateEntriesModalEl.addEventListener('shown.bs.modal', () => {
 			updateFullGenerateEntriesPrompt();
@@ -64,11 +77,15 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		promptTextarea.addEventListener('input', updateFullGenerateEntriesPrompt);
 		countSelect.addEventListener('change', updateFullGenerateEntriesPrompt);
+		// START MODIFICATION: Added event listener for category input
+		document.getElementById('generate-entries-category').addEventListener('input', updateFullGenerateEntriesPrompt);
+		// END MODIFICATION
 		
 		// MODIFICATION START: This button now only generates a preview, it does not save.
 		createBtn.addEventListener('click', async () => {
 			const prompt = fullPromptTextarea.value;
 			const model = modelSelect.value;
+			const category = document.getElementById('generate-entries-category').value; // Added category
 			if (!prompt || !model) {
 				alert('Prompt and model are required.');
 				return;
@@ -82,7 +99,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				const response = await fetch('/prompt-dictionary/preview-generated-entries', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-					body: JSON.stringify({ prompt, model }),
+					body: JSON.stringify({ prompt, model, word_category: category }), // Added category to request
 				});
 				const data = await response.json();
 				if (response.ok && data.success) {

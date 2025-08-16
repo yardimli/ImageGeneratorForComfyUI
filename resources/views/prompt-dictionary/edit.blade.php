@@ -30,10 +30,27 @@
 						<input type="hidden" name="id" value="{{ $entry->id }}">
 						<div class="row">
 							<div class="col-md-8">
-								<div class="mb-3">
-									<label class="form-label">Name</label>
-									<input type="text" name="name" class="form-control" value="{{ old('name', $entry->name) }}" required>
+								{{-- START MODIFICATION: Added row for name and category --}}
+								<div class="row">
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label class="form-label">Name</label>
+											<input type="text" name="name" class="form-control" value="{{ old('name', $entry->name) }}" required>
+										</div>
+									</div>
+									<div class="col-md-6">
+										<div class="mb-3">
+											<label for="word_category" class="form-label">Category</label>
+											<input class="form-control" list="word-categories-list" id="word_category" name="word_category" value="{{ old('word_category', $entry->word_category) }}" placeholder="e.g., Art Style, Subject, Adjective">
+											<datalist id="word-categories-list">
+												@foreach($wordCategories as $category)
+													<option value="{{ $category }}">
+												@endforeach
+											</datalist>
+										</div>
+									</div>
 								</div>
+								{{-- END MODIFICATION --}}
 								<div class="mb-3">
 									<label class="form-label">Description</label>
 									<textarea name="description" class="form-control asset-description" rows="5">{{ old('description', $entry->description) }}</textarea>
@@ -82,9 +99,17 @@
 			
 			<div class="fixed-save-bar">
 				<div class="container">
-					<div class="text-end">
+					{{-- START MODIFICATION: Added delete button and flex layout --}}
+					<div class="d-flex justify-content-end align-items-center">
+						@if($entry->exists)
+							<button type="button" class="btn btn-danger me-3" data-bs-toggle="modal" data-bs-target="#deleteEntryModal">
+								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash me-1" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+								Delete Entry
+							</button>
+						@endif
 						<button type="submit" class="btn btn-success btn-lg">Save Changes</button>
 					</div>
+					{{-- END MODIFICATION --}}
 				</div>
 			</div>
 		</form>
@@ -146,6 +171,32 @@
 			</div>
 		</div>
 	</div>
+	
+	{{-- START MODIFICATION: Added delete confirmation modal --}}
+	@if($entry->exists)
+		<div class="modal fade" id="deleteEntryModal" tabindex="-1" aria-labelledby="deleteEntryModalLabel" aria-hidden="true">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<h5 class="modal-title" id="deleteEntryModalLabel">Confirm Deletion</h5>
+						<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					</div>
+					<div class="modal-body">
+						Are you sure you want to delete the entry "<strong>{{ $entry->name }}</strong>"? This action cannot be undone.
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<form action="{{ route('prompt-dictionary.destroy', $entry) }}" method="POST" class="d-inline">
+							@csrf
+							@method('DELETE')
+							<button type="submit" class="btn btn-danger">Yes, Delete</button>
+						</form>
+					</div>
+				</div>
+			</div>
+		</div>
+	@endif
+	{{-- END MODIFICATION --}}
 @endsection
 
 @section('styles')

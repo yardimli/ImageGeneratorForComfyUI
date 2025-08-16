@@ -60,6 +60,17 @@
 								<label for="generate-entries-prompt" class="form-label">Instructions for AI</label>
 								<textarea class="form-control" id="generate-entries-prompt" rows="8">Create a punk music dictionary with descriptions that are suitable for use in image generation. Each description should only include descriptive words an image generator would understand, focusing on visual style, clothing, and mood.</textarea>
 							</div>
+							{{-- START MODIFICATION: Added category input --}}
+							<div class="mb-3">
+								<label for="generate-entries-category" class="form-label">Category (Optional)</label>
+								<input class="form-control" list="generate-word-categories-list" id="generate-entries-category" placeholder="Assign a category to all generated entries">
+								<datalist id="generate-word-categories-list">
+									@foreach($wordCategories as $category)
+										<option value="{{ $category }}">
+									@endforeach
+								</datalist>
+							</div>
+							{{-- END MODIFICATION --}}
 							<div class="mb-3">
 								<label for="generate-entries-count" class="form-label">Number of Entries</label>
 								<select id="generate-entries-count" class="form-select">

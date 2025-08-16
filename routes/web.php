@@ -65,11 +65,12 @@
 			});
 		});
 
-		// START MODIFICATION: Updated Prompt Dictionary routes for new generate/save flow.
+		// START MODIFICATION: Updated Prompt Dictionary routes for new generate/save flow and delete.
 		Route::prefix('prompt-dictionary')->name('prompt-dictionary.')->group(function () {
 			Route::get('/', [PromptDictionaryController::class, 'grid'])->name('index');
 			Route::get('/edit', [PromptDictionaryController::class, 'edit'])->name('edit');
 			Route::post('/edit', [PromptDictionaryController::class, 'update'])->name('update');
+			Route::delete('/{entry}', [PromptDictionaryController::class, 'destroy'])->name('destroy'); // Added delete route
 			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
 			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
 			Route::get('/search', [PromptDictionaryController::class, 'search'])->name('search'); // Add search route

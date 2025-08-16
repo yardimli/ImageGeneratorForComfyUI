@@ -18,6 +18,7 @@
 			'user_id',
 			'name',
 			'description',
+			'word_category', // START MODIFICATION: Added word_category
 			'image_prompt',
 			'image_path',
 		];

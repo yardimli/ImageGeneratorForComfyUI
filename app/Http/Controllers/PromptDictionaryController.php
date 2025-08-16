@@ -47,6 +47,14 @@
 				->orderBy('name', 'asc')
 				->get();
 
+			// START MODIFICATION: Fetch unique word categories for the generation modal.
+			$wordCategories = PromptDictionaryEntry::where('user_id', auth()->id())
+				->whereNotNull('word_category')
+				->distinct()
+				->orderBy('word_category', 'asc')
+				->pluck('word_category');
+			// END MODIFICATION
+
 			// Fetch models for the AI modal.
 			try {
 				$modelsResponse = $llmController->getModels();
@@ -57,7 +65,8 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			return view('prompt-dictionary.grid', compact('entries', 'models'));
+			// MODIFICATION: Pass categories to the view.
+			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories'));
 		}
 
 		/**
@@ -79,6 +88,14 @@
 					->select('id', 'upscale_status', 'upscale_url', 'filename')
 					->first();
 			}
+
+			// START MODIFICATION: Fetch unique word categories for the user.
+			$wordCategories = PromptDictionaryEntry::where('user_id', auth()->id())
+				->whereNotNull('word_category')
+				->distinct()
+				->orderBy('word_category', 'asc')
+				->pluck('word_category');
+			// END MODIFICATION
 
 			// Fetch models for the AI modals.
 			try {
@@ -105,7 +122,8 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels'));
+			// MODIFICATION: Pass categories to the view.
+			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories'));
 		}
 
 		/**
@@ -117,6 +135,7 @@
 				'id' => 'nullable|integer|exists:prompt_dictionary_entries,id,user_id,' . auth()->id(),
 				'name' => 'required|string|max:255',
 				'description' => 'nullable|string',
+				'word_category' => 'nullable|string|max:255', // START MODIFICATION
 				'image_prompt' => 'nullable|string',
 				'image_path' => 'nullable|string|max:2048',
 			]);
@@ -124,14 +143,37 @@
 			$id = $request->input('id');
 			$message = $id ? 'Entry updated successfully!' : 'Entry created successfully!';
 
-			PromptDictionaryEntry::updateOrCreate(
+			// START MODIFICATION: Get instance to retrieve ID for new entries
+			$entry = PromptDictionaryEntry::updateOrCreate(
 				['id' => $id, 'user_id' => auth()->id()],
 				$validated
 			);
 
-			return redirect()->route('prompt-dictionary.edit', ['entry_id' => $id])
+			return redirect()->route('prompt-dictionary.edit', ['entry_id' => $entry->id])
 				->with('success', $message);
+			// END MODIFICATION
 		}
+
+		// START MODIFICATION: Added destroy method
+		/**
+		 * Delete a single dictionary entry for the user.
+		 *
+		 * @param PromptDictionaryEntry $entry
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function destroy(PromptDictionaryEntry $entry)
+		{
+			// Ensure the user owns this entry
+			if ($entry->user_id !== auth()->id()) {
+				abort(403);
+			}
+
+			$entry->delete();
+
+			return redirect()->route('prompt-dictionary.index')
+				->with('success', 'Entry deleted successfully!');
+		}
+		// END MODIFICATION
 
 		/**
 		 * Rewrite an entry's description using AI.
@@ -214,6 +256,7 @@
 			$validated = $request->validate([
 				'prompt' => 'required|string',
 				'model' => 'required|string',
+				'word_category' => 'nullable|string|max:255', // START MODIFICATION
 			]);
 
 			try {
@@ -237,6 +280,16 @@
 					return !empty($entry['name']) && !empty($entry['description']);
 				});
 
+				// START MODIFICATION: Add the word category to each entry if provided
+				$wordCategory = $validated['word_category'] ?? null;
+				if ($wordCategory) {
+					$filteredEntries = array_map(function ($entry) use ($wordCategory) {
+						$entry['word_category'] = $wordCategory;
+						return $entry;
+					}, $filteredEntries);
+				}
+				// END MODIFICATION
+
 				return response()->json([
 					'success' => true,
 					'entries' => array_values($filteredEntries) // Re-index array
@@ -256,6 +309,7 @@
 				'entries' => 'required|array',
 				'entries.*.name' => 'required|string|max:255',
 				'entries.*.description' => 'required|string',
+				'entries.*.word_category' => 'nullable|string|max:255', // START MODIFICATION
 			]);
 
 			try {
@@ -265,6 +319,7 @@
 							'user_id' => auth()->id(),
 							'name' => $entryData['name'],
 							'description' => $entryData['description'],
+							'word_category' => $entryData['word_category'] ?? null, // START MODIFICATION
 						]);
 					}
 				});
