@@ -357,5 +357,4 @@
 	</script>
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{ asset('js/prompt-script.js') }}"></script>
-	<script src="{{ asset('js/image-results-script.js') }}"></script>
 @endsection

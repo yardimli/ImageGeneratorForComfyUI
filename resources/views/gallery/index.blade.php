@@ -419,8 +419,17 @@
 
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
-	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script>
+		let imageModal;
+		
+		
+		function openImageModal(filename) {
+			const modalImage = document.getElementById('modalImage');
+			modalImage.src = `${filename}`;
+			imageModal.show();
+		}
+		
+		
 		document.addEventListener('DOMContentLoaded', function () {
 			const deleteConfirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
 			const selectAllBtn = document.getElementById('selectAllBtn');
@@ -430,6 +439,8 @@
 			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			
+			imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+
 			document.getElementById('selectAllFilters').addEventListener('click', function (e) {
 				e.preventDefault();
 				const checkboxes = document.querySelectorAll('.filter-checkbox');

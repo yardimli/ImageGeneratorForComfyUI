@@ -205,7 +205,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				// Add event listener for the new button
 				document.getElementById('storeGeneratedPrompts').addEventListener('click', async function() {
 					this.disabled = true;
-					this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing...`;
+					this.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Processing... Results will be in gallery.`;
 					
 					try {
 						const storeResponse = await fetch('/prompts/store-generated', {
@@ -217,7 +217,7 @@ document.addEventListener('DOMContentLoaded', function () {
 							body: JSON.stringify({
 								prompts: data.prompts,
 								settings: data.settings
-							})
+							}),
 						});
 						
 						const storeData = await storeResponse.json();
@@ -226,6 +226,7 @@ document.addEventListener('DOMContentLoaded', function () {
 							// Show the prompt queued modal
 							const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
 							promptQueuedModal.show();
+							document.getElementById('storeGeneratedPrompts').innerHTML = 'Images are being generated. You can see them in the gallery once they are ready.';
 						} else {
 							alert('Error: ' + storeData.error);
 							this.disabled = false;

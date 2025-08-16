@@ -327,7 +327,6 @@
 
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
-	<script src="{{ asset('js/image-results-script.js') }}"></script>
 	<script src="{{ asset('js/mix-script.js') }}"></script>
 	<script src="{{ asset('js/pexels-script.js') }}"></script>
 @endsection
