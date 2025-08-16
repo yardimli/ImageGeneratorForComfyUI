@@ -3,6 +3,7 @@
 	use App\Http\Controllers\Api\PromptApiController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Http\Request;
+	use Illuminate\Routing\Middleware\ThrottleRequests;
 	use Illuminate\Support\Facades\Route;
 
 	/*
