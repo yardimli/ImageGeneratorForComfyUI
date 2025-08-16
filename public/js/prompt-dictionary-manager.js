@@ -42,7 +42,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	const historyModalEl = document.getElementById('historyModal');
-	const historyModal = new bootstrap.Modal(historyModalEl);
+	if (!historyModalEl) {
+		console.error('History modal element not found.');
+	} else {
+		const historyModal = new bootstrap.Modal(historyModalEl);
+	}
+	
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let activeImageUploadContainer = null;
 
