@@ -226,23 +226,23 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
-		const selected = document.querySelector('#historyModal .history-image-card.selected');
-		if (selected) {
-			openCropper(selected.dataset.path);
-			historyModal.hide();
-		} else {
-			alert('Please select an image.');
-		}
-	});
+	if (document.getElementById('addSelectedHistoryImageBtn')) {
+		document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
+			const selected = document.querySelector('#historyModal .history-image-card.selected');
+			if (selected) {
+				openCropper(selected.dataset.path);
+				historyModal.hide();
+			} else {
+				alert('Please select an image.');
+			}
+		});
+		
+		['historySource', 'historySort', 'historyPerPage'].forEach(id => {
+			const el = document.getElementById(id);
+			if (el) el.addEventListener('change', () => loadHistory(1));
+		});
+	}
 	
-	['historySource', 'historySort', 'historyPerPage'].forEach(id => {
-		const el = document.getElementById(id);
-		if (el) el.addEventListener('change', () => loadHistory(1));
-	});
-	
-	// --- Main Logic ---
-	// MODIFICATION START: Removed reindexAssetNames, addBtn listener, and removeBtn logic.
 	if (container) {
 		container.addEventListener('click', (e) => {
 			if (e.target.matches('.select-image-btn')) {
