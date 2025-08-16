@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	let activeImageUploadContainer = null;
 	
 	const llmModelKey = 'promptDictAi_model';
-	const promptModelKey = 'promptDict_promptInstructions';
+	const promptModelKey = 'promptDict_promptModel';
 	const promptInstructionsKey = 'promptDict_promptInstructions';
 	const drawModelKey = 'promptDict_drawModel';
 	
