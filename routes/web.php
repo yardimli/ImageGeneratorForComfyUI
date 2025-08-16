@@ -10,8 +10,8 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
-	use App\Http\Controllers\PromptDictionaryController; // START MODIFICATION
-	use App\Http\Controllers\PromptDictionaryImageController; // START MODIFICATION
+	use App\Http\Controllers\PromptDictionaryController;
+	use App\Http\Controllers\PromptDictionaryImageController;
 	use App\Http\Controllers\QuizController;
 	use App\Http\Controllers\StoryPdfController;
 	use App\Http\Controllers\StoryController;
@@ -67,11 +67,12 @@
 
 		// START MODIFICATION: Add Prompt Dictionary routes
 		Route::prefix('prompt-dictionary')->name('prompt-dictionary.')->group(function () {
-			Route::get('/', [PromptDictionaryController::class, 'index'])->name('index');
-			Route::post('/', [PromptDictionaryController::class, 'update'])->name('update');
+			Route::get('/', [PromptDictionaryController::class, 'grid'])->name('index');
+			Route::get('/edit', [PromptDictionaryController::class, 'edit'])->name('edit');
+			Route::post('/edit', [PromptDictionaryController::class, 'update'])->name('update');
 			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
 			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
-			Route::post('/generate-entries', [PromptDictionaryController::class, 'generateEntries'])->name('generate-entries'); // ADDED
+			Route::post('/generate-entries', [PromptDictionaryController::class, 'generateEntries'])->name('generate-entries');
 
 			Route::prefix('{entry}')->group(function () {
 				Route::post('/generate-image', [PromptDictionaryImageController::class, 'generate'])->name('generate-image');

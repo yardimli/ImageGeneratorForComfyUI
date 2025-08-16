@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', function () {
 	const container = document.getElementById('dictionary-entries-container');
-	if (!container) return;
+	// MODIFICATION: container can be null on the new grid page, so we check for it where needed.
 	
 	const config = {
 		containerId: 'dictionary-entries-container',
@@ -228,6 +228,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// --- Main Logic ---
 	function reindexAssetNames() {
+		// MODIFICATION: Check if container exists before querying
+		if (!container) return;
 		const cards = container.querySelectorAll(config.cardSelector);
 		cards.forEach((card, index) => {
 			card.querySelectorAll('[name]').forEach(input => {
@@ -239,25 +241,31 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	addBtn.addEventListener('click', () => {
-		const newAssetHtml = template.innerHTML.replace(/__INDEX__/g, container.children.length);
-		container.insertAdjacentHTML('beforeend', newAssetHtml);
-		reindexAssetNames();
-	});
+	// MODIFICATION: Check if addBtn exists
+	if (addBtn) {
+		addBtn.addEventListener('click', () => {
+			const newAssetHtml = template.innerHTML.replace(/__INDEX__/g, container.children.length);
+			container.insertAdjacentHTML('beforeend', newAssetHtml);
+			reindexAssetNames();
+		});
+	}
 	
-	container.addEventListener('click', (e) => {
-		if (e.target.matches(config.removeBtnSelector)) {
-			if (confirm('Are you sure you want to remove this item? This cannot be undone.')) {
-				e.target.closest(config.cardSelector).remove();
-				reindexAssetNames();
+	// MODIFICATION: Check if container exists
+	if (container) {
+		container.addEventListener('click', (e) => {
+			if (e.target.matches(config.removeBtnSelector)) {
+				if (confirm('Are you sure you want to remove this item? This cannot be undone.')) {
+					e.target.closest(config.cardSelector).remove();
+					reindexAssetNames();
+				}
 			}
-		}
-		if (e.target.matches('.select-image-btn')) {
-			activeImageUploadContainer = e.target.closest('.col-md-4').querySelector('.image-upload-container');
-			loadHistory(1);
-			historyModal.show();
-		}
-	});
+			if (e.target.matches('.select-image-btn')) {
+				activeImageUploadContainer = e.target.closest('.col-md-4').querySelector('.image-upload-container');
+				loadHistory(1);
+				historyModal.show();
+			}
+		});
+	}
 	
 	// --- AI Asset Description Rewrite Modal ---
 	const rewriteModalEl = document.getElementById('rewriteAssetDescriptionModal');
@@ -297,14 +305,17 @@ document.addEventListener('DOMContentLoaded', function () {
 			rewriteFullPromptTextarea.value = fullPrompt;
 		}
 		
-		container.addEventListener('click', (e) => {
-			const rewriteButton = e.target.closest('.rewrite-asset-description-btn');
-			if (rewriteButton) {
-				const card = rewriteButton.closest(config.cardSelector);
-				activeDescriptionTextarea = card.querySelector('.asset-description');
-				originalDescription = activeDescriptionTextarea.value;
-			}
-		});
+		// MODIFICATION: Check if container exists
+		if (container) {
+			container.addEventListener('click', (e) => {
+				const rewriteButton = e.target.closest('.rewrite-asset-description-btn');
+				if (rewriteButton) {
+					const card = rewriteButton.closest(config.cardSelector);
+					activeDescriptionTextarea = card.querySelector('.asset-description');
+					originalDescription = activeDescriptionTextarea.value;
+				}
+			});
+		}
 		
 		rewriteModalEl.addEventListener('shown.bs.modal', () => {
 			if (!activeDescriptionTextarea) {
@@ -420,13 +431,16 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		document.getElementById('prompt-instructions').addEventListener('input', updateFullPromptPreview);
-		container.addEventListener('input', (e) => {
-			if (e.target.matches('.asset-description') && generatePromptModalEl.classList.contains('show')) {
-				if (activeImagePromptTextarea && e.target.closest(config.cardSelector) === activeImagePromptTextarea.closest(config.cardSelector)) {
-					updateFullPromptPreview();
+		// MODIFICATION: Check if container exists
+		if (container) {
+			container.addEventListener('input', (e) => {
+				if (e.target.matches('.asset-description') && generatePromptModalEl.classList.contains('show')) {
+					if (activeImagePromptTextarea && e.target.closest(config.cardSelector) === activeImagePromptTextarea.closest(config.cardSelector)) {
+						updateFullPromptPreview();
+					}
 				}
-			}
-		});
+			});
+		}
 		
 		document.getElementById('prompt-model').addEventListener('change', (e) => localStorage.setItem(promptModelKey, e.target.value));
 		
@@ -440,12 +454,15 @@ document.addEventListener('DOMContentLoaded', function () {
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
 		
-		container.addEventListener('click', (e) => {
-			if (e.target.matches('.generate-prompt-btn')) {
-				const card = e.target.closest(config.cardSelector);
-				activeImagePromptTextarea = card.querySelector('.image-prompt-textarea');
-			}
-		});
+		// MODIFICATION: Check if container exists
+		if (container) {
+			container.addEventListener('click', (e) => {
+				if (e.target.matches('.generate-prompt-btn')) {
+					const card = e.target.closest(config.cardSelector);
+					activeImagePromptTextarea = card.querySelector('.image-prompt-textarea');
+				}
+			});
+		}
 		
 		writePromptBtn.addEventListener('click', async () => {
 			if (!activeImagePromptTextarea) return;
@@ -523,25 +540,28 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		}
 		
-		container.addEventListener('click', (e) => {
-			const drawButton = e.target.closest('.draw-with-ai-btn');
-			if (drawButton) {
-				const card = drawButton.closest(config.cardSelector);
-				const assetId = drawButton.dataset.assetId;
-				const imagePromptTextarea = card.querySelector('.image-prompt-textarea');
-				if (imagePromptTextarea.value !== (imagePromptTextarea.dataset.initialValue || '')) {
-					alert('Your image prompt has unsaved changes. Please save all changes before generating an image.');
-					e.preventDefault(); e.stopPropagation(); return;
+		// MODIFICATION: Check if container exists
+		if (container) {
+			container.addEventListener('click', (e) => {
+				const drawButton = e.target.closest('.draw-with-ai-btn');
+				if (drawButton) {
+					const card = drawButton.closest(config.cardSelector);
+					const assetId = drawButton.dataset.assetId;
+					const imagePromptTextarea = card.querySelector('.image-prompt-textarea');
+					if (imagePromptTextarea.value !== (imagePromptTextarea.dataset.initialValue || '')) {
+						alert('Your image prompt has unsaved changes. Please save all changes before generating an image.');
+						e.preventDefault(); e.stopPropagation(); return;
+					}
+					if (!assetId) {
+						alert('This item has not been saved yet. Please save all changes first.');
+						e.preventDefault(); e.stopPropagation(); return;
+					}
+					drawAssetIdInput.value = assetId;
+					drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this item yet)';
+					drawWithAiModal.show();
 				}
-				if (!assetId) {
-					alert('This item has not been saved yet. Please save all changes first.');
-					e.preventDefault(); e.stopPropagation(); return;
-				}
-				drawAssetIdInput.value = assetId;
-				drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this item yet)';
-				drawWithAiModal.show();
-			}
-		});
+			});
+		}
 		
 		generateImageBtn.addEventListener('click', async () => {
 			const assetId = drawAssetIdInput.value;
@@ -736,7 +756,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		generateEntriesModalEl.addEventListener('hidden.bs.modal', () => {
-			previewArea.innerHTML = '<p class="text-muted">Click "Generate Preview" to see results here.</p>';
+			previewArea.innerHTML = '<p class="text-muted">Click "Generate & Save" to create new entries and see a preview here.</p>'; // MODIFIED TEXT
 			addBtn.classList.add('d-none');
 			createBtn.disabled = false;
 			createBtn.querySelector('.spinner-border').classList.add('d-none');
@@ -781,22 +801,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		addBtn.addEventListener('click', () => {
+			// The entries are now saved on the backend when the preview is generated.
+			// This button just needs to close the modal and refresh the page to show the new entries in the grid.
 			if (generatedEntriesCache.length === 0) return;
 			
-			generatedEntriesCache.forEach(entry => {
-				const newAssetHtml = template.innerHTML.replace(/__INDEX__/g, container.children.length);
-				container.insertAdjacentHTML('beforeend', newAssetHtml);
-				const newCard = container.lastElementChild;
-				if (newCard) {
-					const nameInput = newCard.querySelector('input[name$="[name]"]');
-					const descriptionTextarea = newCard.querySelector('textarea[name$="[description]"]');
-					if (nameInput) nameInput.value = entry.name || '';
-					if (descriptionTextarea) descriptionTextarea.value = entry.description || '';
-				}
-			});
-			
-			reindexAssetNames();
 			generateEntriesModal.hide();
+			location.reload();
 		});
 	} // END MODIFICATION
 });

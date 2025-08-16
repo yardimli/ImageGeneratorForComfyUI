@@ -12,11 +12,41 @@
 	class PromptDictionaryController extends Controller
 	{
 		/**
+		 * Display the prompt dictionary grid view. // MODIFIED
+		 */
+		public function grid(LlmController $llmController) // NEW METHOD
+		{
+			$entries = PromptDictionaryEntry::where('user_id', auth()->id())
+				->orderBy('name', 'asc')
+				->get();
+
+			// Fetch models for the AI modal.
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for Prompt Dictionary Grid: ' . $e->getMessage());
+				$models = [];
+				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
+			}
+
+			return view('prompt-dictionary.grid', compact('entries', 'models'));
+		}
+
+		/**
 		 * Display the prompt dictionary management page.
 		 */
-		public function index(LlmController $llmController)
+		public function edit(Request $request, LlmController $llmController) // MODIFIED: Added Request
 		{
-			$entries = PromptDictionaryEntry::where('user_id', auth()->id())->latest()->get();
+			// MODIFICATION START: Add filtering logic
+			$query = PromptDictionaryEntry::where('user_id', auth()->id());
+
+			if ($request->has('entry_id')) {
+				$query->where('id', $request->input('entry_id'));
+			}
+
+			$entries = $query->latest()->get();
+			// MODIFICATION END
 
 			// Attach prompt data (for upscaling status) to each entry that has an image.
 			foreach ($entries as $entry) {
@@ -53,7 +83,7 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('prompt-dictionary.index', compact('entries', 'models', 'imageModels'));
+			return view('prompt-dictionary.edit', compact('entries', 'models', 'imageModels'));
 		}
 
 		/**
@@ -89,7 +119,7 @@
 				PromptDictionaryEntry::where('user_id', auth()->id())->whereNotIn('id', $incomingIds)->delete();
 			});
 
-			return redirect()->route('prompt-dictionary.index')->with('success', 'Dictionary updated successfully!');
+			return redirect()->route('prompt-dictionary.grid')->with('success', 'Dictionary updated successfully!'); // MODIFIED: Redirect to grid
 		}
 
 		/**
@@ -164,8 +194,8 @@
 			}
 		}
 
-		/** // START MODIFICATION
-		 * Generate dictionary entries using AI.
+		/**
+		 * Generate and save dictionary entries using AI. // MODIFIED
 		 */
 		public function generateEntries(Request $request, LlmController $llmController)
 		{
@@ -190,13 +220,28 @@
 					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
 				}
 
+				// START MODIFICATION: Save the generated entries to the database
+				$savedEntries = [];
+				DB::transaction(function () use ($generatedEntries, &$savedEntries) {
+					foreach ($generatedEntries as $entryData) {
+						if (!empty($entryData['name']) && !empty($entryData['description'])) {
+							$savedEntries[] = PromptDictionaryEntry::create([
+								'user_id' => auth()->id(),
+								'name' => $entryData['name'],
+								'description' => $entryData['description'],
+							]);
+						}
+					}
+				});
+				// END MODIFICATION
+
 				return response()->json([
 					'success' => true,
-					'entries' => $generatedEntries
+					'entries' => $savedEntries // Return the newly created entries
 				]);
 			} catch (\Exception $e) {
 				Log::error('AI Dictionary Entry Generation Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating entries. Please try again.'], 500);
 			}
-		} // END MODIFICATION
+		}
 	}
