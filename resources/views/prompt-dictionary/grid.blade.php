@@ -9,9 +9,7 @@
 			</div>
 			<div>
 				<button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#generateEntriesModal">Auto-Generate Entries</button>
-				{{-- START MODIFICATION --}}
 				<a href="{{ route('prompt-dictionary.edit') }}" class="btn btn-primary">Add New Entry</a>
-				{{-- END MODIFICATION --}}
 			</div>
 		</div>
 		
@@ -73,7 +71,6 @@
 							<div class="mb-3">
 								<label for="generate-entries-model" class="form-label">AI Model</label>
 								<select class="form-select" id="generate-entries-model">
-									{{-- Note: This requires the $models variable. We'll pass it from the new grid() controller method. --}}
 									@if(empty($models))
 										<option value="" disabled>Could not load models.</option>
 									@else
@@ -87,22 +84,28 @@
 								<label for="generate-entries-full-prompt" class="form-label">Full Prompt Sent to AI</label>
 								<textarea class="form-control" id="generate-entries-full-prompt" rows="10"></textarea>
 							</div>
+							{{-- START MODIFICATION: Changed button text --}}
 							<button type="button" class="btn btn-primary" id="generate-entries-create-btn">
 								<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-								Generate & Save
+								Generate Preview
 							</button>
+							{{-- END MODIFICATION --}}
 						</div>
 						<div class="col-md-7">
 							<h6>Generated Preview</h6>
 							<div id="generate-entries-preview-area" class="border p-3 rounded" style="max-height: 500px; overflow-y: auto;">
-								<p class="text-muted">Click "Generate & Save" to create new entries and see a preview here.</p>
+								{{-- START MODIFICATION: Updated placeholder text --}}
+								<p class="text-muted">Click "Generate Preview" to create new entries and see a preview here.</p>
+								{{-- END MODIFICATION --}}
 							</div>
 						</div>
 					</div>
 				</div>
 				<div class="modal-footer">
 					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-					<button type="button" class="btn btn-success d-none" id="add-generated-entries-btn">Close & Refresh</button>
+					{{-- START MODIFICATION: Changed button text --}}
+					<button type="button" class="btn btn-success d-none" id="add-generated-entries-btn">Save Entries & Refresh</button>
+					{{-- END MODIFICATION --}}
 				</div>
 			</div>
 		</div>
@@ -126,6 +129,7 @@
 @endsection
 
 @section('scripts')
-	{{-- This JS file is needed for the Auto-Generate modal --}}
-	<script src="{{ asset('js/prompt-dictionary-manager.js') }}"></script>
+	{{-- START MODIFICATION: Changed script to the new grid-specific JS file. --}}
+	<script src="{{ asset('js/prompt-dictionary-grid.js') }}"></script>
+	{{-- END MODIFICATION --}}
 @endsection

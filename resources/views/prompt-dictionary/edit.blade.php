@@ -4,12 +4,10 @@
 	<div class="container py-4" style="padding-bottom: 100px;">
 		<div class="d-flex justify-content-between align-items-center mb-4">
 			<div>
-				{{-- START MODIFICATION --}}
 				<h1>{{ $entry->exists ? 'Edit' : 'Create' }} Dictionary Entry</h1>
 				<p class="text-muted">
 					Fill out the details for your dictionary entry. <a href="{{ route('prompt-dictionary.index') }}">Return to Grid View</a>.
 				</p>
-				{{-- END MODIFICATION --}}
 			</div>
 		</div>
 		
@@ -26,7 +24,6 @@
 		
 		<form action="{{ route('prompt-dictionary.update') }}" method="POST">
 			@csrf
-			{{-- START MODIFICATION: Removed loop and container div, form now handles a single entry --}}
 			<div id="dictionary-entries-container"> {{-- This ID is kept for JS event delegation --}}
 				<div class="card mb-3 entry-card" data-id="{{ $entry->id }}">
 					<div class="card-body">
@@ -82,12 +79,11 @@
 					</div>
 				</div>
 			</div>
-			{{-- END MODIFICATION --}}
 			
 			<div class="fixed-save-bar">
 				<div class="container">
 					<div class="text-end">
-						<button type="submit" class="btn btn-success btn-lg">Save Changes</button> {{-- MODIFIED --}}
+						<button type="submit" class="btn btn-success btn-lg">Save Changes</button>
 					</div>
 				</div>
 			</div>
@@ -150,9 +146,6 @@
 			</div>
 		</div>
 	</div>
-	
-	{{-- START MODIFICATION: Removed entry template --}}
-	{{-- END MODIFICATION --}}
 @endsection
 
 @section('styles')
@@ -178,5 +171,7 @@
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
-	<script src="{{ asset('js/prompt-dictionary-manager.js') }}"></script>
+	{{-- START MODIFICATION: Changed script to the new edit-specific JS file. --}}
+	<script src="{{ asset('js/prompt-dictionary-edit.js') }}"></script>
+	{{-- END MODIFICATION --}}
 @endsection

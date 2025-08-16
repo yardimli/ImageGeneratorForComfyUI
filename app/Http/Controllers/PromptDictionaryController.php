@@ -34,11 +34,10 @@
 		}
 
 		/**
-		 * Display the page to edit or create a single prompt dictionary entry. // MODIFIED
+		 * Display the page to edit or create a single prompt dictionary entry.
 		 */
-		public function edit(Request $request, LlmController $llmController) // MODIFIED
+		public function edit(Request $request, LlmController $llmController)
 		{
-			// MODIFICATION START: Fetch a single entry for editing, or create a new one.
 			if ($request->has('entry_id')) {
 				$entry = PromptDictionaryEntry::where('user_id', auth()->id())
 					->findOrFail($request->input('entry_id'));
@@ -53,7 +52,6 @@
 					->select('id', 'upscale_status', 'upscale_url', 'filename')
 					->first();
 			}
-			// MODIFICATION END
 
 			// Fetch models for the AI modals.
 			try {
@@ -80,15 +78,14 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels')); // MODIFIED: Pass single 'entry'
+			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels'));
 		}
 
 		/**
-		 * Create or update a single dictionary entry for the user. // MODIFIED
+		 * Create or update a single dictionary entry for the user.
 		 */
 		public function update(Request $request)
 		{
-			// MODIFICATION START: Validate and save a single entry.
 			$validated = $request->validate([
 				'id' => 'nullable|integer|exists:prompt_dictionary_entries,id,user_id,' . auth()->id(),
 				'name' => 'required|string|max:255',
@@ -105,8 +102,8 @@
 				$validated
 			);
 
-			return redirect()->route('prompt-dictionary.index')->with('success', $message);
-			// MODIFICATION END
+			return redirect()->route('prompt-dictionary.edit', ['entry_id' => $id])
+				->with('success', $message);
 		}
 
 		/**
@@ -181,10 +178,11 @@
 			}
 		}
 
+		// START MODIFICATION: Replaced generateEntries with two separate methods for preview and storing.
 		/**
-		 * Generate and save dictionary entries using AI.
+		 * Generate a preview of dictionary entries using AI without saving them.
 		 */
-		public function generateEntries(Request $request, LlmController $llmController)
+		public function previewGeneratedEntries(Request $request, LlmController $llmController)
 		{
 			$validated = $request->validate([
 				'prompt' => 'required|string',
@@ -207,26 +205,51 @@
 					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
 				}
 
-				$savedEntries = [];
-				DB::transaction(function () use ($generatedEntries, &$savedEntries) {
-					foreach ($generatedEntries as $entryData) {
-						if (!empty($entryData['name']) && !empty($entryData['description'])) {
-							$savedEntries[] = PromptDictionaryEntry::create([
-								'user_id' => auth()->id(),
-								'name' => $entryData['name'],
-								'description' => $entryData['description'],
-							]);
-						}
-					}
+				// Filter out any potentially empty entries from the AI response
+				$filteredEntries = array_filter($generatedEntries, function ($entry) {
+					return !empty($entry['name']) && !empty($entry['description']);
 				});
 
 				return response()->json([
 					'success' => true,
-					'entries' => $savedEntries
+					'entries' => array_values($filteredEntries) // Re-index array
 				]);
 			} catch (\Exception $e) {
 				Log::error('AI Dictionary Entry Generation Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating entries. Please try again.'], 500);
 			}
 		}
+
+		/**
+		 * Store a batch of generated dictionary entries.
+		 */
+		public function storeGeneratedEntries(Request $request)
+		{
+			$validated = $request->validate([
+				'entries' => 'required|array',
+				'entries.*.name' => 'required|string|max:255',
+				'entries.*.description' => 'required|string',
+			]);
+
+			try {
+				DB::transaction(function () use ($validated) {
+					foreach ($validated['entries'] as $entryData) {
+						PromptDictionaryEntry::create([
+							'user_id' => auth()->id(),
+							'name' => $entryData['name'],
+							'description' => $entryData['description'],
+						]);
+					}
+				});
+
+				return response()->json([
+					'success' => true,
+					'message' => 'Entries saved successfully!'
+				]);
+			} catch (\Exception $e) {
+				Log::error('AI Dictionary Entry Storing Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while saving the entries. Please try again.'], 500);
+			}
+		}
+		// END MODIFICATION
 	}

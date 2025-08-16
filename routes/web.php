@@ -65,14 +65,15 @@
 			});
 		});
 
-		// START MODIFICATION: Add Prompt Dictionary routes
+		// START MODIFICATION: Updated Prompt Dictionary routes for new generate/save flow.
 		Route::prefix('prompt-dictionary')->name('prompt-dictionary.')->group(function () {
 			Route::get('/', [PromptDictionaryController::class, 'grid'])->name('index');
 			Route::get('/edit', [PromptDictionaryController::class, 'edit'])->name('edit');
 			Route::post('/edit', [PromptDictionaryController::class, 'update'])->name('update');
 			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
 			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
-			Route::post('/generate-entries', [PromptDictionaryController::class, 'generateEntries'])->name('generate-entries');
+			Route::post('/preview-generated-entries', [PromptDictionaryController::class, 'previewGeneratedEntries'])->name('preview-generated-entries');
+			Route::post('/store-generated-entries', [PromptDictionaryController::class, 'storeGeneratedEntries'])->name('store-generated-entries');
 
 			Route::prefix('{entry}')->group(function () {
 				Route::post('/generate-image', [PromptDictionaryImageController::class, 'generate'])->name('generate-image');
