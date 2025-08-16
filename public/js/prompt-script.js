@@ -360,7 +360,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				item.className = 'list-group-item list-group-item-action';
 				item.dataset.name = entry.name; // We will insert the name
 				item.innerHTML = `
-                <img src="${entry.image_path}" alt="${entry.name}">
+                <img src="${entry.image_path}" alt="${entry.name}" style="max-width: 64px; max-height: 64px;">
                 <div class="dictionary-item-info">
                     <strong>${entry.name}</strong>
                     <p>${entry.description || entry.image_prompt || 'No description'}</p>
