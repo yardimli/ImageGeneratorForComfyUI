@@ -12,9 +12,9 @@
 	class PromptDictionaryController extends Controller
 	{
 		/**
-		 * Display the prompt dictionary grid view. // MODIFIED
+		 * Display the prompt dictionary grid view.
 		 */
-		public function grid(LlmController $llmController) // NEW METHOD
+		public function grid(LlmController $llmController)
 		{
 			$entries = PromptDictionaryEntry::where('user_id', auth()->id())
 				->orderBy('name', 'asc')
@@ -34,29 +34,26 @@
 		}
 
 		/**
-		 * Display the prompt dictionary management page.
+		 * Display the page to edit or create a single prompt dictionary entry. // MODIFIED
 		 */
-		public function edit(Request $request, LlmController $llmController) // MODIFIED: Added Request
+		public function edit(Request $request, LlmController $llmController) // MODIFIED
 		{
-			// MODIFICATION START: Add filtering logic
-			$query = PromptDictionaryEntry::where('user_id', auth()->id());
-
+			// MODIFICATION START: Fetch a single entry for editing, or create a new one.
 			if ($request->has('entry_id')) {
-				$query->where('id', $request->input('entry_id'));
+				$entry = PromptDictionaryEntry::where('user_id', auth()->id())
+					->findOrFail($request->input('entry_id'));
+			} else {
+				$entry = new PromptDictionaryEntry();
 			}
 
-			$entries = $query->latest()->get();
+			// Attach prompt data (for upscaling status) if it's an existing entry with an image.
+			$entry->prompt_data = null;
+			if ($entry->exists && !empty($entry->image_path)) {
+				$entry->prompt_data = Prompt::where('filename', $entry->image_path)
+					->select('id', 'upscale_status', 'upscale_url', 'filename')
+					->first();
+			}
 			// MODIFICATION END
-
-			// Attach prompt data (for upscaling status) to each entry that has an image.
-			foreach ($entries as $entry) {
-				$entry->prompt_data = null;
-				if ($entry->id && !empty($entry->image_path)) {
-					$entry->prompt_data = Prompt::where('filename', $entry->image_path)
-						->select('id', 'upscale_status', 'upscale_url', 'filename')
-						->first();
-				}
-			}
 
 			// Fetch models for the AI modals.
 			try {
@@ -83,43 +80,33 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('prompt-dictionary.edit', compact('entries', 'models', 'imageModels'));
+			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels')); // MODIFIED: Pass single 'entry'
 		}
 
 		/**
-		 * Update the dictionary entries for the user.
+		 * Create or update a single dictionary entry for the user. // MODIFIED
 		 */
 		public function update(Request $request)
 		{
+			// MODIFICATION START: Validate and save a single entry.
 			$validated = $request->validate([
-				'entries' => 'nullable|array',
-				'entries.*.id' => 'nullable|integer|exists:prompt_dictionary_entries,id',
-				'entries.*.name' => 'required|string|max:255',
-				'entries.*.description' => 'nullable|string',
-				'entries.*.image_prompt' => 'nullable|string',
-				'entries.*.image_path' => 'nullable|string|max:2048',
+				'id' => 'nullable|integer|exists:prompt_dictionary_entries,id,user_id,' . auth()->id(),
+				'name' => 'required|string|max:255',
+				'description' => 'nullable|string',
+				'image_prompt' => 'nullable|string',
+				'image_path' => 'nullable|string|max:2048',
 			]);
 
-			DB::transaction(function () use ($validated) {
-				$incomingIds = [];
-				if (isset($validated['entries'])) {
-					foreach ($validated['entries'] as $entryData) {
-						$values = [
-							'user_id' => auth()->id(),
-							'name' => $entryData['name'],
-							'description' => $entryData['description'] ?? null,
-							'image_prompt' => $entryData['image_prompt'] ?? null,
-							'image_path' => $entryData['image_path'] ?? null,
-						];
-						$entry = PromptDictionaryEntry::updateOrCreate(['id' => $entryData['id'] ?? null, 'user_id' => auth()->id()], $values);
-						$incomingIds[] = $entry->id;
-					}
-				}
-				// Delete any entries that were removed on the frontend.
-				PromptDictionaryEntry::where('user_id', auth()->id())->whereNotIn('id', $incomingIds)->delete();
-			});
+			$id = $request->input('id');
+			$message = $id ? 'Entry updated successfully!' : 'Entry created successfully!';
 
-			return redirect()->route('prompt-dictionary.index')->with('success', 'Dictionary updated successfully!'); // MODIFIED: Redirect to grid
+			PromptDictionaryEntry::updateOrCreate(
+				['id' => $id, 'user_id' => auth()->id()],
+				$validated
+			);
+
+			return redirect()->route('prompt-dictionary.index')->with('success', $message);
+			// MODIFICATION END
 		}
 
 		/**
@@ -195,7 +182,7 @@
 		}
 
 		/**
-		 * Generate and save dictionary entries using AI. // MODIFIED
+		 * Generate and save dictionary entries using AI.
 		 */
 		public function generateEntries(Request $request, LlmController $llmController)
 		{
@@ -220,7 +207,6 @@
 					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
 				}
 
-				// START MODIFICATION: Save the generated entries to the database
 				$savedEntries = [];
 				DB::transaction(function () use ($generatedEntries, &$savedEntries) {
 					foreach ($generatedEntries as $entryData) {
@@ -233,11 +219,10 @@
 						}
 					}
 				});
-				// END MODIFICATION
 
 				return response()->json([
 					'success' => true,
-					'entries' => $savedEntries // Return the newly created entries
+					'entries' => $savedEntries
 				]);
 			} catch (\Exception $e) {
 				Log::error('AI Dictionary Entry Generation Failed: ' . $e->getMessage());

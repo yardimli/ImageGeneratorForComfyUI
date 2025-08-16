@@ -9,7 +9,9 @@
 			</div>
 			<div>
 				<button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#generateEntriesModal">Auto-Generate Entries</button>
-				<a href="{{ route('prompt-dictionary.edit') }}" class="btn btn-primary">Add/Manage Entries</a>
+				{{-- START MODIFICATION --}}
+				<a href="{{ route('prompt-dictionary.edit') }}" class="btn btn-primary">Add New Entry</a>
+				{{-- END MODIFICATION --}}
 			</div>
 		</div>
 		

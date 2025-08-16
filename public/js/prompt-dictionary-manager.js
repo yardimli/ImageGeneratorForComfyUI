@@ -2,18 +2,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	const container = document.getElementById('dictionary-entries-container');
 	// MODIFICATION: container can be null on the new grid page, so we check for it where needed.
 	
+	// MODIFICATION START: Removed unused config properties for list management.
 	const config = {
 		containerId: 'dictionary-entries-container',
-		addBtnId: 'add-entry-btn',
-		templateId: 'entry-template',
 		cardSelector: '.entry-card',
-		removeBtnSelector: '.remove-entry-btn',
-		namePrefix: 'entries',
 		assetType: 'entry'
 	};
-	
-	const addBtn = document.getElementById(config.addBtnId);
-	const template = document.getElementById(config.templateId);
+	// MODIFICATION END
 	
 	// --- Image Handling Logic ---
 	const cropperModalEl = document.getElementById('cropperModal');
@@ -227,38 +222,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 	
 	// --- Main Logic ---
-	function reindexAssetNames() {
-		// MODIFICATION: Check if container exists before querying
-		if (!container) return;
-		const cards = container.querySelectorAll(config.cardSelector);
-		cards.forEach((card, index) => {
-			card.querySelectorAll('[name]').forEach(input => {
-				const name = input.getAttribute('name');
-				if (name) {
-					input.setAttribute('name', name.replace(/\[\d+\]|\[__INDEX__\]/, `[${index}]`));
-				}
-			});
-		});
-	}
-	
-	// MODIFICATION: Check if addBtn exists
-	if (addBtn) {
-		addBtn.addEventListener('click', () => {
-			const newAssetHtml = template.innerHTML.replace(/__INDEX__/g, container.children.length);
-			container.insertAdjacentHTML('beforeend', newAssetHtml);
-			reindexAssetNames();
-		});
-	}
-	
-	// MODIFICATION: Check if container exists
+	// MODIFICATION START: Removed reindexAssetNames, addBtn listener, and removeBtn logic.
 	if (container) {
 		container.addEventListener('click', (e) => {
-			if (e.target.matches(config.removeBtnSelector)) {
-				if (confirm('Are you sure you want to remove this item? This cannot be undone.')) {
-					e.target.closest(config.cardSelector).remove();
-					reindexAssetNames();
-				}
-			}
 			if (e.target.matches('.select-image-btn')) {
 				activeImageUploadContainer = e.target.closest('.col-md-4').querySelector('.image-upload-container');
 				loadHistory(1);
@@ -266,6 +232,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
+	// MODIFICATION END
 	
 	// --- AI Asset Description Rewrite Modal ---
 	const rewriteModalEl = document.getElementById('rewriteAssetDescriptionModal');
@@ -305,7 +272,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			rewriteFullPromptTextarea.value = fullPrompt;
 		}
 		
-		// MODIFICATION: Check if container exists
 		if (container) {
 			container.addEventListener('click', (e) => {
 				const rewriteButton = e.target.closest('.rewrite-asset-description-btn');
@@ -431,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		document.getElementById('prompt-instructions').addEventListener('input', updateFullPromptPreview);
-		// MODIFICATION: Check if container exists
 		if (container) {
 			container.addEventListener('input', (e) => {
 				if (e.target.matches('.asset-description') && generatePromptModalEl.classList.contains('show')) {
@@ -454,7 +419,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
 		
-		// MODIFICATION: Check if container exists
 		if (container) {
 			container.addEventListener('click', (e) => {
 				if (e.target.matches('.generate-prompt-btn')) {
@@ -540,7 +504,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		}
 		
-		// MODIFICATION: Check if container exists
 		if (container) {
 			container.addEventListener('click', (e) => {
 				const drawButton = e.target.closest('.draw-with-ai-btn');
@@ -710,7 +673,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// --- AI Auto-Generate Entries Modal --- // START MODIFICATION
+	// --- AI Auto-Generate Entries Modal ---
 	const generateEntriesModalEl = document.getElementById('generateEntriesModal');
 	if (generateEntriesModalEl) {
 		const generateEntriesModal = new bootstrap.Modal(generateEntriesModalEl);
@@ -756,7 +719,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		generateEntriesModalEl.addEventListener('hidden.bs.modal', () => {
-			previewArea.innerHTML = '<p class="text-muted">Click "Generate & Save" to create new entries and see a preview here.</p>'; // MODIFIED TEXT
+			previewArea.innerHTML = '<p class="text-muted">Click "Generate & Save" to create new entries and see a preview here.</p>';
 			addBtn.classList.add('d-none');
 			createBtn.disabled = false;
 			createBtn.querySelector('.spinner-border').classList.add('d-none');
@@ -801,12 +764,9 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		addBtn.addEventListener('click', () => {
-			// The entries are now saved on the backend when the preview is generated.
-			// This button just needs to close the modal and refresh the page to show the new entries in the grid.
 			if (generatedEntriesCache.length === 0) return;
-			
 			generateEntriesModal.hide();
 			location.reload();
 		});
-	} // END MODIFICATION
+	}
 });
