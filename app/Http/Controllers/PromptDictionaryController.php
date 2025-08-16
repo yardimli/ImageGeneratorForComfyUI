@@ -11,6 +11,33 @@
 
 	class PromptDictionaryController extends Controller
 	{
+		// START MODIFICATION: Added search method for dictionary popup
+		/**
+		 * Search for dictionary entries for the autocomplete feature.
+		 *
+		 * @param Request $request
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function search(Request $request)
+		{
+			$term = $request->input('term', '');
+
+			$entries = PromptDictionaryEntry::where('user_id', auth()->id())
+				->where('name', 'LIKE', '%' . $term . '%')
+				->orderBy('name', 'asc')
+				->limit(10)
+				->get(['id', 'name', 'description', 'image_prompt', 'image_path']);
+
+			// Add a placeholder image if image_path is empty
+			$entries->transform(function ($entry) {
+				$entry->image_path = $entry->image_path ?: 'https://via.placeholder.com/50?text=N/A';
+				return $entry;
+			});
+
+			return response()->json($entries);
+		}
+		// END MODIFICATION
+
 		/**
 		 * Display the prompt dictionary grid view.
 		 */

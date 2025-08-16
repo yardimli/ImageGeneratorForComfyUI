@@ -20,12 +20,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	const originalPromptArea = document.querySelector('textarea[name="original_prompt"]');
 	const mainPromptArea = document.querySelector('textarea[name="prompt_template"]');
 	const aspectRatioSelect = document.getElementById('aspectRatio');
-	// START MODIFICATION: Get the new container for template controls.
 	const templateRelatedControls = document.getElementById('template-related-controls');
-	// END MODIFICATION
 	
 	
-	// START MODIFICATION: Function to show/hide template controls based on selection.
 	function toggleTemplateControls() {
 		if (templateSelect.value) { // Show if a template is selected
 			templateRelatedControls.classList.remove('d-none');
@@ -33,11 +30,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			templateRelatedControls.classList.add('d-none');
 		}
 	}
-	// END MODIFICATION
 	
-	// START MODIFICATION: Hide template controls on initial page load if no template is selected.
 	toggleTemplateControls();
-	// END MODIFICATION
 
 // Function to add a new template row
 	function addTemplateRow() {
@@ -65,9 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Modify the template selection to split content by "::"
 	templateSelect.addEventListener('change', async function () {
-		// START MODIFICATION: Toggle visibility of template controls when selection changes.
 		toggleTemplateControls();
-		// END MODIFICATION
 		
 		const selectedTemplateName = this.value;
 		const templateContent = selectedTemplateName ? templateContents[selectedTemplateName] : '';
@@ -109,10 +101,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		// Handle original prompt field similar to before
 		if (!selectedTemplateName) {
 			originalPromptArea.disabled = false;
-			originalPromptArea.placeholder = "Enter your prompt here";
+			originalPromptArea.placeholder = "Enter your prompt here. Type # to search dictionary.";
 		} else if (templateContent.includes('{prompt}')) {
 			originalPromptArea.disabled = false;
-			originalPromptArea.placeholder = "This text will replace {prompt} in the template";
+			originalPromptArea.placeholder = "This text will replace {prompt} in the template. Type # to search dictionary.";
 		} else {
 			originalPromptArea.disabled = true;
 			originalPromptArea.placeholder = "This template doesn't use {prompt}";
@@ -339,4 +331,122 @@ document.addEventListener('DOMContentLoaded', function () {
 	document.getElementById('saveTemplateBtn').addEventListener('click', async function () {
 		saveTemplate();
 	});
+	
+	// START MODIFICATION: Dictionary search popup logic
+	const dictionaryPopup = document.getElementById('dictionary-popup');
+	let dictionarySearchActive = false;
+	
+	async function fetchDictionaryEntries(term) {
+		try {
+			const response = await fetch(`/prompt-dictionary/search?term=${encodeURIComponent(term)}`);
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			return await response.json();
+		} catch (error) {
+			console.error('Failed to fetch dictionary entries:', error);
+			return [];
+		}
+	}
+	
+	function renderDictionaryPopup(entries, textarea) {
+		dictionaryPopup.innerHTML = '';
+		if (entries.length === 0) {
+			dictionaryPopup.innerHTML = '<div class="list-group-item disabled">No results found</div>';
+		} else {
+			entries.forEach(entry => {
+				const item = document.createElement('a');
+				item.href = '#';
+				item.className = 'list-group-item list-group-item-action';
+				item.dataset.name = entry.name; // We will insert the name
+				item.innerHTML = `
+                <img src="${entry.image_path}" alt="${entry.name}">
+                <div class="dictionary-item-info">
+                    <strong>${entry.name}</strong>
+                    <p>${entry.description || entry.image_prompt || 'No description'}</p>
+                </div>
+            `;
+				item.addEventListener('click', function(e) {
+					e.preventDefault();
+					insertDictionaryEntry(this.dataset.name);
+				});
+				dictionaryPopup.appendChild(item);
+			});
+		}
+		
+		const rect = textarea.getBoundingClientRect();
+		dictionaryPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+		dictionaryPopup.style.left = `${rect.left + window.scrollX}px`;
+		dictionaryPopup.style.display = 'block';
+	}
+	
+	function insertDictionaryEntry(name) {
+		const text = originalPromptArea.value;
+		const cursorPos = originalPromptArea.selectionStart;
+		
+		// Find the start of the search term (#...)
+		const textBeforeCursor = text.substring(0, cursorPos);
+		const searchStart = textBeforeCursor.lastIndexOf('#');
+		
+		if (searchStart !== -1) {
+			const textBefore = text.substring(0, searchStart);
+			const textAfter = text.substring(cursorPos);
+			
+			originalPromptArea.value = textBefore + name + ' ' + textAfter;
+			
+			// Set cursor position after the inserted text
+			const newCursorPos = (textBefore + name + ' ').length;
+			originalPromptArea.focus();
+			originalPromptArea.setSelectionRange(newCursorPos, newCursorPos);
+		}
+		
+		hideDictionaryPopup();
+	}
+	
+	function hideDictionaryPopup() {
+		dictionaryPopup.style.display = 'none';
+		dictionarySearchActive = false;
+	}
+	
+	if (originalPromptArea && dictionaryPopup) {
+		originalPromptArea.addEventListener('input', async function(e) {
+			const text = this.value;
+			const cursorPos = this.selectionStart;
+			
+			// Find the last '#' before the cursor
+			const textBeforeCursor = text.substring(0, cursorPos);
+			const tagIndex = textBeforeCursor.lastIndexOf('#');
+			
+			if (tagIndex !== -1) {
+				// Check if there's a space between '#' and cursor. If so, it's not an active search.
+				const potentialTerm = textBeforeCursor.substring(tagIndex);
+				if (!/\s/.test(potentialTerm)) {
+					dictionarySearchActive = true;
+					const searchTerm = potentialTerm.substring(1); // remove #
+					
+					const entries = await fetchDictionaryEntries(searchTerm);
+					renderDictionaryPopup(entries, this);
+					return; // Exit to prevent hiding
+				}
+			}
+			
+			// If we reach here, it's not an active search
+			hideDictionaryPopup();
+		});
+		
+		originalPromptArea.addEventListener('keydown', function(e) {
+			if (dictionarySearchActive && e.key === 'Escape') {
+				e.preventDefault();
+				hideDictionaryPopup();
+			}
+		});
+		
+		// Hide popup when clicking outside
+		document.addEventListener('click', function(e) {
+			if (dictionarySearchActive && !dictionaryPopup.contains(e.target) && e.target !== originalPromptArea) {
+				hideDictionaryPopup();
+			}
+		});
+	}
+	// END MODIFICATION
 });

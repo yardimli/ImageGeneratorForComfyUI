@@ -72,6 +72,7 @@
 			Route::post('/edit', [PromptDictionaryController::class, 'update'])->name('update');
 			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
 			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
+			Route::get('/search', [PromptDictionaryController::class, 'search'])->name('search'); // Add search route
 			Route::post('/preview-generated-entries', [PromptDictionaryController::class, 'previewGeneratedEntries'])->name('preview-generated-entries');
 			Route::post('/store-generated-entries', [PromptDictionaryController::class, 'storeGeneratedEntries'])->name('store-generated-entries');
 

@@ -45,9 +45,6 @@
 							<label class="form-label">Render Count</label>
 							<input type="number" class="form-control" name="render_each_prompt_times" value="1" min="1">
 						</div>
-						
-						{{-- START MODIFICATION: Removed model dropdown --}}
-						{{-- END MODIFICATION --}}
 					
 					</div>
 					
@@ -100,7 +97,6 @@
 						</div>
 					</div>
 					<div class="row mb-3">
-						{{-- START MODIFICATION: Added Schnell and Dev model checkboxes --}}
 						<div class="col-md-3">
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
@@ -119,7 +115,6 @@
 								<label class="form-check-label mb-0" for="createDev">Dev 0₺</label>
 							</div>
 						</div>
-						{{-- END MODIFICATION --}}
 						<div class="col-md-3">
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
@@ -189,10 +184,9 @@
 					<div class="mb-3">
 						<label class="form-label">Prompt</label>
 						<textarea class="form-control" name="original_prompt" rows="2"
-						          placeholder="This text will replace {prompt} in the template"></textarea>
+						          placeholder="This text will replace {prompt} in the template. Type # to search dictionary."></textarea>
 					</div>
 					
-					<!-- START MODIFICATION: Add a wrapper for template-related controls, hidden by default. -->
 					<div id="template-related-controls" class="d-none">
 						<div class="mb-3">
 							<label class="form-label">Prompt Template</label>
@@ -211,7 +205,6 @@
 							<button type="button" class="btn btn-secondary" id="saveTemplateBtn">Save as Template</button>
 						</div>
 					</div>
-					<!-- END MODIFICATION -->
 					
 					<div class="row mb-3">
 						<div class="col-md-6">
@@ -256,6 +249,12 @@
 				<!-- Results will be inserted here -->
 			</div>
 		</div>
+		
+		{{-- START MODIFICATION: Add dictionary search popup --}}
+		<div id="dictionary-popup" class="list-group" style="display: none; position: absolute; z-index: 1050; width: 350px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+			{{-- Search results will be appended here by JS --}}
+		</div>
+		{{-- END MODIFICATION --}}
 	</div>
 	
 	<!-- Image Modal -->
@@ -294,6 +293,44 @@
 @endsection
 
 @section('styles')
+	{{-- START MODIFICATION: Add styles for dictionary search popup --}}
+	<style>
+      .dictionary-popup .list-group-item {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+          padding: 0.5rem;
+      }
+      .dictionary-popup .list-group-item img {
+          width: 40px;
+          height: 40px;
+          object-fit: cover;
+          margin-right: 10px;
+          border-radius: 4px;
+      }
+      .dictionary-popup .list-group-item:hover {
+          background-color: #f0f0f0;
+      }
+      .dictionary-popup .list-group-item-info {
+          overflow: hidden;
+      }
+      .dictionary-popup .list-group-item-info strong {
+          display: block;
+          font-size: 0.9rem;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+      }
+      .dictionary-popup .list-group-item-info p {
+          font-size: 0.75rem;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          color: #6c757d;
+      }
+	</style>
+	{{-- END MODIFICATION --}}
 @endsection
 
 @section('scripts')
