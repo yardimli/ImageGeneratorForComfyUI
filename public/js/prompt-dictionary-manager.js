@@ -660,7 +660,10 @@ document.addEventListener('DOMContentLoaded', function () {
 			generatedEntriesCache = [];
 		});
 		
-		document.getElementById('generate-entries-model').addEventListener('change', (e) => localStorage.setItem(llmModelKey, e.target.value));
+		modelSelect.addEventListener('change',  function (e) {
+			console.log('Selected model:', e.target.value);
+			localStorage.setItem(llmModelKey, e.target.value);
+		});
 		
 		promptTextarea.addEventListener('input', updateFullGenerateEntriesPrompt);
 		countSelect.addEventListener('change', updateFullGenerateEntriesPrompt);
