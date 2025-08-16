@@ -334,8 +334,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// START MODIFICATION: Dictionary search popup logic
 	const dictionaryPopup = document.getElementById('dictionary-popup');
-	let dictionarySearchActive = false;
+	const dictionarySearchInput = document.getElementById('dictionary-search-input');
+	const dictionaryResultsContainer = document.getElementById('dictionary-results-container');
+	let activeSelectionIndex = -1;
 	
+	/**
+	 * Fetches dictionary entries from the server.
+	 * @param {string} term The search term.
+	 * @returns {Promise<Array>} A promise that resolves to an array of entries.
+	 */
 	async function fetchDictionaryEntries(term) {
 		try {
 			const response = await fetch(`/prompt-dictionary/search?term=${encodeURIComponent(term)}`);
@@ -349,19 +356,24 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	}
 	
-	function renderDictionaryPopup(entries, textarea) {
-		dictionaryPopup.innerHTML = '';
+	/**
+	 * Renders the fetched dictionary entries into the results container.
+	 * @param {Array} entries The array of dictionary entries.
+	 */
+	function renderDictionaryResults(entries) {
+		dictionaryResultsContainer.innerHTML = '';
+		activeSelectionIndex = -1; // Reset selection on new render
 		if (entries.length === 0) {
-			dictionaryPopup.innerHTML = '<div class="list-group-item disabled">No results found</div>';
+			dictionaryResultsContainer.innerHTML = '<div class="list-group-item disabled">No results found</div>';
 		} else {
 			entries.forEach(entry => {
 				const item = document.createElement('a');
 				item.href = '#';
-				item.className = 'list-group-item list-group-item-action';
-				item.dataset.name = entry.name; // We will insert the name
+				item.className = 'list-group-item list-group-item-action dictionary-item';
+				item.dataset.name = entry.name;
 				item.dataset.description = entry.description || entry.name;
 				item.innerHTML = `
-                <img src="${entry.image_path}" alt="${entry.name}" style="max-width: 64px; max-height: 64px;">
+                <img src="${entry.image_path}" alt="${entry.name}">
                 <div class="dictionary-item-info">
                     <strong>${entry.name}</strong>
                     <p>${entry.description || entry.image_prompt || 'No description'}</p>
@@ -371,80 +383,124 @@ document.addEventListener('DOMContentLoaded', function () {
 					e.preventDefault();
 					insertDictionaryEntry(this.dataset.name + ' (' + this.dataset.description + ')');
 				});
-				dictionaryPopup.appendChild(item);
+				dictionaryResultsContainer.appendChild(item);
 			});
 		}
-		
-		const rect = textarea.getBoundingClientRect();
-		dictionaryPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
-		dictionaryPopup.style.left = `${rect.left + window.scrollX}px`;
-		dictionaryPopup.style.display = 'block';
 	}
 	
-	function insertDictionaryEntry(name) {
+	/**
+	 * Inserts the selected dictionary entry text into the main prompt textarea.
+	 * @param {string} textToInsert The text to insert.
+	 */
+	function insertDictionaryEntry(textToInsert) {
 		const text = originalPromptArea.value;
 		const cursorPos = originalPromptArea.selectionStart;
 		
-		// Find the start of the search term (#...)
-		const textBeforeCursor = text.substring(0, cursorPos);
-		const searchStart = textBeforeCursor.lastIndexOf('#');
+		const textBefore = text.substring(0, cursorPos);
+		const textAfter = text.substring(cursorPos);
 		
-		if (searchStart !== -1) {
-			const textBefore = text.substring(0, searchStart);
-			const textAfter = text.substring(cursorPos);
-			
-			originalPromptArea.value = textBefore + name + ' ' + textAfter;
-			
-			// Set cursor position after the inserted text
-			const newCursorPos = (textBefore + name + ' ').length;
-			originalPromptArea.focus();
-			originalPromptArea.setSelectionRange(newCursorPos, newCursorPos);
-		}
+		originalPromptArea.value = textBefore + textToInsert + ' ' + textAfter;
+		
+		const newCursorPos = (textBefore + textToInsert + ' ').length;
+		originalPromptArea.focus();
+		originalPromptArea.setSelectionRange(newCursorPos, newCursorPos);
 		
 		hideDictionaryPopup();
 	}
 	
+	/**
+	 * Shows and positions the dictionary popup.
+	 * @param {HTMLElement} textarea The textarea element to position against.
+	 */
+	function showDictionaryPopup(textarea) {
+		const rect = textarea.getBoundingClientRect();
+		dictionaryPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+		dictionaryPopup.style.left = `${rect.left + window.scrollX}px`;
+		dictionaryPopup.style.display = 'block';
+		
+		dictionarySearchInput.value = '';
+		dictionaryResultsContainer.innerHTML = '';
+		dictionarySearchInput.focus();
+		activeSelectionIndex = -1;
+	}
+	
+	/**
+	 * Hides the dictionary popup and returns focus to the main textarea.
+	 */
 	function hideDictionaryPopup() {
 		dictionaryPopup.style.display = 'none';
-		dictionarySearchActive = false;
+		originalPromptArea.focus();
+	}
+	
+	/**
+	 * Updates the visual selection for keyboard navigation.
+	 * @param {NodeListOf<Element>} items The list of result items.
+	 */
+	function updateSelection(items) {
+		items.forEach((item, index) => {
+			if (index === activeSelectionIndex) {
+				item.classList.add('active');
+				item.scrollIntoView({ block: 'nearest' });
+			} else {
+				item.classList.remove('active');
+			}
+		});
 	}
 	
 	if (originalPromptArea && dictionaryPopup) {
-		originalPromptArea.addEventListener('input', async function(e) {
+		// Event listener to trigger the popup when '#' is typed.
+		originalPromptArea.addEventListener('input', function(e) {
 			const text = this.value;
 			const cursorPos = this.selectionStart;
-			
-			// Find the last '#' before the cursor
 			const textBeforeCursor = text.substring(0, cursorPos);
-			const tagIndex = textBeforeCursor.lastIndexOf('#');
 			
-			if (tagIndex !== -1) {
-				// Check if there's a space between '#' and cursor. If so, it's not an active search.
-				const potentialTerm = textBeforeCursor.substring(tagIndex);
-				if (!/\s/.test(potentialTerm)) {
-					dictionarySearchActive = true;
-					const searchTerm = potentialTerm.substring(1); // remove #
-					
-					const entries = await fetchDictionaryEntries(searchTerm);
-					renderDictionaryPopup(entries, this);
-					return; // Exit to prevent hiding
-				}
-			}
-			
-			// If we reach here, it's not an active search
-			hideDictionaryPopup();
-		});
-		
-		originalPromptArea.addEventListener('keydown', function(e) {
-			if (dictionarySearchActive && e.key === 'Escape') {
-				e.preventDefault();
-				hideDictionaryPopup();
+			if (textBeforeCursor.endsWith('#')) {
+				// Remove the '#' from the textarea to prevent it from being part of the prompt.
+				this.value = text.substring(0, cursorPos - 1) + text.substring(cursorPos);
+				this.setSelectionRange(cursorPos - 1, cursorPos - 1); // Restore cursor position.
+				
+				showDictionaryPopup(this);
 			}
 		});
 		
-		// Hide popup when clicking outside
+		// Event listener for the search input within the popup.
+		dictionarySearchInput.addEventListener('input', async function() {
+			const entries = await fetchDictionaryEntries(this.value);
+			renderDictionaryResults(entries);
+		});
+		
+		// Event listener for keyboard navigation (arrows, enter, escape).
+		dictionarySearchInput.addEventListener('keydown', function(e) {
+			const items = dictionaryResultsContainer.querySelectorAll('.dictionary-item');
+			if (items.length === 0 && e.key !== 'Escape') return;
+			
+			switch (e.key) {
+				case 'ArrowDown':
+					e.preventDefault();
+					activeSelectionIndex = (activeSelectionIndex + 1) % items.length;
+					updateSelection(items);
+					break;
+				case 'ArrowUp':
+					e.preventDefault();
+					activeSelectionIndex = (activeSelectionIndex - 1 + items.length) % items.length;
+					updateSelection(items);
+					break;
+				case 'Enter':
+					e.preventDefault();
+					if (activeSelectionIndex > -1) {
+						items[activeSelectionIndex].click(); // Trigger click to insert.
+					}
+					break;
+				case 'Escape':
+					e.preventDefault();
+					hideDictionaryPopup();
+					break;
+			}
+		});
+		
+		// Hide popup when clicking outside of it.
 		document.addEventListener('click', function(e) {
-			if (dictionarySearchActive && !dictionaryPopup.contains(e.target) && e.target !== originalPromptArea) {
+			if (dictionaryPopup.style.display === 'block' && !dictionaryPopup.contains(e.target) && e.target !== originalPromptArea) {
 				hideDictionaryPopup();
 			}
 		});

@@ -251,8 +251,13 @@
 		</div>
 		
 		{{-- START MODIFICATION: Add dictionary search popup --}}
-		<div id="dictionary-popup" class="list-group" style="display: none; position: absolute; z-index: 1050; width: 350px; max-height: 300px; overflow-y: auto; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
-			{{-- Search results will be appended here by JS --}}
+		<div id="dictionary-popup" style="display: none; position: absolute; z-index: 1050; width: 450px; background-color: white; border: 1px solid #ddd; box-shadow: 0 2px 5px rgba(0,0,0,0.1); border-radius: 0.25rem;">
+			<div class="p-2">
+				<input type="text" id="dictionary-search-input" class="form-control" placeholder="Search dictionary...">
+			</div>
+			<div id="dictionary-results-container" class="list-group list-group-flush" style="max-height: 300px; overflow-y: auto;">
+				{{-- Search results will be appended here by JS --}}
+			</div>
 		</div>
 		{{-- END MODIFICATION --}}
 	</div>
@@ -295,34 +300,43 @@
 @section('styles')
 	{{-- START MODIFICATION: Add styles for dictionary search popup --}}
 	<style>
-      .dictionary-popup .list-group-item {
+      #dictionary-results-container .dictionary-item {
           display: flex;
           align-items: center;
           cursor: pointer;
-          padding: 0.5rem;
+          padding: 0.5rem 0.75rem;
       }
-      .dictionary-popup .list-group-item img {
-          width: 40px;
-          height: 40px;
+      #dictionary-results-container .dictionary-item img {
+          width: 50px;
+          height: 50px;
           object-fit: cover;
-          margin-right: 10px;
+          margin-right: 12px;
           border-radius: 4px;
+          flex-shrink: 0;
       }
-      .dictionary-popup .list-group-item:hover {
+      #dictionary-results-container .dictionary-item:hover {
           background-color: #f0f0f0;
       }
-      .dictionary-popup .list-group-item-info {
+      /* Bootstrap's .active class handles the highlight for keyboard nav */
+      #dictionary-results-container .dictionary-item.active {
+          background-color: #0d6efd;
+          color: white;
+      }
+      #dictionary-results-container .dictionary-item.active .dictionary-item-info p {
+          color: #e9ecef;
+      }
+      .dictionary-item-info {
           overflow: hidden;
       }
-      .dictionary-popup .list-group-item-info strong {
+      .dictionary-item-info strong {
           display: block;
           font-size: 0.9rem;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
       }
-      .dictionary-popup .list-group-item-info p {
-          font-size: 0.75rem;
+      .dictionary-item-info p {
+          font-size: 0.8rem;
           margin: 0;
           white-space: nowrap;
           overflow: hidden;
