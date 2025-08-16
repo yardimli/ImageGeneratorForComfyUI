@@ -22,8 +22,8 @@
 	});
 
 	Route::get('/prompts/pending', [PromptApiController::class, 'getPendingPrompts'])->withoutMiddleware([ThrottleRequests::class]);
-	Route::post('/prompts/update-filename', [PromptApiController::class, 'updateFilename']);
-	Route::post('/prompts/update-status', [PromptApiController::class, 'updateRenderStatus']);
+	Route::post('/prompts/update-filename', [PromptApiController::class, 'updateFilename'])->withoutMiddleware([ThrottleRequests::class]);
+	Route::post('/prompts/update-status', [PromptApiController::class, 'updateRenderStatus'])->withoutMiddleware([ThrottleRequests::class]);
 	Route::get('/prompts/queue-count', [PromptApiController::class, 'getQueueCount'])->withoutMiddleware([ThrottleRequests::class]);
 	Route::get('/prompts/upscale-queue-count', [UpscaleAndNotesController::class, 'getUpscaleQueueCount'])->withoutMiddleware([ThrottleRequests::class]);
 
