@@ -21,6 +21,9 @@ document.addEventListener('DOMContentLoaded', function () {
 	let activeImageUploadContainer = null;
 
 	const llmModelKey = 'promptDictAi_model';
+	const promptModelKey = 'promptDict_promptInstructions';
+	const promptInstructionsKey = 'promptDict_promptInstructions';
+	const drawModelKey = 'promptDict_drawModel';
 	
 	function openCropper(imageUrl) {
 		imageToCrop.src = imageUrl;
@@ -377,8 +380,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		const generatedPromptText = document.getElementById('generated-prompt-text');
 		const fullPromptTextarea = document.getElementById('full-prompt-text');
 		let activeImagePromptTextarea = null;
-		const promptModelKey = 'storyCreateAi_model';
-		const promptInstructionsKey = 'promptDict_promptInstructions';
 		
 		function updateFullPromptPreview() {
 			if (!activeImagePromptTextarea || !fullPromptTextarea) return;
@@ -480,7 +481,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
 		const drawHeightInput = document.getElementById('draw-height');
-		const drawModelKey = 'promptDict_drawModel';
 		
 		drawWithAiModalEl.addEventListener('shown.bs.modal', () => {
 			const savedModel = localStorage.getItem(drawModelKey);
@@ -594,8 +594,6 @@ document.addEventListener('DOMContentLoaded', function () {
 						imagePreview.dataset.bsTarget = '#imageDetailModal';
 						imagePreview.dataset.imageUrl = statusData.filename;
 						imagePreview.dataset.promptId = statusData.prompt_id;
-						imagePreview.dataset.upscaleStatus = statusData.upscale_status;
-						imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
 					}
 				} catch (pollError) {
 					clearInterval(pollInterval);
@@ -604,77 +602,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			}, 5000);
 		}
 	}
-	
-	// --- Image Detail Modal (Upscaling) Logic ---
-	const imageDetailModalEl = document.getElementById('imageDetailModal');
-	if (imageDetailModalEl) {
-		const modalImage = document.getElementById('modalDetailImage');
-		const upscaleBtnContainer = document.getElementById('upscale-button-container');
-		const upscaleStatusContainer = document.getElementById('upscale-status-container');
-		let activeImageTrigger = null;
-		
-		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
-			const trigger = event.relatedTarget;
-			if (!trigger || !trigger.dataset.imageUrl) {
-				event.preventDefault();
-				return;
-			}
-			activeImageTrigger = trigger;
-			modalImage.src = trigger.dataset.imageUrl;
-			upscaleStatusContainer.innerHTML = '';
-			const upscaleStatus = parseInt(trigger.dataset.upscaleStatus, 10);
-			if (upscaleStatus === 2 && trigger.dataset.upscaleUrl) {
-				upscaleBtnContainer.innerHTML = `<a href="${trigger.dataset.upscaleUrl}" target="_blank" class="btn btn-info">View Upscaled</a>`;
-			} else if (upscaleStatus === 1) {
-				upscaleBtnContainer.innerHTML = `<button class="btn btn-warning" disabled>Upscaling...</button>`;
-			} else if (trigger.dataset.promptId) {
-				upscaleBtnContainer.innerHTML = `<button class="btn btn-success upscale-story-image-btn" data-prompt-id="${trigger.dataset.promptId}" data-filename="${trigger.dataset.imageUrl}">Upscale Image</button>`;
-			} else {
-				upscaleBtnContainer.innerHTML = '';
-			}
-		});
-		
-		document.body.addEventListener('click', async function (e) {
-			if (e.target.classList.contains('upscale-story-image-btn')) {
-				const button = e.target;
-				button.disabled = true;
-				button.innerHTML = '<span class="spinner-border spinner-border-sm"></span> Upscaling...';
-				upscaleStatusContainer.innerHTML = 'Sending request...';
-				try {
-					const response = await fetch(`/images/${button.dataset.promptId}/upscale`, {
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-						body: JSON.stringify({ filename: button.dataset.filename })
-					});
-					const data = await response.json();
-					if (data.prediction_id) {
-						upscaleStatusContainer.innerHTML = 'Upscale in progress...';
-						if (activeImageTrigger) {
-							const imageContainer = activeImageTrigger.closest('.image-upload-container');
-							if (imageContainer) {
-								const label = imageContainer.previousElementSibling;
-								if (label && label.tagName === 'LABEL') {
-									label.querySelectorAll('.badge').forEach(b => b.remove());
-									const newBadge = document.createElement('span');
-									newBadge.className = 'badge bg-warning ms-2';
-									newBadge.title = 'Image is being upscaled';
-									newBadge.textContent = 'Upscaling...';
-									label.appendChild(newBadge);
-								}
-							}
-						}
-					} else {
-						throw new Error(data.message || 'Failed to start upscale.');
-					}
-				} catch (error) {
-					upscaleStatusContainer.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
-					button.disabled = false;
-					button.textContent = 'Upscale Image';
-				}
-			}
-		});
-	}
-	
+
 	// --- AI Auto-Generate Entries Modal ---
 	const generateEntriesModalEl = document.getElementById('generateEntriesModal');
 	if (generateEntriesModalEl) {
@@ -731,6 +659,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			createBtn.querySelector('.spinner-border').classList.add('d-none');
 			generatedEntriesCache = [];
 		});
+		
+		document.getElementById('generate-entries-model').addEventListener('change', (e) => localStorage.setItem(llmModelKey, e.target.value));
 		
 		promptTextarea.addEventListener('input', updateFullGenerateEntriesPrompt);
 		countSelect.addEventListener('change', updateFullGenerateEntriesPrompt);

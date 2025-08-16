@@ -59,11 +59,6 @@
 								</div>
 							</div>
 							<div class="col-md-4">
-								<label class="form-label">Image
-									@if(isset($entry->prompt_data) && $entry->prompt_data->upscale_status === 1)
-										<span class="badge bg-warning ms-2" title="Image is being upscaled">Upscaling...</span>
-									@endif
-								</label>
 								<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 									<img src="{{ $entry->image_path ?: 'https://via.placeholder.com/200' }}"
 									     class="asset-image-preview"
@@ -73,8 +68,6 @@
 									     data-bs-target="#imageDetailModal"
 									     data-image-url="{{ $entry->image_path }}"
 									     data-prompt-id="{{ $entry->prompt_data->id }}"
-									     data-upscale-status="{{ $entry->prompt_data->upscale_status }}"
-									     data-upscale-url="{{ $entry->prompt_data->upscale_url ? asset('storage/upscaled/' . $entry->prompt_data->upscale_url) : '' }}"
 										@endif
 									>
 									<div class="spinner-overlay d-none position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(var(--bs-body-color-rgb), 0.5);">
