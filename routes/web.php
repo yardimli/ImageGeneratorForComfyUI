@@ -71,6 +71,7 @@
 			Route::post('/', [PromptDictionaryController::class, 'update'])->name('update');
 			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
 			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
+			Route::post('/generate-entries', [PromptDictionaryController::class, 'generateEntries'])->name('generate-entries'); // ADDED
 
 			Route::prefix('{entry}')->group(function () {
 				Route::post('/generate-image', [PromptDictionaryImageController::class, 'generate'])->name('generate-image');

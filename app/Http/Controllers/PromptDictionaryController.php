@@ -163,4 +163,40 @@
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
 		}
+
+		/** // START MODIFICATION
+		 * Generate dictionary entries using AI.
+		 */
+		public function generateEntries(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'prompt' => 'required|string',
+				'model' => 'required|string',
+			]);
+
+			try {
+				$response = $llmController->callLlmSync(
+					$validated['prompt'],
+					$validated['model'],
+					'AI Dictionary Entry Generation',
+					0.7,
+					'json_object'
+				);
+
+				$generatedEntries = $response['entries'] ?? null;
+
+				if (!$generatedEntries || !is_array($generatedEntries)) {
+					Log::error('AI Dictionary Entry Generation failed to return a valid array.', ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'entries' => $generatedEntries
+				]);
+			} catch (\Exception $e) {
+				Log::error('AI Dictionary Entry Generation Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while generating entries. Please try again.'], 500);
+			}
+		} // END MODIFICATION
 	}
