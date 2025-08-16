@@ -20,10 +20,25 @@ document.addEventListener('DOMContentLoaded', function () {
 	const originalPromptArea = document.querySelector('textarea[name="original_prompt"]');
 	const mainPromptArea = document.querySelector('textarea[name="prompt_template"]');
 	const aspectRatioSelect = document.getElementById('aspectRatio');
+	// START MODIFICATION: Get the new container for template controls.
+	const templateRelatedControls = document.getElementById('template-related-controls');
+	// END MODIFICATION
 	
 	
+	// START MODIFICATION: Function to show/hide template controls based on selection.
+	function toggleTemplateControls() {
+		if (templateSelect.value) { // Show if a template is selected
+			templateRelatedControls.classList.remove('d-none');
+		} else { // Hide if "No Template" is selected
+			templateRelatedControls.classList.add('d-none');
+		}
+	}
+	// END MODIFICATION
 	
-	
+	// START MODIFICATION: Hide template controls on initial page load if no template is selected.
+	toggleTemplateControls();
+	// END MODIFICATION
+
 // Function to add a new template row
 	function addTemplateRow() {
 		const newRow = document.createElement('div');
@@ -50,6 +65,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Modify the template selection to split content by "::"
 	templateSelect.addEventListener('change', async function () {
+		// START MODIFICATION: Toggle visibility of template controls when selection changes.
+		toggleTemplateControls();
+		// END MODIFICATION
+		
 		const selectedTemplateName = this.value;
 		const templateContent = selectedTemplateName ? templateContents[selectedTemplateName] : '';
 		

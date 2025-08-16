@@ -192,22 +192,26 @@
 						          placeholder="This text will replace {prompt} in the template"></textarea>
 					</div>
 					
-					<div class="mb-3">
-						<label class="form-label">Prompt Template</label>
-						<div id="prompt-template-container">
-							<div class="prompt-template-row mb-2 d-flex">
-								<textarea class="form-control prompt-template-part me-2" rows="2"
-								          placeholder="Prompt section"></textarea>
-								<button type="button" style="width: 100px;" class="btn btn-success add-template-row">Add</button>
+					<!-- START MODIFICATION: Add a wrapper for template-related controls, hidden by default. -->
+					<div id="template-related-controls" class="d-none">
+						<div class="mb-3">
+							<label class="form-label">Prompt Template</label>
+							<div id="prompt-template-container">
+								<div class="prompt-template-row mb-2 d-flex">
+									<textarea class="form-control prompt-template-part me-2" rows="2"
+									          placeholder="Prompt section"></textarea>
+									<button type="button" style="width: 100px;" class="btn btn-success add-template-row">Add</button>
+								</div>
 							</div>
+							<!-- Hidden field to store the combined prompt template value -->
+							<input type="hidden" name="prompt_template" id="combined-prompt-template">
 						</div>
-						<!-- Hidden field to store the combined prompt template value -->
-						<input type="hidden" name="prompt_template" id="combined-prompt-template">
+						
+						<div class="mb-3">
+							<button type="button" class="btn btn-secondary" id="saveTemplateBtn">Save as Template</button>
+						</div>
 					</div>
-					
-					<div class="mb-3">
-						<button type="button" class="btn btn-secondary" id="saveTemplateBtn">Save as Template</button>
-					</div>
+					<!-- END MODIFICATION -->
 					
 					<div class="row mb-3">
 						<div class="col-md-6">
