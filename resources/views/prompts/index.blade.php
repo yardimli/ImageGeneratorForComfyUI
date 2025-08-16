@@ -105,7 +105,7 @@
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
 									<input type="hidden" name="create_schnell" value="0">
-									<input type="checkbox" class="form-check-input" name="create_schnell" id="createSchnell" value="1" checked>
+									<input type="checkbox" class="form-check-input" name="create_schnell" id="createSchnell" value="1">
 								</div>
 								<label class="form-check-label mb-0" for="createSchnell">Schnell 0₺</label>
 							</div>
@@ -114,7 +114,7 @@
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
 									<input type="hidden" name="create_dev" value="0">
-									<input type="checkbox" class="form-check-input" name="create_dev" id="createDev" value="1" checked>
+									<input type="checkbox" class="form-check-input" name="create_dev" id="createDev" value="1">
 								</div>
 								<label class="form-check-label mb-0" for="createDev">Dev 0₺</label>
 							</div>
@@ -124,7 +124,7 @@
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
 									<input type="hidden" name="create_minimax" value="0">
-									<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1" checked>
+									<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1">
 								</div>
 								<label class="form-check-label mb-0" for="createMinimax">MiniMax 0.3₺</label>
 							</div>
