@@ -65,7 +65,7 @@
 <div id="app">
 	<nav class="navbar navbar-expand-md bg-body-tertiary shadow-sm">
 		<div class="container">
-			<a class="navbar-brand" href="{{ url('/') }}">
+			<a class="navbar-brand" href="{{ route('home') }}">
 				{{ config('app.name', 'Laravel') }}
 			</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
@@ -77,14 +77,16 @@
 				<!-- Left Side Of Navbar -->
 				<ul class="navbar-nav me-auto">
 					<li class="nav-item">
-						<a class="nav-link" href="{{ route('home') }}">Home</a>
-					</li>
-					<li class="nav-item">
 						<a class="nav-link" href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['all']]) }}">Gallery</a>
 					</li>
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.index') }}">Prompts</a>
 					</li>
+					{{-- START MODIFICATION --}}
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('prompt-dictionary.index') }}">Prompt Dict</a>
+					</li>
+					{{-- END MODIFICATION --}}
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
 					</li>
@@ -107,7 +109,6 @@
 							Queue Management <span class="badge bg-primary" id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
 						</a>
 					</li>
-					{{-- START MODIFICATION --}}
 					@php
 						$upscaleCount = \App\Models\Prompt::where('user_id', auth()->id())->where('upscale_status', 1)->count();
 					@endphp
@@ -116,7 +117,6 @@
 							Upscaling <span class="badge bg-warning @if($upscaleCount == 0) d-none @endif" id="navUpscaleQueueCount">{{ $upscaleCount }}</span>
 						</a>
 					</li>
-					{{-- END MODIFICATION --}}
 				</ul>
 				
 				<!-- Right Side Of Navbar -->

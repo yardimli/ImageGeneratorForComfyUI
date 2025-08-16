@@ -23,6 +23,7 @@
 			'story_page_id',
 			'story_character_id',
 			'story_place_id',
+			'prompt_dictionary_entry_id', // START MODIFICATION
 			'upload_to_s3',
 
 			'create_schnell',

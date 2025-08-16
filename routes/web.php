@@ -10,7 +10,9 @@
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
-	use App\Http\Controllers\QuizController; // MODIFICATION: Add QuizController.
+	use App\Http\Controllers\PromptDictionaryController; // START MODIFICATION
+	use App\Http\Controllers\PromptDictionaryImageController; // START MODIFICATION
+	use App\Http\Controllers\QuizController;
 	use App\Http\Controllers\StoryPdfController;
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
@@ -62,6 +64,20 @@
 				// Note: The delete route for settings is now outside this group.
 			});
 		});
+
+		// START MODIFICATION: Add Prompt Dictionary routes
+		Route::prefix('prompt-dictionary')->name('prompt-dictionary.')->group(function () {
+			Route::get('/', [PromptDictionaryController::class, 'index'])->name('index');
+			Route::post('/', [PromptDictionaryController::class, 'update'])->name('update');
+			Route::post('/rewrite-description', [PromptDictionaryController::class, 'rewriteDescription'])->name('rewrite-description');
+			Route::post('/generate-image-prompt', [PromptDictionaryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
+
+			Route::prefix('{entry}')->group(function () {
+				Route::post('/generate-image', [PromptDictionaryImageController::class, 'generate'])->name('generate-image');
+				Route::get('/image-status', [PromptDictionaryImageController::class, 'checkStatus'])->name('image-status');
+			});
+		});
+		// END MODIFICATION
 
 		// --- Image Actions (Upscale, Notes) ---
 		Route::prefix('images/{prompt}')->name('image.')->group(function () {
@@ -150,20 +166,14 @@
 			// Custom routes
 			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
-			// START MODIFICATION: Add route for AI text rewriting.
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
-			// END MODIFICATION
-			// START MODIFICATION: Add route for AI asset description rewriting.
 			Route::post('/rewrite-asset-description', [StoryController::class, 'rewriteAssetDescription'])->name('rewrite-asset-description');
-			// END MODIFICATION
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
 			Route::post('/generate-character-image-prompt', [StoryController::class, 'generateCharacterImagePrompt'])->name('generate-character-image-prompt');
 			Route::post('/generate-place-image-prompt', [StoryController::class, 'generatePlaceImagePrompt'])->name('generate-place-image-prompt');
 
-			// START MODIFICATION: Changed page insertion routes from POST to PUT to match the parent form's method.
 			Route::put('/{story}/pages/{storyPage}/insert-above', [StoryController::class, 'insertPageAbove'])->name('pages.insert-above');
 			Route::put('/{story}/pages/{storyPage}/insert-below', [StoryController::class, 'insertPageBelow'])->name('pages.insert-below');
-			// END MODIFICATION
 
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
@@ -189,11 +199,9 @@
 			Route::post('/{story}/dictionary/generate', [DictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
 			Route::post('/{story}/dictionary', [DictionaryController::class, 'updateDictionary'])->name('dictionary.update');
 
-			// START MODIFICATION: Add routes for quiz management.
 			Route::get('/{story}/quiz', [QuizController::class, 'quiz'])->name('quiz');
 			Route::post('/{story}/quiz/generate', [QuizController::class, 'generateQuiz'])->name('quiz.generate');
 			Route::post('/{story}/quiz', [QuizController::class, 'updateQuiz'])->name('quiz.update');
-			// END MODIFICATION
 
 			Route::get('/{story}/pdf/setup', [StoryPdfController::class, 'setup'])->name('pdf.setup');
 			Route::post('/{story}/pdf/generate', [StoryPdfController::class, 'generate'])->name('pdf.generate');
