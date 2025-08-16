@@ -12,39 +12,44 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// --- Image Handling Logic ---
 	const cropperModalEl = document.getElementById('cropperModal');
-	const cropperModal = new bootstrap.Modal(cropperModalEl);
-	const imageToCrop = document.getElementById('imageToCrop');
+	if (!cropperModalEl) {
+		console.error('Cropper modal element not found.');
+	} else {
+		const cropperModal = new bootstrap.Modal(cropperModalEl);
+		const imageToCrop = document.getElementById('imageToCrop');
+		let cropper;
+		
+		function openCropper(imageUrl) {
+			imageToCrop.src = imageUrl;
+			cropperModal.show();
+		}
+		
+		cropperModalEl.addEventListener('shown.bs.modal', function () {
+			if (cropper) cropper.destroy();
+			cropper = new Cropper(imageToCrop, {
+				aspectRatio: 1,
+				viewMode: 1,
+				background: false,
+			});
+		});
+		
+		cropperModalEl.addEventListener('hidden.bs.modal', function () {
+			if (cropper) {
+				cropper.destroy();
+				cropper = null;
+			}
+		});
+	}
+	
 	const historyModalEl = document.getElementById('historyModal');
 	const historyModal = new bootstrap.Modal(historyModalEl);
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
-	let cropper;
 	let activeImageUploadContainer = null;
 
 	const llmModelKey = 'promptDictAi_model';
 	const promptModelKey = 'promptDict_promptInstructions';
 	const promptInstructionsKey = 'promptDict_promptInstructions';
 	const drawModelKey = 'promptDict_drawModel';
-	
-	function openCropper(imageUrl) {
-		imageToCrop.src = imageUrl;
-		cropperModal.show();
-	}
-	
-	cropperModalEl.addEventListener('shown.bs.modal', function () {
-		if (cropper) cropper.destroy();
-		cropper = new Cropper(imageToCrop, {
-			aspectRatio: 1,
-			viewMode: 1,
-			background: false,
-		});
-	});
-	
-	cropperModalEl.addEventListener('hidden.bs.modal', function () {
-		if (cropper) {
-			cropper.destroy();
-			cropper = null;
-		}
-	});
 	
 	function dataURLtoBlob(dataurl) {
 		const arr = dataurl.split(',');
