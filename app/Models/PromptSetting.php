@@ -24,15 +24,17 @@
 			'story_character_id',
 			'story_place_id',
 			'upload_to_s3',
+
+			'create_schnell',
+			'create_dev',
 			'create_minimax',
 			'create_imagen',
 			'create_aura_flow',
 			'create_ideogram_v2a',
 			'create_luma_photon',
 			'create_recraft_20b',
-			// START MODIFICATION
 			'create_fal_qwen_image',
-			// END MODIFICATION
+
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
@@ -54,15 +56,16 @@
 			'generate_original_prompt' => 'boolean',
 			'append_to_prompt' => 'boolean',
 			'upload_to_s3' => 'boolean',
+
+			'create_schnell' => 'boolean',
+			'create_dev' => 'boolean',
 			'create_minimax' => 'boolean',
 			'create_imagen' => 'boolean',
-			// START MODIFICATION: Fix typo and add new model
 			'create_aura_flow' => 'boolean',
 			'create_ideogram_v2a' => 'boolean',
 			'create_luma_photon' => 'boolean',
 			'create_recraft_20b' => 'boolean',
 			'create_fal_qwen_image' => 'boolean',
-			// END MODIFICATION
 		];
 
 

@@ -41,17 +41,18 @@
 					'render_each_prompt_times' => 'required|integer|min:1',
 					'width' => 'required|integer',
 					'height' => 'required|integer',
-					'model' => 'required|in:schnell,dev,outpaint',
 					'upload_to_s3' => 'required|in:0,1,true,false',
+
+					'create_schnell' => 'required|in:0,1,true,false',
+					'create_dev' => 'required|in:0,1,true,false',
 					'create_minimax' => 'required|in:0,1,true,false',
 					'create_imagen' => 'required|in:0,1,true,false',
 					'create_aura_flow' => 'required|in:0,1,true,false',
 					'create_ideogram_v2a' => 'required|in:0,1,true,false',
 					'create_luma_photon' => 'required|in:0,1,true,false',
 					'create_recraft_20b' => 'required|in:0,1,true,false',
-					// START MODIFICATION
 					'create_fal_qwen_image' => 'required|in:0,1,true,false',
-					// END MODIFICATION
+
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -131,17 +132,18 @@
 					'render_each_prompt_times' => $settings['render_each_prompt_times'],
 					'width' => $settings['width'],
 					'height' => $settings['height'],
-					'model' => $settings['model'],
 					'upload_to_s3' => filter_var($settings['upload_to_s3'] ?? true, FILTER_VALIDATE_BOOLEAN),
+
+					'create_schnell' => filter_var($settings['create_schnell'] ?? false, FILTER_VALIDATE_BOOLEAN),
+					'create_dev' => filter_var($settings['create_dev'] ?? false, FILTER_VALIDATE_BOOLEAN),
 					'create_minimax' => filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_imagen' => filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_aura_flow' => filter_var($settings['create_aura_flow'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_ideogram_v2a' => filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_luma_photon' => filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN),
 					'create_recraft_20b' => filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					// START MODIFICATION
 					'create_fal_qwen_image' => filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					// END MODIFICATION
+
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
@@ -153,18 +155,32 @@
 
 				foreach ($request->prompts as $finalPrompt) {
 					for ($i = 0; $i < $settings['render_each_prompt_times']; $i++) {
-						// Store the prompt
-						Prompt::create([
-							'user_id' => auth()->id(),
-							'generation_type' => 'prompt',
-							'prompt_setting_id' => $prompt_setting_id,
-							'original_prompt' => $settings['original_prompt'],
-							'generated_prompt' => $finalPrompt,
-							'width' => $settings['width'],
-							'height' => $settings['height'],
-							'model' => $settings['model'],
-							'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-						]);
+						if (filter_var($settings['create_schnell'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'schnell',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
+						if (filter_var($settings['create_dev'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
+							Prompt::create([
+								'user_id' => auth()->id(),
+								'generation_type' => 'prompt',
+								'prompt_setting_id' => $prompt_setting_id,
+								'original_prompt' => $settings['original_prompt'],
+								'generated_prompt' => $finalPrompt,
+								'width' => $settings['width'],
+								'height' => $settings['height'],
+								'model' => 'dev',
+								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+							]);
+						}
 						if (filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
 							Prompt::create([
 								'user_id' => auth()->id(),
@@ -308,17 +324,18 @@
 				'render_each_prompt_times' => $settings->render_each_prompt_times,
 				'width' => $settings->width,
 				'height' => $settings->height,
-				'model' => $settings->model,
 				'upload_to_s3' => $settings->upload_to_s3,
+
+				'create_schnell' => $settings->create_schnell,
+				'create_dev' => $settings->create_dev,
 				'create_minimax' => $settings->create_minimax,
 				'create_imagen' => $settings->create_imagen,
 				'create_aura_flow' => $settings->create_aura_flow,
 				'create_ideogram_v2a' => $settings->create_ideogram_v2a,
 				'create_luma_photon' => $settings->create_luma_photon,
 				'create_recraft_20b' => $settings->create_recraft_20b,
-				// START MODIFICATION
 				'create_fal_qwen_image' => $settings->create_fal_qwen_image,
-				// END MODIFICATION
+
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,

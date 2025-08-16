@@ -46,14 +46,8 @@
 							<input type="number" class="form-control" name="render_each_prompt_times" value="1" min="1">
 						</div>
 						
-						<div class="col-md-2">
-							<label class="form-label">Model</label>
-							<select class="form-select" name="model">
-								<option value="schnell" selected>Schnell</option>
-								<option value="dev" selected>Dev</option>
-								<option value="outpaint">Outpaint</option>
-							</select>
-						</div>
+						{{-- START MODIFICATION: Removed model dropdown --}}
+						{{-- END MODIFICATION --}}
 					
 					</div>
 					
@@ -106,6 +100,26 @@
 						</div>
 					</div>
 					<div class="row mb-3">
+						{{-- START MODIFICATION: Added Schnell and Dev model checkboxes --}}
+						<div class="col-md-3">
+							<div class="d-flex align-items-center">
+								<div class="form-check me-2">
+									<input type="hidden" name="create_schnell" value="0">
+									<input type="checkbox" class="form-check-input" name="create_schnell" id="createSchnell" value="1" checked>
+								</div>
+								<label class="form-check-label mb-0" for="createSchnell">Schnell 0₺</label>
+							</div>
+						</div>
+						<div class="col-md-3">
+							<div class="d-flex align-items-center">
+								<div class="form-check me-2">
+									<input type="hidden" name="create_dev" value="0">
+									<input type="checkbox" class="form-check-input" name="create_dev" id="createDev" value="1" checked>
+								</div>
+								<label class="form-check-label mb-0" for="createDev">Dev 0₺</label>
+							</div>
+						</div>
+						{{-- END MODIFICATION --}}
 						<div class="col-md-3">
 							<div class="d-flex align-items-center">
 								<div class="form-check me-2">
