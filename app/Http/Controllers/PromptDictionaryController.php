@@ -41,13 +41,21 @@
 		/**
 		 * Display the prompt dictionary grid view.
 		 */
-		public function grid(LlmController $llmController)
+		// START MODIFICATION: Injected Request and added filtering logic.
+		public function grid(Request $request, LlmController $llmController)
 		{
-			$entries = PromptDictionaryEntry::where('user_id', auth()->id())
-				->orderBy('name', 'asc')
-				->get();
+			$category = $request->input('category');
 
-			// START MODIFICATION: Fetch unique word categories for the generation modal.
+			$query = PromptDictionaryEntry::where('user_id', auth()->id());
+
+			if ($category) {
+				$query->where('word_category', $category);
+			}
+
+			$entries = $query->orderBy('name', 'asc')->get();
+			// END MODIFICATION
+
+			// START MODIFICATION: Fetch unique word categories for the generation modal and filter dropdown.
 			$wordCategories = PromptDictionaryEntry::where('user_id', auth()->id())
 				->whereNotNull('word_category')
 				->distinct()
@@ -65,8 +73,8 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			// MODIFICATION: Pass categories to the view.
-			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories'));
+			// MODIFICATION: Pass categories and the selected category to the view.
+			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category'));
 		}
 
 		/**

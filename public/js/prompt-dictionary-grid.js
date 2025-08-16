@@ -2,6 +2,15 @@ document.addEventListener('DOMContentLoaded', function () {
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	const llmModelKey = 'promptDictAi_model';
 	
+	// START MODIFICATION: Added auto-submit for category filter
+	const categoryFilter = document.getElementById('category-filter');
+	if (categoryFilter) {
+		categoryFilter.addEventListener('change', function () {
+			this.closest('form').submit();
+		});
+	}
+	// END MODIFICATION
+	
 	// --- AI Auto-Generate Entries Modal ---
 	const generateEntriesModalEl = document.getElementById('generateEntriesModal');
 	if (generateEntriesModalEl) {

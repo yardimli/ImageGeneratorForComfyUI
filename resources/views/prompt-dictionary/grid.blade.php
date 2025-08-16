@@ -24,6 +24,24 @@
 			</div>
 		@endif
 		
+		{{-- START MODIFICATION: Added category filter form --}}
+		<div class="mb-4">
+			<form action="{{ route('prompt-dictionary.index') }}" method="GET" id="filter-form" class="row g-3 align-items-center">
+				<div class="col-auto">
+					<label for="category-filter" class="col-form-label">Filter by Category:</label>
+				</div>
+				<div class="col-auto">
+					<select name="category" id="category-filter" class="form-select">
+						<option value="">All Categories</option>
+						@foreach($wordCategories as $cat)
+							<option value="{{ $cat }}" {{ $category == $cat ? 'selected' : '' }}>{{ $cat }}</option>
+						@endforeach
+					</select>
+				</div>
+			</form>
+		</div>
+		{{-- END MODIFICATION --}}
+		
 		@if($entries->isEmpty())
 			<div class="text-center p-5 border rounded">
 				<h4>Your dictionary is empty.</h4>
@@ -36,7 +54,12 @@
 						<a href="{{ route('prompt-dictionary.edit', ['entry_id' => $entry->id]) }}" class="card h-100 text-decoration-none entry-grid-card">
 							<img src="{{ $entry->image_path ?: 'https://via.placeholder.com/200?text=No+Image' }}" class="card-img-top" alt="{{ $entry->name }}">
 							<div class="card-body">
-								<p class="card-title text-center fw-bold">{{ $entry->name }}</p>
+								<p class="card-title text-center fw-bold mb-1">{{ $entry->name }}</p>
+								{{-- START MODIFICATION: Display word category if it exists --}}
+								@if($entry->word_category)
+									<p class="text-center mb-0"><span class="badge bg-secondary">{{ $entry->word_category }}</span></p>
+								@endif
+								{{-- END MODIFICATION --}}
 							</div>
 						</a>
 					</div>
