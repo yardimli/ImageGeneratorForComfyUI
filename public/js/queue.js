@@ -39,7 +39,7 @@ function updateUpscaleQueueCount() {
 // END MODIFICATION
 
 document.addEventListener('DOMContentLoaded', function () {
-	queueUpdateInterval = setInterval(updateQueueCount, 3000);
+	queueUpdateInterval = setInterval(updateQueueCount, 5000);
 	updateQueueCount();
 	
 	// START MODIFICATION
