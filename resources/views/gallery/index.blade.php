@@ -130,10 +130,10 @@
 										<label class="form-check-label" for="model-recraft-20b">Recraft 20b</label>
 									</div>
 									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="fal-qwen-image"
-										       id="model-fal-qwen-image"
-											{{ in_array('fal-qwen-image', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-fal-qwen-image">Fal Qwen Image</label>
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="fal-ai/qwen-image"
+										       id="model-fal-ai/qwen-image"
+											{{ in_array('fal-ai/qwen-image', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-fal-ai/qwen-image">Fal Qwen Image</label>
 									</div>
 									
 									<div class="mt-3">
