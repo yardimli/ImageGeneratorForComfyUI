@@ -129,6 +129,12 @@
 											{{ in_array('recraft-20b', $selectedTypes ?? []) ? 'checked' : '' }}>
 										<label class="form-check-label" for="model-recraft-20b">Recraft 20b</label>
 									</div>
+									<div class="form-check">
+										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="fal_qwen_image"
+										       id="model-fal_qwen_image"
+											{{ in_array('fal_qwen_image', $selectedTypes ?? []) ? 'checked' : '' }}>
+										<label class="form-check-label" for="model-fal_qwen_image">Fal Qwen Image</label>
+									</div>
 									
 									<div class="mt-3">
 										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
