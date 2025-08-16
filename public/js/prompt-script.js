@@ -414,7 +414,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	 */
 	function showDictionaryPopup(textarea) {
 		const rect = textarea.getBoundingClientRect();
-		dictionaryPopup.style.top = `${rect.bottom + window.scrollY + 5}px`;
+		dictionaryPopup.style.top = `${rect.bottom + window.scrollY}px`;
 		dictionaryPopup.style.left = `${rect.left + window.scrollX}px`;
 		dictionaryPopup.style.display = 'block';
 		
