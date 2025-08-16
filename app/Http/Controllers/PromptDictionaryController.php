@@ -119,7 +119,7 @@
 				PromptDictionaryEntry::where('user_id', auth()->id())->whereNotIn('id', $incomingIds)->delete();
 			});
 
-			return redirect()->route('prompt-dictionary.grid')->with('success', 'Dictionary updated successfully!'); // MODIFIED: Redirect to grid
+			return redirect()->route('prompt-dictionary.index')->with('success', 'Dictionary updated successfully!'); // MODIFIED: Redirect to grid
 		}
 
 		/**

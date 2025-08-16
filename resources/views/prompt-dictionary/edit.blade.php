@@ -6,7 +6,7 @@
 			<div>
 				{{-- START MODIFICATION --}}
 				<h1>Manage Dictionary Entries</h1>
-				<p class="text-muted">Add, edit, or delete your dictionary entries here. <a href="{{ route('prompt-dictionary.grid') }}">Return to Grid View</a>.</p>
+				<p class="text-muted">Add, edit, or delete your dictionary entries here. <a href="{{ route('prompt-dictionary.index') }}">Return to Grid View</a>.</p>
 			</div>
 			<div>
 				<button type="button" id="add-entry-btn" class="btn btn-primary">Add New Entry</button>
@@ -96,7 +96,7 @@
 				@empty
 					<div class="text-center p-5 border rounded">
 						<h4>No entries to display.</h4>
-						<p>Click "Add New Entry" to get started, or select an entry from the <a href="{{ route('prompt-dictionary.grid') }}">grid view</a>.</p>
+						<p>Click "Add New Entry" to get started, or select an entry from the <a href="{{ route('prompt-dictionary.index') }}">grid view</a>.</p>
 					</div>
 				@endforelse
 			</div>
