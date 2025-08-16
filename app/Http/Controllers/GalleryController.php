@@ -15,13 +15,13 @@ class GalleryController extends Controller
 
 		// If search is active, select all types
 		if (!empty($search)) {
-			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b', 'fal-qwen-image'];
 		} else {
-			$selectedTypes = $request->query('types', ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b']);
+			$selectedTypes = $request->query('types', ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b', 'fal-qwen-image']);
 
 			//check if selectedTypes contains 'all' then select all types
 			if (in_array('all', $selectedTypes)) {
-				$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
+				$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b', 'fal-qwen-image'];
 			}
 
 			if (!is_array($selectedTypes)) {
@@ -147,9 +147,9 @@ class GalleryController extends Controller
 
 		// If search is active, select all types
 		if (!empty($search)) {
-			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b'];
+			$selectedTypes = ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b', 'fal-qwen-image'];
 		} else {
-			$selectedTypes = $request->query('types', ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b']);
+			$selectedTypes = $request->query('types', ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow','ideogram-v2a','luma-photon','recraft-20b', 'fal-qwen-image']);
 			if (!is_array($selectedTypes)) {
 				$selectedTypes = [$selectedTypes];
 			}
