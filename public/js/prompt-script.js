@@ -368,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function () {
             `;
 				item.addEventListener('click', function(e) {
 					e.preventDefault();
-					insertDictionaryEntry(this.dataset.name);
+					insertDictionaryEntry(this.dataset.description || this.dataset.name);
 				});
 				dictionaryPopup.appendChild(item);
 			});
