@@ -19,6 +19,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let cropper;
 	let activeImageUploadContainer = null;
+
+	const llmModelKey = 'promptDictAi_model';
 	
 	function openCropper(imageUrl) {
 		imageToCrop.src = imageUrl;
@@ -247,7 +249,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		const replaceTextBtn = document.getElementById('replace-asset-text-btn');
 		let activeDescriptionTextarea = null;
 		let originalDescription = '';
-		const rewriteModelKey = 'storyCreateAi_model';
 		
 		const styleOptions = {
 			entry: {
@@ -297,7 +298,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
 				rewriteStyleSelect.appendChild(option);
 			}
-			const savedModel = localStorage.getItem(rewriteModelKey);
+			const savedModel = localStorage.getItem(llmModelKey);
 			if (savedModel) rewriteModelSelect.value = savedModel;
 			updateRewritePromptPreview();
 		});
@@ -314,7 +315,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		rewriteStyleSelect.addEventListener('change', updateRewritePromptPreview);
-		rewriteModelSelect.addEventListener('change', (e) => localStorage.setItem(rewriteModelKey, e.target.value));
+		rewriteModelSelect.addEventListener('change', (e) => localStorage.setItem(llmModelKey, e.target.value));
 		
 		rewriteBtn.addEventListener('click', async () => {
 			const prompt = rewriteFullPromptTextarea.value;
@@ -717,6 +718,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		generateEntriesModalEl.addEventListener('shown.bs.modal', () => {
 			updateFullGenerateEntriesPrompt();
+			
+			const savedModel = localStorage.getItem(llmModelKey);
+			if (savedModel) modelSelect.value = savedModel;
+			
 		});
 		
 		generateEntriesModalEl.addEventListener('hidden.bs.modal', () => {
