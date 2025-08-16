@@ -511,7 +511,8 @@ document.addEventListener('DOMContentLoaded', function () {
 					const card = drawButton.closest(config.cardSelector);
 					const assetId = drawButton.dataset.assetId;
 					const imagePromptTextarea = card.querySelector('.image-prompt-textarea');
-					if (imagePromptTextarea.value.trim() !== imagePromptTextarea.dataset.initialValue.trim()) {
+					const initial = JSON.parse(imagePromptTextarea.dataset.initialValue || '""');
+					if (imagePromptTextarea.value.trim() !== initial.trim()) {
 						alert('Your image prompt has unsaved changes. Please save all changes before generating an image.');
 						e.preventDefault(); e.stopPropagation(); return;
 					}
