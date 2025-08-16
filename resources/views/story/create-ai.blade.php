@@ -185,9 +185,10 @@
 			if (levelSelect && instructionsTextarea) {
 				levelSelect.addEventListener('change', function () {
 					const selectedLevel = this.value;
+					const selectedOption = this.options[this.selectedIndex];
 					if (selectedLevel) {
 						// Add a newline before appending to separate it from existing text.
-						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel}`;
+						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel} - ${selectedOption.text}`;
 						
 						// Append the text.
 						instructionsTextarea.value += textToAppend;
