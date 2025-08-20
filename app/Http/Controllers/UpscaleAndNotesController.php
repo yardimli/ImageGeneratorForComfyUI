@@ -2,9 +2,6 @@
 	namespace App\Http\Controllers;
 
 	use App\Models\Prompt; // MODIFICATION: Add Prompt model.
-	use App\Models\PromptSetting;
-	use App\Models\UserTemplate;
-	use App\Services\ChatGPTService;
 	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Http;

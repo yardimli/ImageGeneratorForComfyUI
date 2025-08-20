@@ -2,10 +2,10 @@
 
 	namespace App\Http\Controllers;
 
+	use App\Http\Controllers\LlmController; // MODIFICATION: Import LlmController
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
 	use App\Models\UserTemplate;
-	use App\Services\ChatGPTService;
 	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Http;
@@ -15,11 +15,12 @@
 
 	class PromptController extends Controller
 	{
-		protected $chatgpt;
+		// MODIFICATION: Change property to use LlmController
+		protected $llmController;
 
-		public function __construct(ChatGPTService $chatgpt)
+		public function __construct(LlmController $llmController)
 		{
-			$this->chatgpt = $chatgpt;
+			$this->llmController = $llmController;
 		}
 
 		public function index()
@@ -69,7 +70,8 @@
 
 				// Only generate prompts if prompt field is not empty
 				if (!empty($request->prompt_template)) {
-					$generatedPrompts = $this->chatgpt->generatePrompts(
+					// MODIFICATION: Call the new method on LlmController
+					$generatedPrompts = $this->llmController->generateChatPrompts(
 						$request->prompt_template,
 						(int)$request->count,
 						$request->precision,
@@ -270,7 +272,6 @@
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
 						}
-						// START MODIFICATION
 						if (filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
 							Prompt::create([
 								'user_id' => auth()->id(),
@@ -284,7 +285,6 @@
 								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
 							]);
 						}
-						// END MODIFICATION
 
 					}
 				}

@@ -2,8 +2,8 @@
 
 	namespace App\Http\Controllers;
 
+	use App\Http\Controllers\LlmController; // MODIFICATION: Import LlmController
 	use App\Models\GoodAlbumCover;
-	use App\Services\ChatGPTService;
 	use Exception;
 	use Illuminate\Http\Request;
 	use Illuminate\Pagination\LengthAwarePaginator;
@@ -169,9 +169,9 @@
 		}
 
 		/**
-		 * Generate prompts for liked album covers using OpenAI Vision.
+		 * Generate prompts for liked album covers using an LLM Vision model.
 		 */
-		public function generatePrompts(Request $request, ChatGPTService $chatGPTService)
+		public function generatePrompts(Request $request, LlmController $llmController)
 		{
 			$request->validate([
 				'cover_ids' => 'required|array|min:1',
@@ -239,8 +239,8 @@
 						// Base64 encode
 						$base64Image = base64_encode($resizedImageData);
 
-						// Call OpenAI
-						$generatedPrompt = $chatGPTService->generatePromptFromImage($promptText, $base64Image, $mimeType);
+						// MODIFICATION: Call the new method on LlmController
+						$generatedPrompt = $llmController->generatePromptFromImage($promptText, $base64Image, $mimeType);
 
 						// Update DB
 						$cover->update(['mix_prompt' => $generatedPrompt]);
@@ -484,7 +484,6 @@
 			}
 		}
 
-		// START MODIFICATION: Add method to unlike a cover
 		/**
 		 * Set a liked cover's status to unliked.
 		 *
@@ -508,7 +507,6 @@
 				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
 			}
 		}
-		// END MODIFICATION
 
 		public function upscaleCover(Request $request, GoodAlbumCover $cover)
 		{
@@ -521,7 +519,6 @@
 				return response()->json(['success' => false, 'message' => 'A Kontext image must be generated before upscaling.'], 422);
 			}
 
-			// START MODIFICATION: If re-doing an upscale, clear the old data and file first.
 			if ($cover->upscaled_path) {
 				Storage::disk('public')->delete($cover->upscaled_path);
 			}
@@ -531,7 +528,6 @@
 			$cover->upscale_status = null;
 			$cover->upscale_prediction_id = null;
 			$cover->upscale_status_url = null;
-			// END MODIFICATION
 
 			// Use the generated Kontext image as the source for upscaling.
 			// We need a full, public URL for the Replicate API.
