@@ -359,16 +359,19 @@ document.addEventListener('DOMContentLoaded', function () {
 		 * @param {string} styleInstruction - The specific instruction for rewriting.
 		 * @returns {string} The full prompt for the LLM.
 		 */
-		// START MODIFICATION: Use prompt template from the backend.
+		// START MODIFICATION: Use both system and user prompts from the backend template.
 		function buildAssetRewritePrompt(text, styleInstruction) {
-			const template = window.promptTemplates['story.asset.rewrite'];
-			if (!template) {
-				console.error('Rewrite prompt template not found!');
-				return 'Error: Template "story.asset.rewrite" not found.';
+			const templateData = window.promptTemplates['story.asset.rewrite']; // MODIFICATION: Get template data object.
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+				console.error('Rewrite prompt template not found or is incomplete!');
+				return 'Error: Template "story.asset.rewrite" not found or is incomplete.';
 			}
-			return template
+			// MODIFICATION: Build user prompt from template.
+			const userPrompt = templateData.user_prompt
 				.replace('{instruction}', styleInstruction)
 				.replace('{text}', text);
+			// MODIFICATION: Combine system and user prompts for the full prompt.
+			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
 		// END MODIFICATION
 		
@@ -495,7 +498,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
 	
-	// START MODIFICATION: Use prompt template from the backend.
+	// START MODIFICATION: Use both system and user prompts from the backend template.
 	/**
 	 * Builds the full prompt for generating an asset image.
 	 * @param {string} assetDescription - The description of the asset.
@@ -504,10 +507,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * @returns {string} The full prompt string.
 	 */
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
-		const template = window.promptTemplates['story.asset.image_prompt'];
-		if (!template) {
-			console.error('Image prompt template not found!');
-			return 'Error: Template "story.asset.image_prompt" not found.';
+		const templateData = window.promptTemplates['story.asset.image_prompt']; // MODIFICATION: Get template data object.
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+			console.error('Image prompt template not found or is incomplete!');
+			return 'Error: Template "story.asset.image_prompt" not found or is incomplete.';
 		}
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
@@ -521,11 +524,19 @@ document.addEventListener('DOMContentLoaded', function () {
 			assetInstructions = "Output should be a scene with clear background, focusing on the place's key features and atmosphere. No people should be included in the image.";
 		}
 		
-		return template
+		// MODIFICATION: Build user prompt from template.
+		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
-			.replace('{userInstructions}', instructionsText)
+			.replace('{userInstructions}', instructionsText);
+		
+		// MODIFICATION: Build system prompt from template, replacing its placeholders.
+		const systemPrompt = templateData.system_prompt
+			.replace('{assetType}', assetType)
 			.replace('{assetInstructions}', assetInstructions);
+		
+		// MODIFICATION: Combine system and user prompts for the full prompt.
+		return `${systemPrompt}\n\n${userPrompt}`;
 	}
 	// END MODIFICATION
 	

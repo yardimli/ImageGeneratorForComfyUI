@@ -76,9 +76,9 @@
 			}
 
 			// MODIFICATION: Pass categories and the selected category to the view.
-			// START MODIFICATION: Fetch prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entries.generate%')
-				->pluck('user_prompt', 'name')->all();
+				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
 			// END MODIFICATION
 			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category', 'promptTemplates'));
 		}
@@ -138,9 +138,9 @@
 			];
 
 			// MODIFICATION: Pass categories to the view.
-			// START MODIFICATION: Fetch prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entry.%')
-				->pluck('user_prompt', 'name')->all();
+				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
 			// END MODIFICATION
 			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories', 'promptTemplates'));
 		}

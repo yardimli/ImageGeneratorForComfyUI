@@ -506,11 +506,11 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			// START MODIFICATION: Fetch prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::whereIn('name', [
 				'story.page.rewrite',
 				'story.page.image_prompt'
-			])->pluck('user_prompt', 'name')->all();
+			])->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.edit', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -865,9 +865,9 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			// START MODIFICATION: Fetch prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->pluck('user_prompt', 'name')->all();
+				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.characters', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -948,9 +948,9 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			// START MODIFICATION: Fetch prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->pluck('user_prompt', 'name')->all();
+				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.places', compact('story', 'models', 'imageModels', 'promptTemplates'));

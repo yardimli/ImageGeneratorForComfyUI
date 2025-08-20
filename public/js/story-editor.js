@@ -325,7 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// Logic for AI Image Prompt Generation
-	// START MODIFICATION: Use prompt template from the backend.
+	// START MODIFICATION: Use both system and user prompts from the backend template.
 	/**
 	 * Builds the full prompt for generating a page image.
 	 * @param {string} pageText - The text content of the page.
@@ -335,21 +335,25 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * @returns {string} The full prompt string.
 	 */
 	function buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, userInstructions) {
-		const template = window.promptTemplates['story.page.image_prompt'];
-		if (!template) {
-			console.error('Image prompt template not found!');
-			return 'Error: Template "story.page.image_prompt" not found.';
+		const templateData = window.promptTemplates['story.page.image_prompt']; // MODIFICATION: Get template data object.
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+			console.error('Image prompt template not found or is incomplete!');
+			return 'Error: Template "story.page.image_prompt" not found or is incomplete.';
 		}
 		
 		const characterText = characterDescriptions.length > 0 ? "Characters in this scene:\n- " + characterDescriptions.join("\n- ") : "No specific characters are described for this scene.";
 		const placeText = placeDescriptions.length > 0 ? "Places in this scene:\n- " + placeDescriptions.join("\n- ") : "No specific places are described for this scene.";
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		return template
+		// MODIFICATION: Build user prompt from template.
+		const userPrompt = templateData.user_prompt
 			.replace('{pageText}', pageText)
 			.replace('{characterDescriptions}', characterText)
 			.replace('{placeDescriptions}', placeText)
 			.replace('{userInstructions}', instructionsText);
+		
+		// MODIFICATION: Combine system and user prompts for the full prompt.
+		return `${templateData.system_prompt}\n\n${userPrompt}`;
 	}
 	// END MODIFICATION
 	
@@ -522,12 +526,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		 * @param {string} style - The selected rewrite style.
 		 * @returns {string} The full prompt for the LLM.
 		 */
-		// START MODIFICATION: Use prompt template from the backend.
+		// START MODIFICATION: Use both system and user prompts from the backend template.
 		function buildRewritePrompt(text, style) {
-			const template = window.promptTemplates['story.page.rewrite'];
-			if (!template) {
-				console.error('Rewrite prompt template not found!');
-				return 'Error: Template "story.page.rewrite" not found.';
+			const templateData = window.promptTemplates['story.page.rewrite']; // MODIFICATION: Get template data object.
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+				console.error('Rewrite prompt template not found or is incomplete!');
+				return 'Error: Template "story.page.rewrite" not found or is incomplete.';
 			}
 			
 			const styleInstructions = {
@@ -545,9 +549,13 @@ document.addEventListener('DOMContentLoaded', function () {
 			
 			const instruction = styleInstructions[style] || styleInstructions['grammar'];
 			
-			return template
+			// MODIFICATION: Build user prompt from template.
+			const userPrompt = templateData.user_prompt
 				.replace('{instruction}', instruction)
 				.replace('{text}', text);
+			
+			// MODIFICATION: Combine system and user prompts for the full prompt.
+			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
 		// END MODIFICATION
 		

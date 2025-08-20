@@ -273,16 +273,21 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		};
 		
-		// START MODIFICATION: Use prompt template from the backend.
+		// START MODIFICATION: Use both system and user prompts from the backend template.
 		function buildAssetRewritePrompt(text, styleInstruction) {
-			const template = window.promptTemplates['prompt_dictionary.entry.rewrite'];
-			if (!template) {
-				console.error('Rewrite prompt template not found!');
-				return 'Error: Template "prompt_dictionary.entry.rewrite" not found.';
+			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite']; // MODIFICATION: Get template data object.
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+				console.error('Rewrite prompt template not found or is incomplete!');
+				return 'Error: Template "prompt_dictionary.entry.rewrite" not found or is incomplete.';
 			}
-			return template
+			
+			// MODIFICATION: Build user prompt from template.
+			const userPrompt = templateData.user_prompt
 				.replace('{instruction}', styleInstruction)
 				.replace('{text}', text);
+			
+			// MODIFICATION: Combine system and user prompts for the full prompt.
+			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
 		// END MODIFICATION
 		
@@ -379,12 +384,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// --- AI Image Prompt and Image Generation ---
-	// START MODIFICATION: Use prompt template from the backend.
+	// START MODIFICATION: Use both system and user prompts from the backend template.
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
-		const template = window.promptTemplates['prompt_dictionary.entry.image_prompt'];
-		if (!template) {
-			console.error('Image prompt template not found!');
-			return 'Error: Template "prompt_dictionary.entry.image_prompt" not found.';
+		const templateData = window.promptTemplates['prompt_dictionary.entry.image_prompt']; // MODIFICATION: Get template data object.
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+			console.error('Image prompt template not found or is incomplete!');
+			return 'Error: Template "prompt_dictionary.entry.image_prompt" not found or is incomplete.';
 		}
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
@@ -393,11 +398,19 @@ document.addEventListener('DOMContentLoaded', function () {
 			assetInstructions = "Output should be a high-quality image that captures the essence of the dictionary entry.";
 		}
 		
-		return template
+		// MODIFICATION: Build user prompt from template.
+		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
-			.replace('{userInstructions}', instructionsText)
+			.replace('{userInstructions}', instructionsText);
+		
+		// MODIFICATION: Build system prompt from template, replacing its placeholders.
+		const systemPrompt = templateData.system_prompt
+			.replace('{assetType}', assetType)
 			.replace('{assetInstructions}', assetInstructions);
+		
+		// MODIFICATION: Combine system and user prompts for the full prompt.
+		return `${systemPrompt}\n\n${userPrompt}`;
 	}
 	// END MODIFICATION
 	
