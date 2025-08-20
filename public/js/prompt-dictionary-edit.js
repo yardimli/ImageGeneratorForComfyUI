@@ -263,39 +263,37 @@ document.addEventListener('DOMContentLoaded', function () {
 		let activeDescriptionTextarea = null;
 		let originalDescription = '';
 		
-		const styleOptions = {
-			entry: {
-				'detailed': "Rewrite the following description to be more visually detailed. Focus on specific features and its overall presence. Also remove any instructions or notes from the original text.",
-				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction. Also remove any instructions or notes from the original text.",
-				'poetic': "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood. Also remove any instructions or notes from the original text.",
-				'technical': "Rewrite the description in a more technical style, focusing on precise terminology and objective details.",
-				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.'
-			}
-		};
+		// MODIFICATION: The 'styleOptions' object is now removed.
 		
-		// START MODIFICATION: Use both system and user prompts from the backend template.
-		function buildAssetRewritePrompt(text, styleInstruction) {
-			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite']; // MODIFICATION: Get template data object.
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+		// MODIFICATION: The function now takes the style *key* and gets the instruction from the template.
+		function buildAssetRewritePrompt(text, styleKey) {
+			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "prompt_dictionary.entry.rewrite" not found or is incomplete.';
 			}
 			
-			// MODIFICATION: Build user prompt from template.
+			const instruction = templateData.options[config.assetType]?.[styleKey] || 'Improve grammar and clarity.';
+			
 			const userPrompt = templateData.user_prompt
-				.replace('{instruction}', styleInstruction)
+				.replace('{instruction}', styleKey)
 				.replace('{text}', text);
 			
-			// MODIFICATION: Combine system and user prompts for the full prompt.
 			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
-		// END MODIFICATION
 		
 		function updateRewritePromptPreview() {
 			if (!originalDescription) return;
 			const selectedStyleKey = rewriteStyleSelect.value;
-			const instruction = styleOptions[config.assetType][selectedStyleKey];
-			const fullPrompt = buildAssetRewritePrompt(originalDescription, instruction);
+			// MODIFICATION: The full instruction text is now retrieved inside the builder function.
+			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
+			const instruction = templateData.options[config.assetType]?.[selectedStyleKey] || '';
+			
+			const userPrompt = templateData.user_prompt
+				.replace('{instruction}', instruction)
+				.replace('{text}', originalDescription);
+			
+			const fullPrompt = `${templateData.system_prompt}\n\n${userPrompt}`;
 			rewriteFullPromptTextarea.value = fullPrompt;
 		}
 		
@@ -316,14 +314,21 @@ document.addEventListener('DOMContentLoaded', function () {
 				rewriteModal.hide();
 				return;
 			}
+			
+			// START MODIFICATION: Populate dropdown from the template's options.
+			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
 			rewriteStyleSelect.innerHTML = '';
-			const currentStyles = styleOptions[config.assetType];
-			for (const key in currentStyles) {
-				const option = document.createElement('option');
-				option.value = key;
-				option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-				rewriteStyleSelect.appendChild(option);
+			if (templateData && templateData.options) {
+				const currentStyles = templateData.options[config.assetType];
+				for (const key in currentStyles) {
+					const option = document.createElement('option');
+					option.value = key;
+					option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+					rewriteStyleSelect.appendChild(option);
+				}
 			}
+			// END MODIFICATION
+			
 			const savedModel = localStorage.getItem(llmModelKey);
 			if (savedModel) rewriteModelSelect.value = savedModel;
 			updateRewritePromptPreview();

@@ -523,41 +523,25 @@ document.addEventListener('DOMContentLoaded', function () {
 		/**
 		 * Builds the full prompt for rewriting story text.
 		 * @param {string} text - The original text.
-		 * @param {string} style - The selected rewrite style.
+		 * @param {string} style - The selected rewrite style key.
 		 * @returns {string} The full prompt for the LLM.
 		 */
-		// START MODIFICATION: Use both system and user prompts from the backend template.
 		function buildRewritePrompt(text, style) {
-			const templateData = window.promptTemplates['story.page.rewrite']; // MODIFICATION: Get template data object.
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+			const templateData = window.promptTemplates['story.page.rewrite'];
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "story.page.rewrite" not found or is incomplete.';
 			}
 			
-			const styleInstructions = {
-				simplify: 'Simplify the following text for a younger audience (around A2-B1 CEFR level). Make the sentences shorter and use simpler vocabulary, but keep the original meaning.',
-				descriptive: 'Rewrite the following text to be more descriptive and poetic. Use vivid imagery, sensory details, and figurative language to paint a richer picture for the reader.',
-				dramatic: 'Rewrite the following text to be more dramatic and suspenseful. Build tension, use shorter, impactful sentences, and focus on the emotional stakes.',
-				perspective: 'Rewrite the following text from the perspective of one of the characters. You will need to infer which character to use or add a note about it. Use "I" and focus on their internal thoughts and feelings.',
-				dialogue: 'Expand the following text by adding more dialogue between the characters. Make the conversation feel natural and reveal character or advance the plot.',
-				concise: 'Rewrite the following text to be more concise and to the point. Remove any unnecessary words, filler, or redundant phrases without losing the core meaning.',
-				thoughts: 'Expand on the following text by delving into the character\'s inner thoughts and feelings. Show, don\'t just tell, what they are experiencing emotionally and mentally.',
-				present_tense: 'Rewrite the following text in the present tense.',
-				past_tense: 'Rewrite the following text in the past tense.',
-				grammar: 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.'
-			};
+			// MODIFICATION: Get instruction from the template's options.
+			const instruction = templateData.options[style] || 'Improve grammar and clarity.';
 			
-			const instruction = styleInstructions[style] || styleInstructions['grammar'];
-			
-			// MODIFICATION: Build user prompt from template.
 			const userPrompt = templateData.user_prompt
 				.replace('{instruction}', instruction)
 				.replace('{text}', text);
 			
-			// MODIFICATION: Combine system and user prompts for the full prompt.
 			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
-		// END MODIFICATION
 		
 		function updateRewritePromptPreview() {
 			if (!originalText) return;
@@ -582,6 +566,21 @@ document.addEventListener('DOMContentLoaded', function () {
 				rewriteTextModal.hide();
 				return;
 			}
+			
+			// START MODIFICATION: Dynamically populate the style dropdown.
+			const templateData = window.promptTemplates['story.page.rewrite'];
+			if (templateData && templateData.options) {
+				rewriteStyleSelect.innerHTML = ''; // Clear existing options
+				for (const key in templateData.options) {
+					const option = document.createElement('option');
+					option.value = key;
+					// Format the key for display (e.g., 'present_tense' -> 'Present Tense')
+					option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+					rewriteStyleSelect.appendChild(option);
+				}
+			}
+			// END MODIFICATION
+			
 			const savedModel = localStorage.getItem(rewriteModelKey);
 			if (savedModel) {
 				rewriteModelSelect.value = savedModel;

@@ -510,7 +510,7 @@
 			$promptTemplates = LlmPrompt::whereIn('name', [
 				'story.page.rewrite',
 				'story.page.image_prompt'
-			])->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
+			])->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.edit', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -867,7 +867,7 @@
 
 			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
+				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.characters', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -950,7 +950,7 @@
 
 			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->get(['name', 'system_prompt', 'user_prompt'])->keyBy('name');
+				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
 			// END MODIFICATION
 
 			return view('story.places', compact('story', 'models', 'imageModels', 'promptTemplates'));

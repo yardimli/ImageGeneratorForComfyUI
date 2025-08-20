@@ -19,6 +19,7 @@
 				$table->longText('system_prompt')->nullable()->comment('Contains system-level instructions, role-playing, JSON structure, etc.');
 				$table->longText('user_prompt')->comment('The main prompt template with {placeholders}.');
 				$table->json('placeholders')->nullable()->comment('An array of available placeholders for display in the UI.');
+				$table->json('options')->nullable()->comment('A JSON object for dynamic options, like dropdowns in the UI.');
 				$table->timestamps();
 			});
 		}

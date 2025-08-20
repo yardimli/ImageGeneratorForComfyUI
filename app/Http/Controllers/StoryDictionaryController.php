@@ -15,7 +15,7 @@
 	use Illuminate\Support\Facades\Validator;
 	use Illuminate\Validation\ValidationException;
 
-	class DictionaryController extends Controller
+	class StoryDictionaryController extends Controller
 	{
 		// START MODIFICATION: Add methods for dictionary management.
 		/**

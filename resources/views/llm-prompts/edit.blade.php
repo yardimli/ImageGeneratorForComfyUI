@@ -25,25 +25,38 @@
 				<div class="card-body">
 					<div class="mb-3">
 						<label for="label" class="form-label">Label</label>
-						<input type="text" id="label" name="label" class="form-control" value="{{ old('label', $prompt->label) }}" required>
+						<input type="text" id="label" name="label" class="form-control @error('label') is-invalid @enderror" value="{{ old('label', $prompt->label) }}" required>
+						@error('label') <div class="invalid-feedback">{{ $message }}</div> @enderror
 					</div>
 					
 					<div class="mb-3">
 						<label for="description" class="form-label">Description</label>
-						<textarea id="description" name="description" class="form-control" rows="3">{{ old('description', $prompt->description) }}</textarea>
+						<textarea id="description" name="description" class="form-control @error('description') is-invalid @enderror" rows="3">{{ old('description', $prompt->description) }}</textarea>
+						@error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
 					</div>
 					
 					<div class="mb-3">
 						<label for="system_prompt" class="form-label">System Prompt / Instructions</label>
-						<textarea id="system_prompt" name="system_prompt" class="form-control" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('system_prompt', $prompt->system_prompt) }}</textarea>
+						<textarea id="system_prompt" name="system_prompt" class="form-control @error('system_prompt') is-invalid @enderror" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('system_prompt', $prompt->system_prompt) }}</textarea>
 						<small class="form-text text-muted">This often contains the core instructions, role-playing, and JSON structure requirements for the AI.</small>
+						@error('system_prompt') <div class="invalid-feedback">{{ $message }}</div> @enderror
 					</div>
 					
 					<div class="mb-3">
 						<label for="user_prompt" class="form-label">User Prompt Template</label>
-						<textarea id="user_prompt" name="user_prompt" class="form-control" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('user_prompt', $prompt->user_prompt) }}</textarea>
+						<textarea id="user_prompt" name="user_prompt" class="form-control @error('user_prompt') is-invalid @enderror" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('user_prompt', $prompt->user_prompt) }}</textarea>
 						<small class="form-text text-muted">This is the main prompt template. Use placeholders like <code>{variable}</code> which will be replaced by the application.</small>
+						@error('user_prompt') <div class="invalid-feedback">{{ $message }}</div> @enderror
 					</div>
+					
+					{{-- START MODIFICATION: Add textarea for the 'options' field. --}}
+					<div class="mb-3">
+						<label for="options" class="form-label">UI Options (JSON)</label>
+						<textarea id="options" name="options" class="form-control @error('options') is-invalid @enderror" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('options', json_encode($prompt->options, JSON_PRETTY_PRINT)) }}</textarea>
+						<small class="form-text text-muted">Valid JSON used to populate UI elements like dropdowns. For example, rewrite styles.</small>
+						@error('options') <div class="invalid-feedback">{{ $message }}</div> @enderror
+					</div>
+					{{-- END MODIFICATION --}}
 					
 					@if($prompt->placeholders)
 						<div class="mb-3">

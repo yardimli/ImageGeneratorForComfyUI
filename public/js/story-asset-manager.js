@@ -333,47 +333,31 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		const rewriteModelKey = 'storyCreateAi_model'; // Reuse same key
 		
-		// Define different rewrite instructions for characters and places.
-		const styleOptions = {
-			character: {
-				'detailed_appearance': "Rewrite the following character description to be more visually detailed. Focus on specific physical features, facial expressions, and their overall presence. Also remove any instructions or notes from the original text.",
-				'focus_clothing': "Expand on the character's clothing and accessories. Describe the style, fabric, color, and condition of what they are wearing in detail. Also remove any instructions or notes from the original text.",
-				'add_personality': "Rewrite the description to hint at the character's personality through their appearance and posture. Show, don't just tell, their traits (e.g., nervous, confident, kind). Also remove any instructions or notes from the original text.",
-				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction. Also remove any instructions or notes from the original text.",
-				'poetic': "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood. Also remove any instructions or notes from the original text.",
-				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.'
-			},
-			place: {
-				'atmospheric': "Rewrite the following place description to be more atmospheric. Focus on the mood, lighting, weather, and overall feeling of the location. Also remove any instructions or notes from the original text.",
-				'focus_architecture': "Expand on the architectural details of the place. Describe the buildings, materials, shapes, and style in greater detail. Also remove any instructions or notes from the original text.",
-				'add_sensory': "Enrich the description by adding sensory details. What does it smell, sound, or feel like to be in this place? Also remove any instructions or notes from the original text.",
-				'simplify': "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick overview. Also remove any instructions or notes from the original text.",
-				'historical': "Rewrite the description to include hints of its history or past events. Suggest a sense of age, use, or abandonment. Also remove any instructions or notes from the original text.",
-				'grammar': 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.'
-			}
-		};
+		// MODIFICATION: The 'styleOptions' object is now removed, as this data will come from the database.
 		
 		/**
 		 * Builds the full prompt for rewriting an asset's description.
 		 * @param {string} text - The original description text.
-		 * @param {string} styleInstruction - The specific instruction for rewriting.
+		 * @param {string} styleKey - The key for the selected rewrite style.
 		 * @returns {string} The full prompt for the LLM.
 		 */
-		// START MODIFICATION: Use both system and user prompts from the backend template.
-		function buildAssetRewritePrompt(text, styleInstruction) {
-			const templateData = window.promptTemplates['story.asset.rewrite']; // MODIFICATION: Get template data object.
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+		function buildAssetRewritePrompt(text, styleKey) {
+			const templateData = window.promptTemplates['story.asset.rewrite'];
+			console.log(templateData);
+			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "story.asset.rewrite" not found or is incomplete.';
 			}
-			// MODIFICATION: Build user prompt from template.
+			
+			// MODIFICATION: Get the instruction text from the template's options.
+			const instruction = templateData.options[config.assetType]?.[styleKey] || 'Improve grammar and clarity.';
+			
 			const userPrompt = templateData.user_prompt
-				.replace('{instruction}', styleInstruction)
+				.replace('{instruction}', instruction)
 				.replace('{text}', text);
-			// MODIFICATION: Combine system and user prompts for the full prompt.
+			
 			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
-		// END MODIFICATION
 		
 		/**
 		 * Updates the live preview of the full prompt sent to the AI.
@@ -381,8 +365,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		function updateRewritePromptPreview() {
 			if (!originalDescription) return;
 			const selectedStyleKey = rewriteStyleSelect.value;
-			const instruction = styleOptions[config.assetType][selectedStyleKey];
-			const fullPrompt = buildAssetRewritePrompt(originalDescription, instruction);
+			// MODIFICATION: Pass the style key to the builder function.
+			const fullPrompt = buildAssetRewritePrompt(originalDescription, selectedStyleKey);
 			rewriteFullPromptTextarea.value = fullPrompt;
 		}
 		
@@ -404,22 +388,23 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			// Populate the style dropdown based on the asset type (character or place).
+			// START MODIFICATION: Populate the style dropdown from the prompt template options.
+			const templateData = window.promptTemplates['story.asset.rewrite'];
 			rewriteStyleSelect.innerHTML = '';
-			const currentStyles = styleOptions[config.assetType];
-			for (const key in currentStyles) {
-				const option = document.createElement('option');
-				option.value = key;
-				// Capitalize and format the key for display (e.g., 'detailed_appearance' -> 'Detailed Appearance').
-				option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-				rewriteStyleSelect.appendChild(option);
+			if (templateData && templateData.options) {
+				const currentStyles = templateData.options[config.assetType];
+				for (const key in currentStyles) {
+					const option = document.createElement('option');
+					option.value = key;
+					option.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+					rewriteStyleSelect.appendChild(option);
+				}
 			}
+			// END MODIFICATION
 			
-			// Load saved AI model from local storage.
 			const savedModel = localStorage.getItem(rewriteModelKey);
 			if (savedModel) rewriteModelSelect.value = savedModel;
 			
-			// Update the prompt preview.
 			updateRewritePromptPreview();
 		});
 		

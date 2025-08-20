@@ -1,7 +1,7 @@
 <?php
 
 	use App\Http\Controllers\AlbumCoverController;
-	use App\Http\Controllers\DictionaryController;
+	use App\Http\Controllers\StoryDictionaryController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
@@ -209,9 +209,9 @@
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
 
-			Route::get('/{story}/dictionary', [DictionaryController::class, 'dictionary'])->name('dictionary');
-			Route::post('/{story}/dictionary/generate', [DictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
-			Route::post('/{story}/dictionary', [DictionaryController::class, 'updateDictionary'])->name('dictionary.update');
+			Route::get('/{story}/dictionary', [StoryDictionaryController::class, 'dictionary'])->name('dictionary');
+			Route::post('/{story}/dictionary/generate', [StoryDictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
+			Route::post('/{story}/dictionary', [StoryDictionaryController::class, 'updateDictionary'])->name('dictionary.update');
 
 			Route::get('/{story}/quiz', [QuizController::class, 'quiz'])->name('quiz');
 			Route::post('/{story}/quiz/generate', [QuizController::class, 'generateQuiz'])->name('quiz.generate');

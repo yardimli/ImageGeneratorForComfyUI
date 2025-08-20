@@ -105,7 +105,7 @@
 					
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.queue') }}">
-							Queue Management <span class="badge bg-primary"
+							Queue <span class="badge bg-primary"
 							                       id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
 						</a>
 					</li>

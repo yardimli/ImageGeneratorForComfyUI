@@ -25,6 +25,7 @@ I want you to act as a prompt generator. Compose each answer as a visual sentenc
 {prompt}{retry_instruction}
 PROMPT,
 					'placeholders' => json_encode(['{count}', '{prompt}', '{retry_instruction}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -57,6 +58,7 @@ PROMPT,
     {userInstructions}
 PROMPT,
 					'placeholders' => json_encode(['{assetType}', '{assetInstructions}', '{assetDescription}', '{userInstructions}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -81,6 +83,15 @@ Original Text:
 "{text}"
 PROMPT,
 					'placeholders' => json_encode(['{instruction}', '{text}']),
+					'options' => json_encode([
+						'entry' => [
+							'detailed' => "Rewrite the following description to be more visually detailed. Focus on specific features and its overall presence. Also remove any instructions or notes from the original text.",
+							'simplify' => "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction. Also remove any instructions or notes from the original text.",
+							'poetic' => "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood. Also remove any instructions or notes from the original text.",
+							'technical' => "Rewrite the description in a more technical style, focusing on precise terminology and objective details.",
+							'grammar' => 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.',
+						],
+					]),
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -113,6 +124,7 @@ PROMPT,
     {userInstructions}
 PROMPT,
 					'placeholders' => json_encode(['{assetType}', '{assetInstructions}', '{assetDescription}', '{userInstructions}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -137,6 +149,24 @@ Original Text:
 "{text}"
 PROMPT,
 					'placeholders' => json_encode(['{instruction}', '{text}']),
+					'options' => json_encode([
+						'character' => [
+							'detailed_appearance' => "Rewrite the following character description to be more visually detailed. Focus on specific physical features, facial expressions, and their overall presence. Also remove any instructions or notes from the original text.",
+							'focus_clothing' => "Expand on the character's clothing and accessories. Describe the style, fabric, color, and condition of what they are wearing in detail. Also remove any instructions or notes from the original text.",
+							'add_personality' => "Rewrite the description to hint at the character's personality through their appearance and posture. Show, don't just tell, their traits (e.g., nervous, confident, kind). Also remove any instructions or notes from the original text.",
+							'simplify' => "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick introduction. Also remove any instructions or notes from the original text.",
+							'poetic' => "Rewrite the description in a more poetic and evocative style. Use figurative language and sensory details to create a stronger mood. Also remove any instructions or notes from the original text.",
+							'grammar' => 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.',
+						],
+						'place' => [
+							'atmospheric' => "Rewrite the following place description to be more atmospheric. Focus on the mood, lighting, weather, and overall feeling of the location. Also remove any instructions or notes from the original text.",
+							'focus_architecture' => "Expand on the architectural details of the place. Describe the buildings, materials, shapes, and style in greater detail. Also remove any instructions or notes from the original text.",
+							'add_sensory' => "Enrich the description by adding sensory details. What does it smell, sound, or feel like to be in this place? Also remove any instructions or notes from the original text.",
+							'simplify' => "Simplify the following description. Use clearer, more concise language suitable for a younger audience or for a quick overview. Also remove any instructions or notes from the original text.",
+							'historical' => "Rewrite the description to include hints of its history or past events. Suggest a sense of age, use, or abandonment. Also remove any instructions or notes from the original text.",
+							'grammar' => 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor. Also remove any instructions or notes from the original text.',
+						],
+					]),
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -175,6 +205,7 @@ Now, generate the character descriptions based on their specific appearances in 
 PROMPT,
 					'user_prompt' => '',
 					'placeholders' => json_encode(['{fullStoryText}', '{characterContext}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -227,6 +258,7 @@ Now, generate the story based on the user's instructions.
 PROMPT,
 					'user_prompt' => '',
 					'placeholders' => json_encode(['{numPages}', '{instructions}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -257,6 +289,7 @@ Now, generate the dictionary based on the provided text and user request.
 PROMPT,
 					'user_prompt' => '',
 					'placeholders' => json_encode(['{userPrompt}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -294,6 +327,7 @@ PROMPT,
     {userInstructions}
 PROMPT,
 					'placeholders' => json_encode(['{pageText}', '{characterDescriptions}', '{placeDescriptions}', '{userInstructions}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -318,6 +352,18 @@ Original Text:
 "{text}"
 PROMPT,
 					'placeholders' => json_encode(['{instruction}', '{text}']),
+					'options' => json_encode([
+						'simplify' => 'Simplify the following text for a younger audience (around A2-B1 CEFR level). Make the sentences shorter and use simpler vocabulary, but keep the original meaning.',
+						'descriptive' => 'Rewrite the following text to be more descriptive and poetic. Use vivid imagery, sensory details, and figurative language to paint a richer picture for the reader.',
+						'dramatic' => 'Rewrite the following text to be more dramatic and suspenseful. Build tension, use shorter, impactful sentences, and focus on the emotional stakes.',
+						'perspective' => 'Rewrite the following text from the perspective of one of the characters. You will need to infer which character to use or add a note about it. Use "I" and focus on their internal thoughts and feelings.',
+						'dialogue' => 'Expand the following text by adding more dialogue between the characters. Make the conversation feel natural and reveal character or advance the plot.',
+						'concise' => 'Rewrite the following text to be more concise and to the point. Remove any unnecessary words, filler, or redundant phrases without losing the core meaning.',
+						'thoughts' => 'Expand on the following text by delving into the character\'s inner thoughts and feelings. Show, don\'t just tell, what they are experiencing emotionally and mentally.',
+						'present_tense' => 'Rewrite the following text in the present tense.',
+						'past_tense' => 'Rewrite the following text in the past tense.',
+						'grammar' => 'Correct any grammatical errors, improve the sentence structure, and enhance the clarity of the following text. Act as a professional editor.',
+					]),
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -356,6 +402,7 @@ Now, generate the place descriptions based on their specific appearances in the 
 PROMPT,
 					'user_prompt' => '',
 					'placeholders' => json_encode(['{fullStoryText}', '{placeContext}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
@@ -387,6 +434,7 @@ Now, generate the quiz based on the provided text and user request.
 PROMPT,
 					'user_prompt' => '',
 					'placeholders' => json_encode(['{userPrompt}']),
+					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
 				],
