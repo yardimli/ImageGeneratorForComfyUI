@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
+	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
 	use App\Models\Prompt;
 	use App\Models\Story;
 	use App\Models\StoryCharacter;
@@ -239,59 +240,17 @@
 		 * @param int $numPages
 		 * @return string
 		 */
+		// START MODIFICATION: Fetch prompt from the database instead of hardcoding.
 		private function buildStoryPrompt(string $instructions, int $numPages): string
 		{
-			// START MODIFICATION: Changed JSON structure to show variants and updated prompt instructions.
-			$jsonStructure = <<<'JSON'
-{
-  "title": "A string for the story title.",
-  "description": "A short description of the story.",
-  "characters": [
-    {
-      "name": "Character Name (Appearance 1)",
-      "description": ""
-    },
-    {
-      "name": "Character Name (Appearance 2)",
-      "description": ""
-    }
-  ],
-  "places": [
-    {
-      "name": "Place Name (State 1)",
-      "description": ""
-    }
-  ],
-  "pages": [
-    {
-      "content": "The text for this page of the story.",
-      "characters": ["Character Name (Appearance 1)"],
-      "places": ["Place Name (State 1)"]
-    }
-  ]
-}
-JSON;
-
-			return <<<PROMPT
-You are a creative storyteller. Based on the following instructions, create a complete story.
-The story must have a title, a short description, a list of characters, a list of places, and a series of pages.
-The number of pages must be exactly {$numPages}.
-
-VERY IMPORTANT INSTRUCTIONS:
-1.  Instructions from the user: "{$instructions}"
-2.  For the 'characters' and 'places' arrays, provide only the 'name'. Leave the 'description' for each character and place as an empty string (""). You will be asked to describe them in a later step.
-3.  If a character's or place's appearance, clothing, age or state changes during the story, you MUST create a separate entry for each version with a descriptive name (e.g., "Cinderella (in rags)", "Cinderella (in a ballgown)", "Arthur (Young)", "Arthur (Old)", "The Castle (daytime)", "The Castle (under siege)").
-4.  In the 'pages' array, you MUST reference the specific version of the character or place that appears on that page.
-
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure (the example shows how to handle character variations):
-{$jsonStructure}
-
-Now, generate the story based on the user's instructions.
-PROMPT;
-			// END MODIFICATION
+			$llmPrompt = LlmPrompt::where('name', 'story.core.generate')->firstOrFail();
+			return str_replace(
+				['{numPages}', '{instructions}'],
+				[$numPages, $instructions],
+				$llmPrompt->system_prompt
+			);
 		}
+		// END MODIFICATION
 
 		/**
 		 * Builds the prompt for the LLM to generate character descriptions.
@@ -301,20 +260,9 @@ PROMPT;
 		 * @param array $characterPageTextMap // MODIFICATION: Add parameter for page context.
 		 * @return string
 		 */
-		// START MODIFICATION: Add $characterPageTextMap parameter and use it to build context.
+		// START MODIFICATION: Fetch prompt from the database and use it to build context.
 		private function buildCharacterDescriptionPrompt(string $fullStoryText, array $characterNames, array $characterPageTextMap): string
 		{
-			$jsonStructure = <<<'JSON'
-{
-  "characters": [
-    {
-      "name": "Character Name",
-      "description": "A detailed description of the character's appearance, including their clothes and physique."
-    }
-  ]
-}
-JSON;
-
 			// Build a string with context for each character.
 			$characterContext = '';
 			foreach ($characterNames as $name) {
@@ -328,28 +276,12 @@ JSON;
 				$characterContext .= "\n";
 			}
 
-			return <<<PROMPT
-You are a character designer. Based on the full story text and the specific page contexts provided below, create a detailed visual description for each of the listed characters.
-Focus on their physical appearance, clothing, and physique with attention to detail, as they appear in the pages they are mentioned in.
-
-Full Story Text (for overall context):
----
-{$fullStoryText}
----
-
-Character Appearances by Page:
----
-{$characterContext}
----
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must contain a 'characters' array, and each object in the array must have a 'name' and 'description' key.
-The 'name' must exactly match one of the names from the provided list.
-The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the character descriptions based on their specific appearances in the story.
-PROMPT;
+			$llmPrompt = LlmPrompt::where('name', 'story.character.describe')->firstOrFail();
+			return str_replace(
+				['{fullStoryText}', '{characterContext}'],
+				[$fullStoryText, $characterContext],
+				$llmPrompt->system_prompt
+			);
 		}
 		// END MODIFICATION
 
@@ -361,20 +293,9 @@ PROMPT;
 		 * @param array $placePageTextMap // MODIFICATION: Add parameter for page context.
 		 * @return string
 		 */
-		// START MODIFICATION: Add $placePageTextMap parameter and use it to build context.
+		// START MODIFICATION: Fetch prompt from the database and use it to build context.
 		private function buildPlaceDescriptionPrompt(string $fullStoryText, array $placeNames, array $placePageTextMap): string
 		{
-			$jsonStructure = <<<'JSON'
-{
-  "places": [
-    {
-      "name": "Place Name",
-      "description": "A detailed description of the place's appearance and atmosphere."
-    }
-  ]
-}
-JSON;
-
 			// Build a string with context for each place.
 			$placeContext = '';
 			foreach ($placeNames as $name) {
@@ -388,28 +309,12 @@ JSON;
 				$placeContext .= "\n";
 			}
 
-			return <<<PROMPT
-You are a world builder. Based on the full story text and the specific page contexts provided below, create a detailed visual description for each of the listed places.
-Focus on the appearance, atmosphere, and key features of each location as it appears in the pages it is mentioned in.
-
-Full Story Text (for overall context):
----
-{$fullStoryText}
----
-
-Place Appearances by Page:
----
-{$placeContext}
----
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must contain a 'places' array, and each object in the array must have a 'name' and 'description' key.
-The 'name' must exactly match one of the names from the provided list.
-The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the place descriptions based on their specific appearances in the story.
-PROMPT;
+			$llmPrompt = LlmPrompt::where('name', 'story.place.describe')->firstOrFail();
+			return str_replace(
+				['{fullStoryText}', '{placeContext}'],
+				[$fullStoryText, $placeContext],
+				$llmPrompt->system_prompt
+			);
 		}
 		// END MODIFICATION
 
@@ -601,7 +506,14 @@ PROMPT;
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('story.edit', compact('story', 'models', 'imageModels'));
+			// START MODIFICATION: Fetch prompt templates for JS.
+			$promptTemplates = LlmPrompt::whereIn('name', [
+				'story.page.rewrite',
+				'story.page.image_prompt'
+			])->pluck('user_prompt', 'name')->all();
+			// END MODIFICATION
+
+			return view('story.edit', compact('story', 'models', 'imageModels', 'promptTemplates'));
 		}
 
 		/**
@@ -953,7 +865,12 @@ PROMPT;
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('story.characters', compact('story', 'models', 'imageModels'));
+			// START MODIFICATION: Fetch prompt templates for JS.
+			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
+				->pluck('user_prompt', 'name')->all();
+			// END MODIFICATION
+
+			return view('story.characters', compact('story', 'models', 'imageModels', 'promptTemplates'));
 		}
 
 		/**
@@ -1031,7 +948,12 @@ PROMPT;
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			return view('story.places', compact('story', 'models', 'imageModels'));
+			// START MODIFICATION: Fetch prompt templates for JS.
+			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
+				->pluck('user_prompt', 'name')->all();
+			// END MODIFICATION
+
+			return view('story.places', compact('story', 'models', 'imageModels', 'promptTemplates'));
 		}
 
 		/**

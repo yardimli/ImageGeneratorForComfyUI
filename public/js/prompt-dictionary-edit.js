@@ -273,10 +273,18 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		};
 		
+		// START MODIFICATION: Use prompt template from the backend.
 		function buildAssetRewritePrompt(text, styleInstruction) {
-			const jsonStructure = `{\n  "rewritten_text": "The rewritten text goes here."\n}`;
-			return `You are an expert story editor. Your task is to rewrite a description for a story asset based on a specific instruction.\nInstruction: "${styleInstruction}"\n\nOriginal Text:\n"${text}"\n\nPlease provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.\nThe JSON object must follow this exact structure:\n${jsonStructure}\n\nNow, rewrite the text based on the instruction.`;
+			const template = window.promptTemplates['prompt_dictionary.entry.rewrite'];
+			if (!template) {
+				console.error('Rewrite prompt template not found!');
+				return 'Error: Template "prompt_dictionary.entry.rewrite" not found.';
+			}
+			return template
+				.replace('{instruction}', styleInstruction)
+				.replace('{text}', text);
 		}
+		// END MODIFICATION
 		
 		function updateRewritePromptPreview() {
 			if (!originalDescription) return;
@@ -371,15 +379,27 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// --- AI Image Prompt and Image Generation ---
+	// START MODIFICATION: Use prompt template from the backend.
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
+		const template = window.promptTemplates['prompt_dictionary.entry.image_prompt'];
+		if (!template) {
+			console.error('Image prompt template not found!');
+			return 'Error: Template "prompt_dictionary.entry.image_prompt" not found.';
+		}
+		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		let assetInstructions = "Output should be a high-quality image that captures the essence of the asset.";
 		if (assetType === "entry") {
 			assetInstructions = "Output should be a high-quality image that captures the essence of the dictionary entry.";
 		}
-		const jsonStructure = `{\n  "prompt": "A detailed, comma-separated list of visual descriptors for the image."\n}`;
-		return `You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.\nYour task is to create a single, concise, and descriptive image prompt for a dictionary ${assetType}.\n\n**Context:**\n1.  **${assetType} Description:**\n    "${assetDescription}"\n\n2.  **User Guidance:**\n    ${instructionsText}\n\n**Instructions:**\n- ${assetInstructions}\n- The prompt should be a single paragraph of comma-separated descriptive phrases.\n- Focus on visual details: appearance, key features, mood, and lighting.\n- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.\n- The JSON object must follow this exact structure:\n${jsonStructure}\n\nNow, generate the image prompt for the provided context in the specified JSON format.`;
+		
+		return template
+			.replace('{assetDescription}', assetDescription)
+			.replace('{assetType}', assetType)
+			.replace('{userInstructions}', instructionsText)
+			.replace('{assetInstructions}', assetInstructions);
 	}
+	// END MODIFICATION
 	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {

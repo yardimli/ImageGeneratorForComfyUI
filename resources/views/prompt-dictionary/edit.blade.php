@@ -222,7 +222,11 @@
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
-	{{-- START MODIFICATION: Changed script to the new edit-specific JS file. --}}
+	{{-- START MODIFICATION: Pass prompt templates to JS and use the correct script file. --}}
+	<script>
+		// Pass prompt templates from PHP to JavaScript
+		window.promptTemplates = @json($promptTemplates ?? []);
+	</script>
 	<script src="{{ asset('js/prompt-dictionary-edit.js') }}"></script>
 	{{-- END MODIFICATION --}}
 @endsection

@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
+	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
 	use App\Models\Story;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
@@ -131,33 +132,12 @@
 		 * @param string $userPrompt
 		 * @return string
 		 */
+		// START MODIFICATION: Fetch prompt from the database instead of hardcoding.
 		private function buildQuizPrompt(string $userPrompt): string
 		{
-			$jsonStructure = <<<'JSON'
-{
-  "quiz": [
-    {
-      "question": "The question about the story.",
-      "answers": "a) Answer one\nb) Answer two\nc) The correct answer*\nd) Answer four"
-    }
-  ]
-}
-JSON;
-
-			return <<<PROMPT
-You are an expert teacher. Based on the following story text and user request, create a list of multiple-choice quiz questions.
-For each entry, provide the question and a list of 4 answers as a single string with newlines.
-Mark the correct answer by adding an asterisk (*) at the end of the line.
-
----
-{$userPrompt}
----
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the quiz based on the provided text and user request.
-PROMPT;
+			$llmPrompt = LlmPrompt::where('name', 'story.quiz.generate')->firstOrFail();
+			// The entire prompt, including JSON structure, is now stored in the system_prompt field.
+			return str_replace('{userPrompt}', $userPrompt, $llmPrompt->system_prompt);
 		}
+		// END MODIFICATION
 	}

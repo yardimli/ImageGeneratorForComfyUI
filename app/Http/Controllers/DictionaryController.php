@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
+	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
 	use App\Models\Prompt;
 	use App\Models\Story;
 	use App\Models\StoryDictionary;
@@ -138,32 +139,12 @@
 		 * @param string $userPrompt
 		 * @return string
 		 */
+		// START MODIFICATION: Fetch prompt from the database instead of hardcoding.
 		private function buildDictionaryPrompt(string $userPrompt): string
 		{
-			$jsonStructure = <<<'JSON'
-{
-  "dictionary": [
-    {
-      "word": "The word from the text",
-      "explanation": "A simple explanation of the word, tailored to the CEFR level."
-    }
-  ]
-}
-JSON;
-
-			return <<<PROMPT
-You are an expert linguist and teacher. Based on the following story text and user request, create a list of dictionary entries.
-For each entry, provide the word and a simple explanation suitable for the specified language level mentioned in the text.
-
----
-{$userPrompt}
----
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure:
-{$jsonStructure}
-
-Now, generate the dictionary based on the provided text and user request.
-PROMPT;
+			$llmPrompt = LlmPrompt::where('name', 'story.dictionary.generate')->firstOrFail();
+			// The entire prompt, including JSON structure, is now stored in the system_prompt field.
+			return str_replace('{userPrompt}', $userPrompt, $llmPrompt->system_prompt);
 		}
+		// END MODIFICATION
 	}

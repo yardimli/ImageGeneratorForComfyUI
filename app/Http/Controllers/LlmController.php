@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Models\LlmLog;
+	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
 	use Illuminate\Http\Client\Response;
 	use Illuminate\Support\Facades\DB;
 	use Illuminate\Support\Facades\File;
@@ -443,6 +444,7 @@
 		 * @return array
 		 * @throws \Exception
 		 */
+		// START MODIFICATION: Refactor to use LlmPrompt from the database.
 		private function retryQueryLlm(string $prompt, int $count, float $temperature, string $modelId): array
 		{
 			$max_retries = 4;
@@ -450,11 +452,16 @@
 			for ($i = 0; $i < $max_retries; $i++) {
 				try {
 					$is_last_retry = ($i == $max_retries - 1 && $max_retries > 1);
-					$system_prompt = "Act like you are a terminal. Always format your response as a single valid JSON array of strings. Always return exactly {$count} answers per question. Do not include any text, markdown, or explanation outside of the JSON array itself.";
-					$user_prompt = "I want you to act as a prompt generator. Compose each answer as a visual sentence. " .
-						"Do not write explanations on replies. Format the answers as a javascript json array with a " .
-						"single string per answer. Return exactly {$count} to my question. Answer the questions exactly. " .
-						"Answer the following question:\n{$prompt}" . ($is_last_retry ? "\nReturn exactly {$count} answers to my question." : "");
+
+					// Fetch the prompt template from the database.
+					$llmPrompt = LlmPrompt::where('name', 'prompt.generate.creative')->firstOrFail();
+
+					$system_prompt = str_replace('{count}', $count, $llmPrompt->system_prompt);
+					$user_prompt = str_replace(
+						['{count}', '{prompt}', '{retry_instruction}'],
+						[$count, $prompt, ($is_last_retry ? "\nReturn exactly {$count} answers to my question." : "")],
+						$llmPrompt->user_prompt
+					);
 
 					$rawResponse = $this->callLlmRaw($system_prompt, $user_prompt, $modelId, $temperature);
 
@@ -472,6 +479,7 @@
 			}
 			throw new \Exception("LLM answers doesn't match batch count. Got " . count($answers) . " answers, expected {$count}.");
 		}
+		// END MODIFICATION
 
 		/**
 		 * Calls a specified LLM and returns the raw string content, without JSON parsing.

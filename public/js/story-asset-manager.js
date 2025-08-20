@@ -359,23 +359,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		 * @param {string} styleInstruction - The specific instruction for rewriting.
 		 * @returns {string} The full prompt for the LLM.
 		 */
+		// START MODIFICATION: Use prompt template from the backend.
 		function buildAssetRewritePrompt(text, styleInstruction) {
-			const jsonStructure = `{
-  "rewritten_text": "The rewritten text goes here."
-}`;
-			
-			return `You are an expert story editor. Your task is to rewrite a description for a story asset based on a specific instruction.
-Instruction: "${styleInstruction}"
-
-Original Text:
-"${text}"
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure:
-${jsonStructure}
-
-Now, rewrite the text based on the instruction.`;
+			const template = window.promptTemplates['story.asset.rewrite'];
+			if (!template) {
+				console.error('Rewrite prompt template not found!');
+				return 'Error: Template "story.asset.rewrite" not found.';
+			}
+			return template
+				.replace('{instruction}', styleInstruction)
+				.replace('{text}', text);
 		}
+		// END MODIFICATION
 		
 		/**
 		 * Updates the live preview of the full prompt sent to the AI.
@@ -500,7 +495,7 @@ Now, rewrite the text based on the instruction.`;
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
 	
-	// START MODIFICATION: Add client-side function to build the asset image prompt.
+	// START MODIFICATION: Use prompt template from the backend.
 	/**
 	 * Builds the full prompt for generating an asset image.
 	 * @param {string} assetDescription - The description of the asset.
@@ -509,6 +504,12 @@ Now, rewrite the text based on the instruction.`;
 	 * @returns {string} The full prompt string.
 	 */
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
+		const template = window.promptTemplates['story.asset.image_prompt'];
+		if (!template) {
+			console.error('Image prompt template not found!');
+			return 'Error: Template "story.asset.image_prompt" not found.';
+		}
+		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
 		let assetInstructions = "Output should be a high-quality image that captures the essence of the asset.";
@@ -520,29 +521,11 @@ Now, rewrite the text based on the instruction.`;
 			assetInstructions = "Output should be a scene with clear background, focusing on the place's key features and atmosphere. No people should be included in the image.";
 		}
 		
-		const jsonStructure = `{
-  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
-}`;
-		
-		return `You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
-Your task is to create a single, concise, and descriptive image prompt for a story ${assetType}.
-
-**Context:**
-1.  **${assetType} Description:**
-    "${assetDescription}"
-
-2.  **User Guidance:**
-    ${instructionsText}
-
-**Instructions:**
-- ${assetInstructions}
-- The prompt should be a single paragraph of comma-separated descriptive phrases.
-- Focus on visual details: appearance, key features, mood, and lighting.
-- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-- The JSON object must follow this exact structure:
-${jsonStructure}
-
-Now, generate the image prompt for the provided context in the specified JSON format.`;
+		return template
+			.replace('{assetDescription}', assetDescription)
+			.replace('{assetType}', assetType)
+			.replace('{userInstructions}', instructionsText)
+			.replace('{assetInstructions}', assetInstructions);
 	}
 	// END MODIFICATION
 	

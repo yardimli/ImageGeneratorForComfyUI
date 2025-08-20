@@ -8,6 +8,7 @@
 	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
+	use App\Http\Controllers\LlmPromptController; // MODIFICATION: Add LlmPromptController.
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\PromptDictionaryController;
@@ -38,6 +39,14 @@
 
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+		// START MODIFICATION: Add routes for LLM Prompt Management
+		Route::prefix('llm-prompts')->name('llm-prompts.')->group(function () {
+			Route::get('/', [LlmPromptController::class, 'index'])->name('index');
+			Route::get('/{prompt}/edit', [LlmPromptController::class, 'edit'])->name('edit');
+			Route::put('/{prompt}', [LlmPromptController::class, 'update'])->name('update');
+		});
+		// END MODIFICATION
 
 		// --- Gallery ---
 		Route::prefix('gallery')->name('gallery.')->group(function () {

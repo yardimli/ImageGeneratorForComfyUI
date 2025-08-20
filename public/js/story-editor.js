@@ -325,6 +325,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// Logic for AI Image Prompt Generation
+	// START MODIFICATION: Use prompt template from the backend.
 	/**
 	 * Builds the full prompt for generating a page image.
 	 * @param {string} pageText - The text content of the page.
@@ -334,39 +335,23 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * @returns {string} The full prompt string.
 	 */
 	function buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, userInstructions) {
+		const template = window.promptTemplates['story.page.image_prompt'];
+		if (!template) {
+			console.error('Image prompt template not found!');
+			return 'Error: Template "story.page.image_prompt" not found.';
+		}
+		
 		const characterText = characterDescriptions.length > 0 ? "Characters in this scene:\n- " + characterDescriptions.join("\n- ") : "No specific characters are described for this scene.";
 		const placeText = placeDescriptions.length > 0 ? "Places in this scene:\n- " + placeDescriptions.join("\n- ") : "No specific places are described for this scene.";
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		const jsonStructure = `{
-  "prompt": "A detailed, comma-separated list of visual descriptors for the image."
-}`;
-		
-		return `You are an expert at writing image generation prompts for AI art models like DALL-E 3 or Midjourney.
-Your task is to create a single, concise, and descriptive image prompt based on the provided context of a story page.
-
-**Context:**
-1.  **Page Content:**
-    "${pageText}"
-
-2.  **Scene Details:**
-    ${characterText}
-    ${placeText}
-
-3.  **User Guidance:**
-    ${instructionsText}
-
-**Instructions:**
-- Synthesize all the information to create a vivid image prompt.
-- The prompt should be a single paragraph of comma-separated descriptive phrases.
-- Focus on visual details: the setting, character appearance, actions, mood, and lighting.
-- Include all details when describing characters and places.
-- Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-- The JSON object must follow this exact structure:
-${jsonStructure}
-
-Now, generate the image prompt for the provided context in the specified JSON format.`;
+		return template
+			.replace('{pageText}', pageText)
+			.replace('{characterDescriptions}', characterText)
+			.replace('{placeDescriptions}', placeText)
+			.replace('{userInstructions}', instructionsText);
 	}
+	// END MODIFICATION
 	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {
@@ -537,7 +522,14 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 		 * @param {string} style - The selected rewrite style.
 		 * @returns {string} The full prompt for the LLM.
 		 */
+		// START MODIFICATION: Use prompt template from the backend.
 		function buildRewritePrompt(text, style) {
+			const template = window.promptTemplates['story.page.rewrite'];
+			if (!template) {
+				console.error('Rewrite prompt template not found!');
+				return 'Error: Template "story.page.rewrite" not found.';
+			}
+			
 			const styleInstructions = {
 				simplify: 'Simplify the following text for a younger audience (around A2-B1 CEFR level). Make the sentences shorter and use simpler vocabulary, but keep the original meaning.',
 				descriptive: 'Rewrite the following text to be more descriptive and poetic. Use vivid imagery, sensory details, and figurative language to paint a richer picture for the reader.',
@@ -553,22 +545,11 @@ Now, generate the image prompt for the provided context in the specified JSON fo
 			
 			const instruction = styleInstructions[style] || styleInstructions['grammar'];
 			
-			const jsonStructure = `{
-  "rewritten_text": "The rewritten text goes here."
-}`;
-			
-			return `You are an expert story editor. Your task is to rewrite a piece of text based on a specific instruction.
-Instruction: "${instruction}"
-
-Original Text:
-"${text}"
-
-Please provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
-The JSON object must follow this exact structure:
-${jsonStructure}
-
-Now, rewrite the text based on the instruction.`;
+			return template
+				.replace('{instruction}', instruction)
+				.replace('{text}', text);
 		}
+		// END MODIFICATION
 		
 		function updateRewritePromptPreview() {
 			if (!originalText) return;

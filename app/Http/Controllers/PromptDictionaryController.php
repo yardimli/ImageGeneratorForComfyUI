@@ -3,6 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
+	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
 	use App\Models\Prompt;
 	use App\Models\PromptDictionaryEntry;
 	use Illuminate\Http\Request;
@@ -75,7 +76,11 @@
 			}
 
 			// MODIFICATION: Pass categories and the selected category to the view.
-			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category'));
+			// START MODIFICATION: Fetch prompt templates for JS.
+			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entries.generate%')
+				->pluck('user_prompt', 'name')->all();
+			// END MODIFICATION
+			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category', 'promptTemplates'));
 		}
 
 		/**
@@ -133,7 +138,11 @@
 			];
 
 			// MODIFICATION: Pass categories to the view.
-			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories'));
+			// START MODIFICATION: Fetch prompt templates for JS.
+			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entry.%')
+				->pluck('user_prompt', 'name')->all();
+			// END MODIFICATION
+			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories', 'promptTemplates'));
 		}
 
 		/**

@@ -104,6 +104,17 @@
 							<li><a class="dropdown-item" href="{{ route('kontext-lora.index') }}">Kontext Lora</a></li>
 						</ul>
 					</li>
+					{{-- START MODIFICATION: Add Admin dropdown for LLM Prompts --}}
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+						   data-bs-toggle="dropdown" aria-expanded="false">
+							Admin
+						</a>
+						<ul class="dropdown-menu" aria-labelledby="adminDropdown">
+							<li><a class="dropdown-item" href="{{ route('llm-prompts.index') }}">LLM Prompts</a></li>
+						</ul>
+					</li>
+					{{-- END MODIFICATION --}}
 					<li class="nav-item">
 						<a class="nav-link" href="{{ route('prompts.queue') }}">
 							Queue Management <span class="badge bg-primary" id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>

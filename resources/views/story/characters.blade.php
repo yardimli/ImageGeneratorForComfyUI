@@ -245,5 +245,10 @@
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
+	{{-- START MODIFICATION: Pass prompt templates to JS --}}
+	<script>
+		window.promptTemplates = @json($promptTemplates ?? []);
+	</script>
+	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/story-asset-manager.js') }}"></script>
 @endsection
