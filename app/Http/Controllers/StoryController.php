@@ -83,9 +83,8 @@
 		{
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])
-					->sortBy('name')
-					->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 
 				$summaries = [];
 				$summaryPath = resource_path('summaries');
@@ -580,9 +579,8 @@ PROMPT;
 			// Fetch models for the AI prompt generator modal
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])
-					->sortBy('name')
-					->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Editor: ' . $e->getMessage());
 				$models = [];
@@ -933,7 +931,8 @@ PROMPT;
 
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Characters: ' . $e->getMessage());
 				$models = [];
@@ -1010,7 +1009,8 @@ PROMPT;
 
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Places: ' . $e->getMessage());
 				$models = [];

@@ -69,6 +69,73 @@
 			return $modelsData;
 		}
 
+		// START MODIFICATION: Add method to process models for dropdowns.
+		/**
+		 * Processes the raw models list from OpenRouter to create a view-friendly array.
+		 * It filters models based on positive/negative lists, adds suffixes for image support,
+		 * and creates variants for reasoning support.
+		 *
+		 * @param array $modelsData The raw JSON response from the getModels() method.
+		 * @return array A sorted array of models ready for a dropdown.
+		 */
+		public function processModelsForView(array $modelsData): array
+		{
+			$processedModels = [];
+			// Define the filter lists. The model 'id' will be checked against these.
+			$positiveList = ['openai', 'anthropic', 'mistral', 'google', 'deepseek', 'mistral'];
+			$negativeList = ['free', '8b', '3b', '7b', '12b', '22b', '24b', 'gpt-4 turbo', 'oss', 'tng', 'lite', '1.5', '2.0', 'tiny', 'gemma', 'small', 'nemo', 'distill', '3.5', 'dolphin', 'codestral', 'devstral', 'magistral'];
+
+			// Use collect on the 'data' key and sort by name.
+			$models = collect($modelsData['data'] ?? [])->sortBy('name');
+
+			foreach ($models as $model) {
+				$id = $model['id'];
+				$idLower = strtolower($id);
+
+				// Negative check: Skip if the ID contains any word from the negative list.
+				$isNegativeMatch = collect($negativeList)->contains(fn($word) => str_contains($idLower, $word));
+				if ($isNegativeMatch) {
+					continue;
+				}
+
+				// Positive check: Must contain at least one word from the positive list.
+				$isPositiveMatch = collect($positiveList)->contains(fn($word) => str_contains($idLower, $word));
+				if (!$isPositiveMatch) {
+					continue;
+				}
+
+				$name = $model['name'];
+				// Check for image and reasoning support in the model's metadata.
+				$hasImageSupport = in_array('image', $model['architecture']['input_modalities'] ?? []);
+				$hasReasoningSupport = in_array('reasoning', $model['supported_parameters'] ?? []);
+
+				if ($hasImageSupport) {
+					$name .= ' (image)';
+				}
+
+				if ($hasReasoningSupport) {
+					// Create a 'non-thinking' version.
+					$processedModels[] = [
+						'id' => $id,
+						'name' => $name . ' (non-thinking)'
+					];
+					// Create a 'thinking' version with a special suffix in the ID.
+					$processedModels[] = [
+						'id' => $id . '--thinking',
+						'name' => $name . ' (thinking)'
+					];
+				} else {
+					$processedModels[] = [
+						'id' => $id,
+						'name' => $name
+					];
+				}
+			}
+			// Sort the final list by name again to correctly order the new variants.
+			return collect($processedModels)->sortBy('name')->values()->all();
+		}
+		// END MODIFICATION
+
 		/**
 		 * Calls a specified LLM synchronously, waiting for the full response.
 		 *
@@ -86,6 +153,14 @@
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
 
+			// START MODIFICATION: Handle 'thinking' model variants by checking for the '--thinking' suffix.
+			$useReasoning = false;
+			if (str_ends_with($modelId, '--thinking')) {
+				$modelId = substr($modelId, 0, -10); // Remove '--thinking' to get the real model ID.
+				$useReasoning = true;
+			}
+			// END MODIFICATION
+
 			$requestBody = [
 				'model' => $modelId,
 				'messages' => [['role' => 'user', 'content' => $prompt]],
@@ -98,6 +173,12 @@
 			if (is_numeric($temperature)) {
 				$requestBody['temperature'] = $temperature;
 			}
+
+			// START MODIFICATION: Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
+			if ($useReasoning) {
+				$requestBody['reasoning'] = ['effort' => 'medium'];
+			}
+			// END MODIFICATION
 
 			try {
 				$response = Http::withToken($this->apiKey)
@@ -335,7 +416,7 @@
 					$tempResults = [];
 					foreach ($results as $result) {
 						foreach ($chatgptAnswers as $answer) {
-							$separator = (substr($result, -1) === ',' || substr($result, -1) === '.') ? ' ' : ', ';
+							$separator = (str_ends_with($result, ',') || str_ends_with($result, '.')) ? ' ' : ', ';
 							$tempResults[] = $result . $separator . $answer;
 						}
 					}
@@ -343,7 +424,7 @@
 				} else {
 					foreach ($chatgptAnswers as $i => $answer) {
 						if (isset($results[$i])) {
-							$separator = (substr($results[$i], -1) === ',' || substr($results[$i, -1] === '.') ? ' ' : ', ';
+							$separator = (str_ends_with($results[$i], ',') || str_ends_with($result, '.')) ? ' ' : ', ';
 							$results[$i] .= $separator . $answer;
 						}
 					}
@@ -408,6 +489,14 @@
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
 
+			// START MODIFICATION: Handle 'thinking' model variants by checking for the '--thinking' suffix.
+			$useReasoning = false;
+			if (str_ends_with($modelId, '--thinking')) {
+				$modelId = substr($modelId, 0, -10); // Remove '--thinking' to get the real model ID.
+				$useReasoning = true;
+			}
+			// END MODIFICATION
+
 			$requestBody = [
 				'model' => $modelId,
 				'messages' => [
@@ -419,6 +508,12 @@
 			if (is_numeric($temperature)) {
 				$requestBody['temperature'] = $temperature;
 			}
+
+			// START MODIFICATION: Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
+			if ($useReasoning) {
+				$requestBody['reasoning'] = ['effort' => 'medium'];
+			}
+			// END MODIFICATION
 
 			try {
 				$response = Http::withToken($this->apiKey)

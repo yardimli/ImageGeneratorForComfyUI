@@ -66,7 +66,8 @@
 			// Fetch models for the AI modal.
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Prompt Dictionary Grid: ' . $e->getMessage());
 				$models = [];
@@ -108,7 +109,8 @@
 			// Fetch models for the AI modals.
 			try {
 				$modelsResponse = $llmController->getModels();
-				$models = collect($modelsResponse['data'] ?? [])->sortBy('name')->all();
+				// MODIFICATION: Process models to add variants for image/reasoning support.
+				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Prompt Dictionary: ' . $e->getMessage());
 				$models = [];
