@@ -12,8 +12,8 @@
 		public function up(): void
 		{
 			Schema::table('prompt_dictionary_entries', function (Blueprint $table) {
-\				$table->string('word_category')->nullable()->after('description');
-\			});
+				$table->string('word_category')->nullable()->after('description');
+			});
 		}
 
 		/**
@@ -22,7 +22,7 @@
 		public function down(): void
 		{
 			Schema::table('prompt_dictionary_entries', function (Blueprint $table) {
-\				$table->dropColumn('word_category');
-\			});
+				$table->dropColumn('word_category');
+			});
 		}
 	};

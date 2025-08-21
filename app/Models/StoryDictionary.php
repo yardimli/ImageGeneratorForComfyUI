@@ -26,7 +26,7 @@
 		/**
 		 * Get the story that this dictionary entry belongs to.
 		 */
-\		public function page()
+		public function page()
 		{
 			return $this->belongsTo(StoryPage::class, 'story_page_id');
 		}
