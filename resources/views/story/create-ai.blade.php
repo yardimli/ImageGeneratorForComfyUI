@@ -127,7 +127,6 @@
 					</div>
 				</form>
 				
-				{{-- New progress bar element --}}
 				<div id="progress-container" class="mt-4 d-none">
 					<p id="progress-text" class="text-center mb-2 fw-bold"></p>
 					<div class="progress" style="height: 25px;">
@@ -180,7 +179,7 @@
 							throw new Error(coreData.message || 'Failed to create the story structure.');
 						}
 						
-						// --- STEP 2: Sequentially generate descriptions ---
+						// --- STEP 2: Sequentially generate descriptions with retries ---
 						const { story_id, characters_to_process, places_to_process } = coreData;
 						const itemsToProcess = [
 							...characters_to_process.map(name => ({ type: 'character', name })),
@@ -195,27 +194,54 @@
 						
 						const totalItems = itemsToProcess.length;
 						const progressStep = 95 / totalItems; // Remaining 95% of progress
+						const maxRetries = 3; // Define max number of retries
 						
 						for (let i = 0; i < totalItems; i++) {
 							const item = itemsToProcess[i];
-							const currentProgress = 5 + ((i) * progressStep);
-							updateProgress(currentProgress, `Generating description for ${item.type}: ${item.name} (${i + 1}/${totalItems})`);
+							let success = false;
 							
-							const descFormData = new FormData();
-							descFormData.append('story_id', story_id);
-							descFormData.append('type', item.type);
-							descFormData.append('name', item.name);
-							descFormData.append('_token', form.querySelector('input[name="_token"]').value);
+							// --- Retry loop for each item ---
+							for (let attempt = 1; attempt <= maxRetries; attempt++) {
+								const currentProgress = 5 + ((i) * progressStep);
+								let progressMessage = `Generating description for ${item.type}: ${item.name} (${i + 1}/${totalItems})`;
+								if (attempt > 1) {
+									progressMessage += ` - Attempt ${attempt}/${maxRetries}`;
+								}
+								updateProgress(currentProgress, progressMessage);
+								
+								try {
+									const descFormData = new FormData();
+									descFormData.append('story_id', story_id);
+									descFormData.append('type', item.type);
+									descFormData.append('name', item.name);
+									descFormData.append('_token', form.querySelector('input[name="_token"]').value);
+									
+									const descResponse = await fetch("{{ route('stories.ai-generate.description') }}", {
+										method: 'POST',
+										body: descFormData,
+										headers: { 'Accept': 'application/json' },
+									});
+									
+									if (descResponse.ok) {
+										success = true;
+										break; // Successful, exit the retry loop
+									}
+									
+									// Handle non-ok HTTP responses (e.g., 422, 500)
+									const errorData = await descResponse.json();
+									console.error(`Attempt ${attempt} failed for ${item.type} '${item.name}':`, errorData.message || `Server returned status ${descResponse.status}`);
+									
+								} catch (networkError) {
+									// Handle network errors (e.g., fetch fails completely)
+									console.error(`Attempt ${attempt} failed for ${item.type} '${item.name}' with a network error:`, networkError);
+								}
+								
+								// If not successful, the loop will continue to the next attempt
+							}
 							
-							const descResponse = await fetch("{{ route('stories.ai-generate.description') }}", {
-								method: 'POST',
-								body: descFormData,
-								headers: { 'Accept': 'application/json' },
-							});
-							
-							if (!descResponse.ok) {
-								const errorData = await descResponse.json();
-								throw new Error(`Failed to generate description for ${item.type} '${item.name}'. ${errorData.message || ''}`);
+							if (!success) {
+								console.warn(`Skipping ${item.type} '${item.name}' after ${maxRetries} failed attempts.`);
+								// The main loop will automatically continue to the next item
 							}
 						}
 						
