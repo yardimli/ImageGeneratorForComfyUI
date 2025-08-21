@@ -4,25 +4,11 @@
 	<div class="container">
 		<div class="row justify-content-center">
 			<div class="col-md-10">
-				<div class="card">
-					<div class="card-header">{{ __('Dashboard') }}</div>
-					
-					<div class="card-body">
-						@if (session('status'))
-							<div class="alert alert-success" role="alert">
-								{{ session('status') }}
-							</div>
-						@endif
-						
-						{{ __('You are logged in!') }}
-						
-						<div class="mt-3">
-							<a href="{{ route('prompts.index') }}" class="btn btn-primary me-2">Prompts</a>
-							<a href="{{ route('image-mix.index') }}" class="btn btn-secondary me-2">Image Mix Tool</a>
-							<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['all']]) }}" class="btn btn-primary">Gallery</a>
-						</div>
+				@if (session('status'))
+					<div class="alert alert-success" role="alert">
+						{{ session('status') }}
 					</div>
-				</div>
+				@endif
 				
 				<!-- Image Statistics -->
 				<div class="card mt-4">
@@ -35,7 +21,7 @@
 							<div class="col-md-4">
 								<h6 class="border-bottom pb-2 mb-3">By Model</h6>
 								<ul class="list-group">
-									@foreach(['schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b'] as $model)
+									@foreach(['schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b', 'fal-ai/qwen-image'] as $model)
 										<li class="list-group-item d-flex justify-content-between align-items-center">
 											{{ ucfirst(str_replace('-', ' ', $model)) }}
 											<span class="badge bg-primary rounded-pill">{{ $modelStats[$model] ?? 0 }}</span>
@@ -47,7 +33,7 @@
 							<div class="col-md-4">
 								<h6 class="border-bottom pb-2 mb-3">By Generation Type</h6>
 								<ul class="list-group">
-									@foreach(['prompt', 'mix', 'mix-one'] as $type)
+									@foreach(['prompt', 'mix', 'mix-one', 'kontext-basic', 'kontext-lora'] as $type)
 										<li class="list-group-item d-flex justify-content-between align-items-center">
 											{{ ucfirst(str_replace('-', ' ', $type)) }}
 											<span class="badge bg-secondary rounded-pill">{{ $generationTypeStats[$type] ?? 0 }}</span>

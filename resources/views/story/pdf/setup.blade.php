@@ -1,5 +1,5 @@
 {{-- resources/views/story/pdf/setup.blade.php --}}
-@extends('layouts.bootstrap-app')
+@extends('layouts.app')
 
 {{-- START MODIFICATION: Add styles for font previews and new logo modal --}}
 @section('styles')

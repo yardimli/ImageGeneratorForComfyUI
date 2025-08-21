@@ -1,4 +1,4 @@
-@extends('layouts.bootstrap-app')
+@extends('layouts.app')
 
 @section('content')
 	<div class="container py-4" style="padding-bottom: 100px;">

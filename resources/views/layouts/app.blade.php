@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-	<meta charset="utf-8">
+	<meta charset="utf-t">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
 	
 	<!-- CSRF Token -->
 	<meta name="csrf-token" content="{{ csrf_token() }}">
+	<link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
+	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
+	
 	<title>{{ config('app.name', 'Laravel') }}</title>
 	
 	<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
@@ -56,15 +59,16 @@
 		});
 	</script>
 	@yield('styles')
-	
-	<!-- Scripts -->
-	@vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
 </head>
 <body>
 <div id="app">
 	<nav class="navbar navbar-expand-md bg-body-tertiary shadow-sm">
 		<div class="container">
-			<a class="navbar-brand" href="{{ url('/') }}">
+				<button class="btn btn-outline-secondary me-2" id="theme-switcher-btn" style="width: 40px;">
+					<span id="theme-icon"></span>
+				</button>
+			<a class="navbar-brand" href="{{ route('home') }}">
 				{{ config('app.name', 'Laravel') }}
 			</a>
 			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
@@ -76,49 +80,64 @@
 				<!-- Left Side Of Navbar -->
 				<ul class="navbar-nav me-auto">
 					<li class="nav-item">
-						<a class="nav-link" href="{{ route('home') }}">Home</a>
-					</li>
-					<li class="nav-item">
 						<a class="nav-link"
 						   href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes ?? ['all']]) }}">Gallery</a>
 					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('prompts.index') }}">Prompts</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('image-mix.index') }}">Image Mix</a>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('stories.index') }}">Story</a>
-					</li>
 					<li class="nav-item dropdown">
-						<a class="nav-link dropdown-toggle" href="#" id="kontextDropdown" role="button"
+						<a class="nav-link dropdown-toggle" href="#" id="promptDropdown" role="button"
 						   data-bs-toggle="dropdown" aria-expanded="false">
-							Kontext
+							Image
 						</a>
-						<ul class="dropdown-menu" aria-labelledby="kontextDropdown">
+						<ul class="dropdown-menu" aria-labelledby="promptDropdown">
+							<li>
+								<a class="dropdown-item" href="{{ route('prompts.index') }}">Prompts</a>
+							</li>
+							<li>
+								<a class="dropdown-item" href="{{ route('prompt-dictionary.index') }}">Prompt Dict</a>
+							</li>
+							<li>
+								<a class="dropdown-item" href="{{ route('image-mix.index') }}">Image Mix</a>
+							</li>
+							<li>
+								<hr class="dropdown-divider">
+							</li>
 							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
 							<li><a class="dropdown-item" href="{{ route('kontext-basic.index') }}">Kontext Basic</a></li>
 							<li><a class="dropdown-item" href="{{ route('kontext-lora.index') }}">Kontext Lora</a></li>
 						</ul>
 					</li>
-					
 					<li class="nav-item">
-						<a class="nav-link" href="{{ route('prompts.queue') }}">
-							Queue <span class="badge bg-primary"
-							                       id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
+						<a class="nav-link" href="{{ route('stories.index') }}">Story</a>
+					</li>
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
+						   data-bs-toggle="dropdown" aria-expanded="false">
+							Admin
 						</a>
+						<ul class="dropdown-menu" aria-labelledby="adminDropdown">
+							<li><a class="dropdown-item" href="{{ route('llm-prompts.index') }}">LLM Prompts</a></li>
+						</ul>
 					</li>
 				</ul>
 				
 				<!-- Right Side Of Navbar -->
 				<ul class="navbar-nav ms-auto">
-					<li class="nav-item me-2">
-						<button class="btn btn-outline-secondary" id="theme-switcher-btn" style="width: 40px;">
-							<span id="theme-icon"></span>
-						</button>
-					</li>
 					<!-- Authentication Links -->
+					<li class="nav-item">
+						<a class="nav-link" href="{{ route('prompts.queue') }}">
+							Queue <span class="badge bg-primary"
+							            id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
+						</a>
+					</li>
+					@php
+						$upscaleCount = \App\Models\Prompt::where('user_id', auth()->id())->where('upscale_status', 1)->count();
+					@endphp
+					<li class="nav-item">
+						<a class="nav-link" href="#">
+							Upscaling <span class="badge bg-warning @if($upscaleCount == 0) d-none @endif"
+							                id="navUpscaleQueueCount">{{ $upscaleCount }}</span>
+						</a>
+					</li>
 					@guest
 						@if (Route::has('login'))
 							<li class="nav-item">
@@ -159,6 +178,9 @@
 		@yield('content')
 	</main>
 </div>
+
+<script src="{{ asset('vendor/popper.min.js') }}"></script>
+<script src="{{ asset('vendor/bootstrap.min.js') }}"></script>
 
 @yield('scripts')
 </body>

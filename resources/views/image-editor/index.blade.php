@@ -1,4 +1,4 @@
-@extends('layouts.bootstrap-app')
+@extends('layouts.app')
 
 @section('styles')
 	<link rel="stylesheet" href="{{asset('vendor/cropperjs/1.6.1/cropper.min.css')}}"/>

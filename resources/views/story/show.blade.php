@@ -1,4 +1,4 @@
-@extends('layouts.bootstrap-app')
+@extends('layouts.app')
 
 @section('styles')
 	<style>

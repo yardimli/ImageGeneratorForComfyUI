@@ -1,4 +1,4 @@
-@extends('layouts.bootstrap-app')
+@extends('layouts.app')
 @section('content')
 	<div class="queue-status">
 		<span class="me-2">Queue:</span>
