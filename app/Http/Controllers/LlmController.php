@@ -84,7 +84,7 @@
 			$processedModels = [];
 			// Define the filter lists. The model 'id' will be checked against these.
 			$positiveList = ['openai', 'anthropic', 'mistral', 'google', 'deepseek', 'mistral'];
-			$negativeList = ['free', '8b', '3b', '7b', '12b', '22b', '24b', 'gpt-4 turbo', 'oss', 'tng', 'lite', '1.5', '2.0', 'tiny', 'gemma', 'small', 'nemo', 'distill', '3.5', 'dolphin', 'codestral', 'devstral', 'magistral'];
+			$negativeList = ['free', '8b', '3b', '7b', '12b', '22b', '24b', 'gpt-4 turbo', 'oss', 'tng', 'lite', '1.5', '2.0', 'tiny', 'gemma', 'small', 'nemo', 'distill', '3.5', 'dolphin', 'codestral', 'devstral', 'magistral', 'o1-pro', 'o3-pro'];
 
 			// Use collect on the 'data' key and sort by name.
 			$models = collect($modelsData['data'] ?? [])->sortBy('name');
