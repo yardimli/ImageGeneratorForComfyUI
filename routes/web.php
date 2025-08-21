@@ -178,6 +178,8 @@
 			// Custom routes
 			Route::get('/create/ai', [CreateStoryController::class, 'createWithAi'])->name('create-ai');
 			Route::post('/create/ai', [CreateStoryController::class, 'storeWithAi'])->name('store-ai');
+			// New route for generating descriptions sequentially
+			Route::post('/ai-generate/description', [CreateStoryController::class, 'generateDescription'])->name('ai-generate.description');
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
 			Route::post('/rewrite-asset-description', [StoryController::class, 'rewriteAssetDescription'])->name('rewrite-asset-description');
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');

@@ -5,6 +5,8 @@
 		<h1>Create a Story with AI</h1>
 		<p class="text-muted">Provide instructions for the story, choose the number of pages and an AI model, and let the magic happen.</p>
 		
+		<div id="error-container" class="alert alert-danger d-none"></div>
+		
 		@if(session('error'))
 			<div class="alert alert-danger">
 				{{ session('error') }}
@@ -124,6 +126,15 @@
 						</button>
 					</div>
 				</form>
+				
+				{{-- New progress bar element --}}
+				<div id="progress-container" class="mt-4 d-none">
+					<p id="progress-text" class="text-center mb-2 fw-bold"></p>
+					<div class="progress" style="height: 25px;">
+						<div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+					</div>
+				</div>
+			
 			</div>
 		</div>
 	</div>
@@ -136,15 +147,111 @@
 			const generateBtn = document.getElementById('generate-btn');
 			const btnText = document.getElementById('btn-text');
 			const btnSpinner = document.getElementById('btn-spinner');
+			const progressContainer = document.getElementById('progress-container');
+			const progressBar = document.getElementById('progress-bar');
+			const progressText = document.getElementById('progress-text');
+			const errorContainer = document.getElementById('error-container');
 			
+			// --- Form submission handler for AI generation ---
 			if (form) {
-				form.addEventListener('submit', function () {
+				form.addEventListener('submit', async function (e) {
+					e.preventDefault();
+					
+					// --- UI updates for starting generation ---
 					generateBtn.disabled = true;
 					btnText.textContent = 'Generating...';
 					btnSpinner.classList.remove('d-none');
+					errorContainer.classList.add('d-none');
+					progressContainer.classList.remove('d-none');
+					updateProgress(0, 'Initializing...');
+					
+					try {
+						// --- STEP 1: Create the core story ---
+						updateProgress(5, 'Generating story core...');
+						const coreFormData = new FormData(form);
+						const coreResponse = await fetch("{{ route('stories.store-ai') }}", {
+							method: 'POST',
+							body: coreFormData,
+							headers: { 'Accept': 'application/json' },
+						});
+						
+						const coreData = await coreResponse.json();
+						if (!coreResponse.ok) {
+							throw new Error(coreData.message || 'Failed to create the story structure.');
+						}
+						
+						// --- STEP 2: Sequentially generate descriptions ---
+						const { story_id, characters_to_process, places_to_process } = coreData;
+						const itemsToProcess = [
+							...characters_to_process.map(name => ({ type: 'character', name })),
+							...places_to_process.map(name => ({ type: 'place', name })),
+						];
+						
+						if (itemsToProcess.length === 0) {
+							updateProgress(100, 'Generation complete!');
+							window.location.href = `/stories/${story_id}/edit`;
+							return;
+						}
+						
+						const totalItems = itemsToProcess.length;
+						const progressStep = 95 / totalItems; // Remaining 95% of progress
+						
+						for (let i = 0; i < totalItems; i++) {
+							const item = itemsToProcess[i];
+							const currentProgress = 5 + ((i) * progressStep);
+							updateProgress(currentProgress, `Generating description for ${item.type}: ${item.name} (${i + 1}/${totalItems})`);
+							
+							const descFormData = new FormData();
+							descFormData.append('story_id', story_id);
+							descFormData.append('type', item.type);
+							descFormData.append('name', item.name);
+							descFormData.append('_token', form.querySelector('input[name="_token"]').value);
+							
+							const descResponse = await fetch("{{ route('stories.ai-generate.description') }}", {
+								method: 'POST',
+								body: descFormData,
+								headers: { 'Accept': 'application/json' },
+							});
+							
+							if (!descResponse.ok) {
+								const errorData = await descResponse.json();
+								throw new Error(`Failed to generate description for ${item.type} '${item.name}'. ${errorData.message || ''}`);
+							}
+						}
+						
+						// --- STEP 3: Finalize and redirect ---
+						updateProgress(100, 'Generation complete! Redirecting...');
+						window.location.href = `/stories/${story_id}/edit`;
+						
+					} catch (error) {
+						console.error('Story generation failed:', error);
+						showError(error.message);
+						resetFormState();
+					}
 				});
 			}
 			
+			function updateProgress(percent, text) {
+				const p = Math.round(percent);
+				progressBar.style.width = p + '%';
+				progressBar.setAttribute('aria-valuenow', p);
+				progressBar.textContent = p + '%';
+				progressText.textContent = text;
+			}
+			
+			function showError(message) {
+				errorContainer.textContent = `An error occurred: ${message}`;
+				errorContainer.classList.remove('d-none');
+			}
+			
+			function resetFormState() {
+				generateBtn.disabled = false;
+				btnText.textContent = 'Generate Story';
+				btnSpinner.classList.add('d-none');
+				progressContainer.classList.add('d-none');
+			}
+			
+			// --- Helper scripts for form usability ---
 			const modelSelect = document.getElementById('model');
 			const modelStorageKey = 'storyCreateAi_model';
 			
@@ -159,10 +266,8 @@
 				});
 			}
 			
-			// Get the instructions textarea at a higher scope to be used by multiple listeners.
 			const instructionsTextarea = document.getElementById('instructions');
 			
-			// Handle prepending summary text to the instructions textarea.
 			const summarySelect = document.getElementById('summary_file');
 			if (summarySelect && instructionsTextarea) {
 				const summaries = @json($summaries ?? []);
@@ -186,13 +291,8 @@
 					const selectedLevel = this.value;
 					const selectedOption = this.options[this.selectedIndex];
 					if (selectedLevel) {
-						// Add a newline before appending to separate it from existing text.
-						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel} - ${selectedOption.text}`;
-						
-						// Append the text.
+						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel} - ${selectedOption.text.trim()}`;
 						instructionsTextarea.value += textToAppend;
-						
-						// Scroll the textarea to the bottom to make the new text visible.
 						instructionsTextarea.scrollTop = instructionsTextarea.scrollHeight;
 					}
 				});

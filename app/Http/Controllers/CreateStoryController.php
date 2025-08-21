@@ -85,10 +85,11 @@
 
 		/**
 		 * Generate and store a new story using AI.
+		 * This is the first step, creating the core story structure.
 		 *
 		 * @param Request $request
 		 * @param LlmController $llmController
-		 * @return \Illuminate\Http\RedirectResponse
+		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function storeWithAi(Request $request, LlmController $llmController)
 		{
@@ -100,87 +101,88 @@
 			]);
 
 			try {
-				$story = DB::transaction(function () use ($validated, $llmController) {
-					// --- STEP 1: Generate Story Core (title, pages, character/place names) ---
-					$corePrompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
-					$storyData = $llmController->callLlmSync(
-						$corePrompt,
-						$validated['model'],
-						'AI Story Generation - Core',
-						0.7,
-						'json_object'
-					);
+				// --- STEP 1: Generate Story Core (title, pages, character/place names) ---
+				$corePrompt = $this->buildStoryPrompt($validated['instructions'], $validated['num_pages']);
+				$storyData = $llmController->callLlmSync(
+					$corePrompt,
+					$validated['model'],
+					'AI Story Generation - Core',
+					0.7,
+					'json_object'
+				);
 
-					$this->validateStoryData($storyData);
-					// Save the initial story structure with empty character/place descriptions.
-					$story = $this->saveStoryFromAiData($storyData, $validated);
+				$this->validateStoryData($storyData);
 
-					//  Create a map of characters/places to the text of the pages they appear on.
-					$characterPageTextMap = [];
-					$placePageTextMap = [];
-					foreach ($storyData['pages'] as $index => $page) {
-						// We include the page number for better context for the LLM.
-						$pageContentWithNumber = "Page " . ($index + 1) . ": " . $page['content'];
-						if (!empty($page['characters'])) {
-							foreach ($page['characters'] as $charName) {
-								if (!isset($characterPageTextMap[$charName])) {
-									$characterPageTextMap[$charName] = [];
-								}
-								$characterPageTextMap[$charName][] = $pageContentWithNumber;
-							}
-						}
-						if (!empty($page['places'])) {
-							foreach ($page['places'] as $placeName) {
-								if (!isset($placePageTextMap[$placeName])) {
-									$placePageTextMap[$placeName] = [];
-								}
-								$placePageTextMap[$placeName][] = $pageContentWithNumber;
-							}
-						}
-					}
+				// Save the initial story structure with empty character/place descriptions.
+				$story = $this->saveStoryFromAiData($storyData, $validated);
 
-
-					$fullStoryText = implode("\n\n", array_column($storyData['pages'], 'content'));
-					$characterNames = array_column($storyData['characters'] ?? [], 'name');
-					$placeNames = array_column($storyData['places'] ?? [], 'name');
-
-					// --- STEP 2: Generate Character Descriptions ---
-					if (!empty($characterNames)) {
-						$charPrompt = $this->buildCharacterDescriptionPrompt($fullStoryText, $characterNames, $characterPageTextMap);
-						$characterDescriptionData = $llmController->callLlmSync(
-							$charPrompt,
-							$validated['model'],
-							'AI Story Generation - Characters',
-							0.7,
-							'json_object'
-						);
-						$this->updateCharactersFromAiData($story, $characterDescriptionData);
-					}
-
-					// --- STEP 3: Generate Place Descriptions ---
-					if (!empty($placeNames)) {
-						$placePrompt = $this->buildPlaceDescriptionPrompt($fullStoryText, $placeNames, $placePageTextMap);
-						$placeDescriptionData = $llmController->callLlmSync(
-							$placePrompt,
-							$validated['model'],
-							'AI Story Generation - Places',
-							0.7,
-							'json_object'
-						);
-						$this->updatePlacesFromAiData($story, $placeDescriptionData);
-					}
-
-					return $story;
-				});
-
-				return redirect()->route('stories.edit', $story)->with('success', 'Your AI-generated story has been created successfully!');
+				// Return data for the frontend to start generating descriptions.
+				return response()->json([
+					'story_id' => $story->id,
+					'characters_to_process' => $story->characters->pluck('name'),
+					'places_to_process' => $story->places->pluck('name'),
+				]);
 			} catch (ValidationException $e) {
-				return back()->withInput()->withErrors($e->errors())->with('error', 'The AI returned data in an invalid format. Please try again.');
+				return response()->json(['message' => 'The AI returned data in an invalid format. Please try again.', 'errors' => $e->errors()], 422);
 			} catch (\Exception $e) {
 				Log::error('AI Story Generation Failed: ' . $e->getMessage());
-				return back()->withInput()->with('error', 'An error occurred while generating the story with AI. Please try again. Error: ' . $e->getMessage());
+				return response()->json(['message' => 'An error occurred while generating the story with AI. Error: ' . $e->getMessage()], 500);
 			}
 		}
+
+		/**
+		 * Generates a description for a single character or place.
+		 * Called via AJAX from the story creation page.
+		 *
+		 * @param Request $request
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generateDescription(Request $request, LlmController $llmController)
+		{
+			$validated = $request->validate([
+				'story_id' => 'required|integer|exists:stories,id',
+				'type' => 'required|string|in:character,place',
+				'name' => 'required|string',
+			]);
+
+			try {
+				$story = Story::with('pages', 'characters', 'places')->findOrFail($validated['story_id']);
+				$fullStoryText = $story->pages->pluck('story_text')->implode("\n\n");
+
+				if ($validated['type'] === 'character') {
+					$prompt = $this->buildSingleCharacterDescriptionPrompt($story, $fullStoryText, $validated['name']);
+					$callReason = 'AI Story Generation - Character Description';
+				} else {
+					$prompt = $this->buildSinglePlaceDescriptionPrompt($story, $fullStoryText, $validated['name']);
+					$callReason = 'AI Story Generation - Place Description';
+				}
+
+				$descriptionData = $llmController->callLlmSync(
+					$prompt,
+					$story->model, // Use the same model as the core story
+					$callReason,
+					0.7,
+					'json_object'
+				);
+
+				$this->validateSingleEntityData($descriptionData, $validated['name']);
+
+				if ($validated['type'] === 'character') {
+					$story->characters()->where('name', $validated['name'])->update(['description' => $descriptionData['description']]);
+				} else {
+					$story->places()->where('name', $validated['name'])->update(['description' => $descriptionData['description']]);
+				}
+
+				return response()->json(['success' => true, 'description' => $descriptionData['description']]);
+			} catch (ValidationException $e) {
+				return response()->json(['message' => 'The AI returned data in an invalid format for ' . $validated['name'] . '. Please try again.', 'errors' => $e->errors()], 422);
+			} catch (\Exception $e) {
+				Log::error('AI Description Generation Failed: ' . $e->getMessage());
+				return response()->json(['message' => 'An error occurred while generating a description for ' . $validated['name'] . '. Error: ' . $e->getMessage()], 500);
+			}
+		}
+
 
 		/**
 		 * Builds the prompt for the LLM to generate a story.
@@ -189,7 +191,6 @@
 		 * @param int $numPages
 		 * @return string
 		 */
-		//  Fetch prompt from the database instead of hardcoding.
 		private function buildStoryPrompt(string $instructions, int $numPages): string
 		{
 			$llmPrompt = LlmPrompt::where('name', 'story.core.generate')->firstOrFail();
@@ -200,68 +201,78 @@
 			);
 		}
 
-
 		/**
-		 * Builds the prompt for the LLM to generate character descriptions.
+		 * Builds the prompt for the LLM to generate a single character's description.
 		 *
+		 * @param Story $story
 		 * @param string $fullStoryText
-		 * @param array $characterNames
-		 * @param array $characterPageTextMap
+		 * @param string $characterName
 		 * @return string
 		 */
-		//  Fetch prompt from the database and use it to build context.
-		private function buildCharacterDescriptionPrompt(string $fullStoryText, array $characterNames, array $characterPageTextMap): string
+		private function buildSingleCharacterDescriptionPrompt(Story $story, string $fullStoryText, string $characterName): string
 		{
-			// Build a string with context for each character.
-			$characterContext = '';
-			foreach ($characterNames as $name) {
-				$characterContext .= "Character: \"{$name}\"\n";
-				if (isset($characterPageTextMap[$name]) && !empty($characterPageTextMap[$name])) {
-					$characterContext .= "Appears in:\n";
-					foreach ($characterPageTextMap[$name] as $pageText) {
-						$characterContext .= "- " . trim($pageText) . "\n";
-					}
-				}
-				$characterContext .= "\n";
-			}
+			// Context of pages where the character appears
+			$characterPageContext = $story->pages()
+				->whereHas('characters', fn ($q) => $q->where('name', $characterName))
+				->get()
+				->map(fn ($page) => "Page " . $page->page_number . ": " . $page->story_text)
+				->implode("\n");
+
+			// Context of already described characters
+			$existingCharacterContext = $story->characters
+				->where('name', '!=', $characterName)
+				->whereNotNull('description')
+				->map(fn ($char) => "Character: {$char->name}\nDescription: {$char->description}")
+				->implode("\n\n");
+
+			// Context of already described places
+			$existingPlaceContext = $story->places
+				->whereNotNull('description')
+				->map(fn ($place) => "Place: {$place->name}\nDescription: {$place->description}")
+				->implode("\n\n");
 
 			$llmPrompt = LlmPrompt::where('name', 'story.character.describe')->firstOrFail();
 			return str_replace(
-				['{fullStoryText}', '{characterContext}'],
-				[$fullStoryText, $characterContext],
+				['{fullStoryText}', '{characterName}', '{characterPageContext}', '{existingCharacterContext}', '{existingPlaceContext}'],
+				[$fullStoryText, $characterName, $characterPageContext ?: 'N/A', $existingCharacterContext ?: 'N/A', $existingPlaceContext ?: 'N/A'],
 				$llmPrompt->system_prompt
 			);
 		}
 
-
 		/**
-		 * Builds the prompt for the LLM to generate place descriptions.
+		 * Builds the prompt for the LLM to generate a single place's description.
 		 *
+		 * @param Story $story
 		 * @param string $fullStoryText
-		 * @param array $placeNames
-		 * @param array $placePageTextMap
+		 * @param string $placeName
 		 * @return string
 		 */
-		//  Fetch prompt from the database and use it to build context.
-		private function buildPlaceDescriptionPrompt(string $fullStoryText, array $placeNames, array $placePageTextMap): string
+		private function buildSinglePlaceDescriptionPrompt(Story $story, string $fullStoryText, string $placeName): string
 		{
-			// Build a string with context for each place.
-			$placeContext = '';
-			foreach ($placeNames as $name) {
-				$placeContext .= "Place: \"{$name}\"\n";
-				if (isset($placePageTextMap[$name]) && !empty($placePageTextMap[$name])) {
-					$placeContext .= "Appears in:\n";
-					foreach ($placePageTextMap[$name] as $pageText) {
-						$placeContext .= "- " . trim($pageText) . "\n";
-					}
-				}
-				$placeContext .= "\n";
-			}
+			// Context of pages where the place appears
+			$placePageContext = $story->pages()
+				->whereHas('places', fn ($q) => $q->where('name', $placeName))
+				->get()
+				->map(fn ($page) => "Page " . $page->page_number . ": " . $page->story_text)
+				->implode("\n");
+
+			// Context of all characters (assuming they are generated first)
+			$allCharacterContext = $story->characters
+				->whereNotNull('description')
+				->map(fn ($char) => "Character: {$char->name}\nDescription: {$char->description}")
+				->implode("\n\n");
+
+			// Context of other already described places
+			$existingPlaceContext = $story->places
+				->where('name', '!=', $placeName)
+				->whereNotNull('description')
+				->map(fn ($place) => "Place: {$place->name}\nDescription: {$place->description}")
+				->implode("\n\n");
 
 			$llmPrompt = LlmPrompt::where('name', 'story.place.describe')->firstOrFail();
 			return str_replace(
-				['{fullStoryText}', '{placeContext}'],
-				[$fullStoryText, $placeContext],
+				['{fullStoryText}', '{placeName}', '{placePageContext}', '{allCharacterContext}', '{existingPlaceContext}'],
+				[$fullStoryText, $placeName, $placePageContext ?: 'N/A', $allCharacterContext ?: 'N/A', $existingPlaceContext ?: 'N/A'],
 				$llmPrompt->system_prompt
 			);
 		}
@@ -298,6 +309,27 @@
 		}
 
 		/**
+		 * Validates the structure for a single entity description from the LLM.
+		 *
+		 * @param array|null $data
+		 * @param string $expectedName
+		 * @throws ValidationException
+		 */
+		private function validateSingleEntityData(?array $data, string $expectedName): void
+		{
+			$validator = Validator::make($data ?? [], [
+				'name' => 'required|string|in:' . $expectedName,
+				'description' => 'required|string|min:1',
+			]);
+
+			if ($validator->fails()) {
+				Log::error('AI Single Entity Validation Failed: ', $validator->errors()->toArray());
+				Log::error('Invalid AI Entity Data: ', $data ?? []);
+				throw new ValidationException($validator);
+			}
+		}
+
+		/**
 		 * Saves the story and its components from the validated AI data.
 		 *
 		 * @param array $data
@@ -319,7 +351,7 @@
 			foreach ($data['characters'] as $charData) {
 				$character = $story->characters()->create([
 					'name' => $charData['name'],
-					'description' => $charData['description'], // This will be an empty string initially
+					'description' => '', // Description will be generated later
 				]);
 				$characterMap[$character->name] = $character->id;
 			}
@@ -328,7 +360,7 @@
 			foreach ($data['places'] as $placeData) {
 				$place = $story->places()->create([
 					'name' => $placeData['name'],
-					'description' => $placeData['description'], // This will be an empty string initially
+					'description' => '', // Description will be generated later
 				]);
 				$placeMap[$place->name] = $place->id;
 			}
@@ -351,65 +383,5 @@
 			}
 
 			return $story;
-		}
-
-		/**
-		 * Updates character descriptions from the validated AI data.
-		 *
-		 * @param Story $story
-		 * @param array|null $characterData
-		 * @throws ValidationException
-		 */
-		private function updateCharactersFromAiData(Story $story, ?array $characterData): void
-		{
-			$validator = Validator::make($characterData ?? [], [
-				'characters' => 'present|array',
-				'characters.*.name' => 'required|string',
-				'characters.*.description' => 'required|string',
-			]);
-
-			if ($validator->fails()) {
-				Log::error('AI Character Description Validation Failed: ', $validator->errors()->toArray());
-				Log::error('Invalid AI Character Data: ', $characterData ?? []);
-				throw new ValidationException($validator);
-			}
-
-			$validated = $validator->validated();
-
-			foreach ($validated['characters'] as $charUpdate) {
-				$story->characters()
-					->where('name', $charUpdate['name'])
-					->update(['description' => $charUpdate['description']]);
-			}
-		}
-
-		/**
-		 * Updates place descriptions from the validated AI data.
-		 *
-		 * @param Story $story
-		 * @param array|null $placeData
-		 * @throws ValidationException
-		 */
-		private function updatePlacesFromAiData(Story $story, ?array $placeData): void
-		{
-			$validator = Validator::make($placeData ?? [], [
-				'places' => 'present|array',
-				'places.*.name' => 'required|string',
-				'places.*.description' => 'required|string',
-			]);
-
-			if ($validator->fails()) {
-				Log::error('AI Place Description Validation Failed: ', $validator->errors()->toArray());
-				Log::error('Invalid AI Place Data: ', $placeData ?? []);
-				throw new ValidationException($validator);
-			}
-
-			$validated = $validator->validated();
-
-			foreach ($validated['places'] as $placeUpdate) {
-				$story->places()
-					->where('name', $placeUpdate['name'])
-					->update(['description' => $placeUpdate['description']]);
-			}
 		}
 	}
