@@ -49,7 +49,7 @@
 				'options' => 'nullable|string', // Validation still expects a string from the textarea.
 			]);
 
-			// START MODIFICATION: Decode the JSON string before updating the model.
+			//  Decode the JSON string before updating the model.
 			if (!empty($validated['options'])) {
 				// Decode the JSON string into a PHP associative array.
 				$decodedOptions = json_decode($validated['options'], true);
@@ -65,7 +65,7 @@
 				// Ensure that if the field is empty, we store null.
 				$validated['options'] = null;
 			}
-			// END MODIFICATION
+			
 
 			$prompt->update($validated);
 

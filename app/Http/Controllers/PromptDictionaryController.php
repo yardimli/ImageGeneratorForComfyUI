@@ -3,7 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
-	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
+	use App\Models\LlmPrompt;
 	use App\Models\Prompt;
 	use App\Models\PromptDictionaryEntry;
 	use Illuminate\Http\Request;
@@ -12,7 +12,7 @@
 
 	class PromptDictionaryController extends Controller
 	{
-		// START MODIFICATION: Added search method for dictionary popup
+		//  Added search method for dictionary popup
 		/**
 		 * Search for dictionary entries for the autocomplete feature.
 		 *
@@ -37,12 +37,12 @@
 
 			return response()->json($entries);
 		}
-		// END MODIFICATION
+
 
 		/**
 		 * Display the prompt dictionary grid view.
 		 */
-		// START MODIFICATION: Injected Request and added filtering logic.
+		//  Injected Request and added filtering logic.
 		public function grid(Request $request, LlmController $llmController)
 		{
 			$category = $request->input('category');
@@ -54,20 +54,19 @@
 			}
 
 			$entries = $query->orderBy('name', 'asc')->get();
-			// END MODIFICATION
 
-			// START MODIFICATION: Fetch unique word categories for the generation modal and filter dropdown.
+
+			//  Fetch unique word categories for the generation modal and filter dropdown.
 			$wordCategories = PromptDictionaryEntry::where('user_id', auth()->id())
 				->whereNotNull('word_category')
 				->distinct()
 				->orderBy('word_category', 'asc')
 				->pluck('word_category');
-			// END MODIFICATION
+
 
 			// Fetch models for the AI modal.
 			try {
 				$modelsResponse = $llmController->getModels();
-				// MODIFICATION: Process models to add variants for image/reasoning support.
 				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Prompt Dictionary Grid: ' . $e->getMessage());
@@ -75,11 +74,9 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			// MODIFICATION: Pass categories and the selected category to the view.
-			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entries.generate%')
 				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
-			// END MODIFICATION
+
 			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category', 'promptTemplates'));
 		}
 
@@ -103,18 +100,17 @@
 					->first();
 			}
 
-			// START MODIFICATION: Fetch unique word categories for the user.
+			//  Fetch unique word categories for the user.
 			$wordCategories = PromptDictionaryEntry::where('user_id', auth()->id())
 				->whereNotNull('word_category')
 				->distinct()
 				->orderBy('word_category', 'asc')
 				->pluck('word_category');
-			// END MODIFICATION
+
 
 			// Fetch models for the AI modals.
 			try {
 				$modelsResponse = $llmController->getModels();
-				// MODIFICATION: Process models to add variants for image/reasoning support.
 				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Prompt Dictionary: ' . $e->getMessage());
@@ -137,11 +133,9 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			// MODIFICATION: Pass categories to the view.
-			// START MODIFICATION: Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entry.%')
 				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
-			// END MODIFICATION
+
 			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories', 'promptTemplates'));
 		}
 
@@ -162,7 +156,7 @@
 			$id = $request->input('id');
 			$message = $id ? 'Entry updated successfully!' : 'Entry created successfully!';
 
-			// START MODIFICATION: Get instance to retrieve ID for new entries
+			//  Get instance to retrieve ID for new entries
 			$entry = PromptDictionaryEntry::updateOrCreate(
 				['id' => $id, 'user_id' => auth()->id()],
 				$validated
@@ -170,10 +164,10 @@
 
 			return redirect()->route('prompt-dictionary.edit', ['entry_id' => $entry->id])
 				->with('success', $message);
-			// END MODIFICATION
+
 		}
 
-		// START MODIFICATION: Added destroy method
+		//  Added destroy method
 		/**
 		 * Delete a single dictionary entry for the user.
 		 *
@@ -192,7 +186,7 @@
 			return redirect()->route('prompt-dictionary.index')
 				->with('success', 'Entry deleted successfully!');
 		}
-		// END MODIFICATION
+
 
 		/**
 		 * Rewrite an entry's description using AI.
@@ -266,7 +260,7 @@
 			}
 		}
 
-		// START MODIFICATION: Replaced generateEntries with two separate methods for preview and storing.
+		//  Replaced generateEntries with two separate methods for preview and storing.
 		/**
 		 * Generate a preview of dictionary entries using AI without saving them.
 		 */
@@ -299,7 +293,7 @@
 					return !empty($entry['name']) && !empty($entry['description']);
 				});
 
-				// START MODIFICATION: Add the word category to each entry if provided
+				//  Add the word category to each entry if provided
 				$wordCategory = $validated['word_category'] ?? null;
 				if ($wordCategory) {
 					$filteredEntries = array_map(function ($entry) use ($wordCategory) {
@@ -307,7 +301,7 @@
 						return $entry;
 					}, $filteredEntries);
 				}
-				// END MODIFICATION
+
 
 				return response()->json([
 					'success' => true,
@@ -352,5 +346,5 @@
 				return response()->json(['success' => false, 'message' => 'An error occurred while saving the entries. Please try again.'], 500);
 			}
 		}
-		// END MODIFICATION
+
 	}

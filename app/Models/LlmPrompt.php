@@ -21,7 +21,7 @@
 			'system_prompt',
 			'user_prompt',
 			'placeholders',
-			'options', // MODIFICATION: Add 'options' to fillable.
+			'options',
 		];
 
 		/**
@@ -31,6 +31,6 @@
 		 */
 		protected $casts = [
 			'placeholders' => 'array',
-			'options' => 'array', // MODIFICATION: Cast 'options' to array.
+			'options' => 'array',
 		];
 	}

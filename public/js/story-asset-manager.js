@@ -317,7 +317,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 	
-	// START MODIFICATION: Add logic for AI Asset Description Rewrite Modal.
 	const rewriteModalEl = document.getElementById('rewriteAssetDescriptionModal');
 	if (rewriteModalEl) {
 		const rewriteModal = new bootstrap.Modal(rewriteModalEl);
@@ -333,8 +332,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		const rewriteModelKey = 'storyCreateAi_model'; // Reuse same key
 		
-		// MODIFICATION: The 'styleOptions' object is now removed, as this data will come from the database.
-		
 		/**
 		 * Builds the full prompt for rewriting an asset's description.
 		 * @param {string} text - The original description text.
@@ -349,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				return 'Error: Template "story.asset.rewrite" not found or is incomplete.';
 			}
 			
-			// MODIFICATION: Get the instruction text from the template's options.
 			const instruction = templateData.options[config.assetType]?.[styleKey] || 'Improve grammar and clarity.';
 			
 			const userPrompt = templateData.user_prompt
@@ -365,7 +361,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		function updateRewritePromptPreview() {
 			if (!originalDescription) return;
 			const selectedStyleKey = rewriteStyleSelect.value;
-			// MODIFICATION: Pass the style key to the builder function.
 			const fullPrompt = buildAssetRewritePrompt(originalDescription, selectedStyleKey);
 			rewriteFullPromptTextarea.value = fullPrompt;
 		}
@@ -388,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			// START MODIFICATION: Populate the style dropdown from the prompt template options.
+			//  Populate the style dropdown from the prompt template options.
 			const templateData = window.promptTemplates['story.asset.rewrite'];
 			rewriteStyleSelect.innerHTML = '';
 			if (templateData && templateData.options) {
@@ -400,7 +395,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					rewriteStyleSelect.appendChild(option);
 				}
 			}
-			// END MODIFICATION
+			
 			
 			const savedModel = localStorage.getItem(rewriteModelKey);
 			if (savedModel) rewriteModelSelect.value = savedModel;
@@ -474,7 +469,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
+	
 	
 	// Logic for AI Image Prompt and Image Generation
 	function decodeHtmlEntities(str) {
@@ -483,7 +478,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
 	
-	// START MODIFICATION: Use both system and user prompts from the backend template.
 	/**
 	 * Builds the full prompt for generating an asset image.
 	 * @param {string} assetDescription - The description of the asset.
@@ -492,8 +486,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * @returns {string} The full prompt string.
 	 */
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
-		const templateData = window.promptTemplates['story.asset.image_prompt']; // MODIFICATION: Get template data object.
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+		const templateData = window.promptTemplates['story.asset.image_prompt'];
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "story.asset.image_prompt" not found or is incomplete.';
 		}
@@ -509,21 +503,18 @@ document.addEventListener('DOMContentLoaded', function () {
 			assetInstructions = "Output should be a scene with clear background, focusing on the place's key features and atmosphere. No people should be included in the image.";
 		}
 		
-		// MODIFICATION: Build user prompt from template.
 		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
 			.replace('{userInstructions}', instructionsText);
 		
-		// MODIFICATION: Build system prompt from template, replacing its placeholders.
 		const systemPrompt = templateData.system_prompt
 			.replace('{assetType}', assetType)
 			.replace('{assetInstructions}', assetInstructions);
 		
-		// MODIFICATION: Combine system and user prompts for the full prompt.
 		return `${systemPrompt}\n\n${userPrompt}`;
 	}
-	// END MODIFICATION
+	
 	
 	// -- AI Prompt Generation Modal Logic --
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
@@ -533,15 +524,12 @@ document.addEventListener('DOMContentLoaded', function () {
 		const updatePromptBtn = document.getElementById('update-prompt-btn');
 		const promptResultArea = document.getElementById('prompt-result-area');
 		const generatedPromptText = document.getElementById('generated-prompt-text');
-		// START MODIFICATION: Get the new full prompt textarea.
 		const fullPromptTextarea = document.getElementById('full-prompt-text');
-		// END MODIFICATION
 		let activeImagePromptTextarea = null;
 		
 		const promptModelKey = 'storyCreateAi_model';
 		const promptInstructionsKey = 'storyEditor_promptInstructions';
 		
-		// START MODIFICATION: Add function to update the live prompt preview.
 		function updateFullPromptPreview() {
 			if (!activeImagePromptTextarea || !fullPromptTextarea) return;
 			
@@ -552,19 +540,16 @@ document.addEventListener('DOMContentLoaded', function () {
 			const fullPrompt = buildAssetImageGenerationPrompt(description, config.assetType, instructions);
 			fullPromptTextarea.value = fullPrompt;
 		}
-		// END MODIFICATION
+		
 		
 		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
 			const savedModel = localStorage.getItem(promptModelKey);
 			if (savedModel) document.getElementById('prompt-model').value = savedModel;
 			const savedInstructions = localStorage.getItem(promptInstructionsKey);
 			if (savedInstructions) document.getElementById('prompt-instructions').value = savedInstructions;
-			// START MODIFICATION: Update the preview when the modal is shown.
 			updateFullPromptPreview();
-			// END MODIFICATION
 		});
 		
-		// START MODIFICATION: Update preview when instructions or description change.
 		document.getElementById('prompt-instructions').addEventListener('input', updateFullPromptPreview);
 		
 		container.addEventListener('input', (e) => {
@@ -574,7 +559,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 			}
 		});
-		// END MODIFICATION
+		
 		
 		document.getElementById('prompt-model').addEventListener('change', (e) => localStorage.setItem(promptModelKey, e.target.value));
 		
@@ -583,9 +568,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
 			generatedPromptText.value = '';
-			// START MODIFICATION: Clear the full prompt preview on close.
 			if (fullPromptTextarea) fullPromptTextarea.value = '';
-			// END MODIFICATION
+			
 			writePromptBtn.disabled = false;
 			writePromptBtn.querySelector('.spinner-border').classList.add('d-none');
 		});
@@ -600,9 +584,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		writePromptBtn.addEventListener('click', async () => {
 			if (!activeImagePromptTextarea) return;
 			
-			// START MODIFICATION: Get the prompt from the new full prompt textarea.
 			const prompt = fullPromptTextarea.value;
-			// END MODIFICATION
 			const model = document.getElementById('prompt-model').value;
 			
 			if (!model) {
@@ -619,9 +601,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				const response = await fetch(endpoint, {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-					// START MODIFICATION: Send the full prompt to the backend.
 					body: JSON.stringify({ prompt, model }),
-					// END MODIFICATION
 				});
 				const data = await response.json();
 				if (response.ok && data.success) {
@@ -800,7 +780,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const modalImage = document.getElementById('modalDetailImage');
 		const upscaleBtnContainer = document.getElementById('upscale-button-container');
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
-		let activeImageTrigger = null; // MODIFICATION: Add variable to store the image element that triggered the modal.
+		let activeImageTrigger = null;
 		
 		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
 			const trigger = event.relatedTarget;
@@ -809,7 +789,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			activeImageTrigger = trigger; // MODIFICATION: Store the trigger element.
+			activeImageTrigger = trigger;
 			
 			modalImage.src = trigger.dataset.imageUrl;
 			upscaleStatusContainer.innerHTML = '';
@@ -843,7 +823,6 @@ document.addEventListener('DOMContentLoaded', function () {
 					if (data.prediction_id) {
 						upscaleStatusContainer.innerHTML = 'Upscale in progress...';
 						
-						// START MODIFICATION: Add the 'Upscaling...' badge to the page label.
 						if (activeImageTrigger) {
 							console.log('Adding upscaling badge to image container');
 							const imageContainer = activeImageTrigger.closest('.image-upload-container');
@@ -866,7 +845,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						{
 							console.log('No active image trigger found for upscaling badge.');
 						}
-						// END MODIFICATION
+						
 						
 					} else {
 						throw new Error(data.message || 'Failed to start upscale.');

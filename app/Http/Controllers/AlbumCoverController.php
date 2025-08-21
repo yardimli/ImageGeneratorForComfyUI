@@ -2,7 +2,7 @@
 
 	namespace App\Http\Controllers;
 
-	use App\Http\Controllers\LlmController; // MODIFICATION: Import LlmController
+	use App\Http\Controllers\LlmController;
 	use App\Models\GoodAlbumCover;
 	use Exception;
 	use Illuminate\Http\Request;
@@ -239,7 +239,6 @@
 						// Base64 encode
 						$base64Image = base64_encode($resizedImageData);
 
-						// MODIFICATION: Call the new method on LlmController
 						$generatedPrompt = $llmController->generatePromptFromImage($promptText, $base64Image, $mimeType);
 
 						// Update DB

@@ -3,11 +3,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	const imageUrlInput = document.getElementById('imageUrlInput');
 	const kontextLoraForm = document.getElementById('kontextLoraForm');
 	
-	// START MODIFICATION: Only the prompt queued modal is needed now.
 	const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
-	// END MODIFICATION
 	
-	// START MODIFICATION: Add logic for Lora dropdown info panel.
 	const loraSelect = document.getElementById('loraNameSelect');
 	const loraInfo = document.getElementById('loraInfo');
 	
@@ -40,7 +37,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		// Initial call to set info on page load.
 		updateLoraInfo();
 	}
-	// END MODIFICATION
+	
 	
 	// --- Image Selection Logic ---
 	function selectImage(url) {
@@ -48,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		imageContainer.innerHTML = `<img src="${url}" style="max-width: 100%; max-height: 250px; object-fit: contain;" alt="Selected Image">`;
 	}
 	
-	// START MODIFICATION: Handle returning from image editor.
+	//  Handle returning from image editor.
 	// When the user saves in the Image Editor, they are redirected back here
 	// with the URL of the newly created image.
 	const urlParams = new URLSearchParams(window.location.search);
@@ -61,7 +58,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const newUrl = window.location.pathname;
 		window.history.replaceState({}, document.title, newUrl);
 	}
-	// END MODIFICATION
+	
 	
 	// All logic for upload, history, and cropping modals has been removed as it's no longer used.
 	

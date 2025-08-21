@@ -263,9 +263,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		let activeDescriptionTextarea = null;
 		let originalDescription = '';
 		
-		// MODIFICATION: The 'styleOptions' object is now removed.
 		
-		// MODIFICATION: The function now takes the style *key* and gets the instruction from the template.
 		function buildAssetRewritePrompt(text, styleKey) {
 			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
 			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
@@ -285,7 +283,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		function updateRewritePromptPreview() {
 			if (!originalDescription) return;
 			const selectedStyleKey = rewriteStyleSelect.value;
-			// MODIFICATION: The full instruction text is now retrieved inside the builder function.
 			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
 			const instruction = templateData.options[config.assetType]?.[selectedStyleKey] || '';
 			
@@ -315,7 +312,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			// START MODIFICATION: Populate dropdown from the template's options.
 			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
 			rewriteStyleSelect.innerHTML = '';
 			if (templateData && templateData.options) {
@@ -327,7 +323,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					rewriteStyleSelect.appendChild(option);
 				}
 			}
-			// END MODIFICATION
+			
 			
 			const savedModel = localStorage.getItem(llmModelKey);
 			if (savedModel) rewriteModelSelect.value = savedModel;
@@ -389,10 +385,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// --- AI Image Prompt and Image Generation ---
-	// START MODIFICATION: Use both system and user prompts from the backend template.
+	//  Use both system and user prompts from the backend template.
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
-		const templateData = window.promptTemplates['prompt_dictionary.entry.image_prompt']; // MODIFICATION: Get template data object.
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+		const templateData = window.promptTemplates['prompt_dictionary.entry.image_prompt'];
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "prompt_dictionary.entry.image_prompt" not found or is incomplete.';
 		}
@@ -403,21 +399,18 @@ document.addEventListener('DOMContentLoaded', function () {
 			assetInstructions = "Output should be a high-quality image that captures the essence of the dictionary entry.";
 		}
 		
-		// MODIFICATION: Build user prompt from template.
 		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
 			.replace('{userInstructions}', instructionsText);
 		
-		// MODIFICATION: Build system prompt from template, replacing its placeholders.
 		const systemPrompt = templateData.system_prompt
 			.replace('{assetType}', assetType)
 			.replace('{assetInstructions}', assetInstructions);
 		
-		// MODIFICATION: Combine system and user prompts for the full prompt.
 		return `${systemPrompt}\n\n${userPrompt}`;
 	}
-	// END MODIFICATION
+	
 	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {

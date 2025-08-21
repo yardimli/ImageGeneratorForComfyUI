@@ -57,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 
 
-// Modify the template selection to split content by "::"
 	templateSelect.addEventListener('change', async function () {
 		toggleTemplateControls();
 		
@@ -111,7 +110,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 
-// Modify saveTemplate function to combine the textarea values
 	async function saveTemplate() {
 		const templateParts = Array.from(document.querySelectorAll('.prompt-template-part'))
 			.map(textarea => textarea.value.trim());
@@ -333,7 +331,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		saveTemplate();
 	});
 	
-	// START MODIFICATION: Dictionary search popup logic
 	const dictionaryPopup = document.getElementById('dictionary-popup');
 	const dictionarySearchInput = document.getElementById('dictionary-search-input');
 	const dictionaryResultsContainer = document.getElementById('dictionary-results-container');
@@ -506,5 +503,5 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
+	
 });

@@ -180,7 +180,7 @@
 			// App view buttons
 			const addImageBtn = document.getElementById('add-image-btn');
 			const cropLayerBtn = document.getElementById('crop-layer-btn');
-			const flipHorizontalBtn = document.getElementById('flip-horizontal-btn'); // MODIFICATION: Get new button.
+			const flipHorizontalBtn = document.getElementById('flip-horizontal-btn');
 			
 			// History Modal
 			const historyModalEl = document.getElementById('historyModal');
@@ -374,7 +374,7 @@
 				// Enable buttons only for single, selectable image objects.
 				const isImageSelected = activeObject && activeObject.type === 'image' && activeObject.selectable;
 				cropLayerBtn.disabled = !isImageSelected;
-				flipHorizontalBtn.disabled = !isImageSelected; // MODIFICATION: Manage flip button state.
+				flipHorizontalBtn.disabled = !isImageSelected;
 			};
 			
 			// Add function to replace an existing canvas object's image.
@@ -494,7 +494,6 @@
 				}
 			});
 			
-			// START MODIFICATION: Add listener for the flip horizontal button.
 			flipHorizontalBtn.addEventListener('click', () => {
 				const activeObject = canvas.getActiveObject();
 				if (activeObject && activeObject.type === 'image') {
@@ -503,7 +502,7 @@
 					canvas.renderAll();
 				}
 			});
-			// END MODIFICATION
+			
 			
 			// History Modal Events
 			[historySource, historySort, historyPerPage].forEach(el => el.addEventListener('change', () => loadHistory(1)));

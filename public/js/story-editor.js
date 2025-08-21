@@ -325,7 +325,6 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	
 	// Logic for AI Image Prompt Generation
-	// START MODIFICATION: Use both system and user prompts from the backend template.
 	/**
 	 * Builds the full prompt for generating a page image.
 	 * @param {string} pageText - The text content of the page.
@@ -335,8 +334,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	 * @returns {string} The full prompt string.
 	 */
 	function buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, userInstructions) {
-		const templateData = window.promptTemplates['story.page.image_prompt']; // MODIFICATION: Get template data object.
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) { // MODIFICATION: Check for complete template.
+		const templateData = window.promptTemplates['story.page.image_prompt'];
+		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "story.page.image_prompt" not found or is incomplete.';
 		}
@@ -345,17 +344,15 @@ document.addEventListener('DOMContentLoaded', function () {
 		const placeText = placeDescriptions.length > 0 ? "Places in this scene:\n- " + placeDescriptions.join("\n- ") : "No specific places are described for this scene.";
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		// MODIFICATION: Build user prompt from template.
 		const userPrompt = templateData.user_prompt
 			.replace('{pageText}', pageText)
 			.replace('{characterDescriptions}', characterText)
 			.replace('{placeDescriptions}', placeText)
 			.replace('{userInstructions}', instructionsText);
 		
-		// MODIFICATION: Combine system and user prompts for the full prompt.
 		return `${templateData.system_prompt}\n\n${userPrompt}`;
 	}
-	// END MODIFICATION
+	
 	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {
@@ -504,7 +501,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// START MODIFICATION: Add logic for the new Rewrite Text modal.
 	const rewriteTextModalEl = document.getElementById('rewriteTextModal');
 	if (rewriteTextModalEl) {
 		const rewriteTextModal = new bootstrap.Modal(rewriteTextModalEl);
@@ -533,7 +529,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				return 'Error: Template "story.page.rewrite" not found or is incomplete.';
 			}
 			
-			// MODIFICATION: Get instruction from the template's options.
 			const instruction = templateData.options[style] || 'Improve grammar and clarity.';
 			
 			const userPrompt = templateData.user_prompt
@@ -567,7 +562,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			// START MODIFICATION: Dynamically populate the style dropdown.
 			const templateData = window.promptTemplates['story.page.rewrite'];
 			if (templateData && templateData.options) {
 				rewriteStyleSelect.innerHTML = ''; // Clear existing options
@@ -579,7 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					rewriteStyleSelect.appendChild(option);
 				}
 			}
-			// END MODIFICATION
+			
 			
 			const savedModel = localStorage.getItem(rewriteModelKey);
 			if (savedModel) {
@@ -650,9 +644,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 	}
-	// END MODIFICATION
 	
-	// START MODIFICATION: Add logic for page-specific dictionary management.
+	
 	const dictionaryModalEl = document.getElementById('dictionaryModal');
 	if (dictionaryModalEl) {
 		const dictionaryModal = new bootstrap.Modal(dictionaryModalEl);
@@ -771,7 +764,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
-	// START MODIFICATION: This is the corrected function.
 	/**
 	 * Re-indexes the name attributes of dictionary entry inputs within a specific page card.
 	 * This is crucial after adding or removing an entry to ensure data is submitted correctly.
@@ -795,7 +787,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		});
 	}
-	// END MODIFICATION
+	
 	
 	function addDictionaryRowToPage(pageCard, word = '', explanation = '') {
 		const template = document.getElementById('dictionary-entry-template');
@@ -824,16 +816,14 @@ document.addEventListener('DOMContentLoaded', function () {
 			reindexDictionaryRows(pageCard);
 		}
 	});
-	// END MODIFICATION
+	
 	
 	// Logic for "Draw with AI" Modal
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {
 		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
 		const generateImageBtn = document.getElementById('generate-image-btn');
-		// START MODIFICATION: Corrected the element ID from 'draw-story-page-id' to 'draw-asset-id' and renamed the variable.
 		const drawAssetIdInput = document.getElementById('draw-asset-id');
-		// END MODIFICATION
 		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
@@ -918,9 +908,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						return;
 					}
 					
-					// START MODIFICATION: Use the corrected variable name.
 					drawAssetIdInput.value = storyPageId;
-					// END MODIFICATION
 					drawImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
 					drawWithAiModal.show();
 					
@@ -930,9 +918,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		// Listener for "Generate Image Only" button inside the modal
 		generateImageBtn.addEventListener('click', async () => {
-			// START MODIFICATION: Use the corrected variable name.
 			const storyPageId = drawAssetIdInput.value;
-			// END MODIFICATION
 			const imagePrompt = drawImagePromptText.textContent;
 			
 			if (!storyPageId) {
@@ -1049,7 +1035,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const modalImage = document.getElementById('modalDetailImage');
 		const upscaleBtnContainer = document.getElementById('upscale-button-container');
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
-		let activeImageTrigger = null; // MODIFICATION: Add variable to store the image element that triggered the modal.
+		let activeImageTrigger = null;
 		
 		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
 			const triggerElement = event.relatedTarget; // The image that was clicked
@@ -1059,7 +1045,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				return;
 			}
 			
-			activeImageTrigger = triggerElement; // MODIFICATION: Store the trigger element.
+			activeImageTrigger = triggerElement;
 			
 			const imageUrl = triggerElement.dataset.imageUrl;
 			const promptId = triggerElement.dataset.promptId;
@@ -1107,7 +1093,6 @@ document.addEventListener('DOMContentLoaded', function () {
 					if (data.prediction_id) {
 						upscaleStatusContainer.innerHTML = 'Upscale in progress. You can close this modal; the page will update on reload.';
 						
-						// START MODIFICATION: Add the 'Upscaling...' badge to the page label.
 						if (activeImageTrigger) {
 							console.log('Adding upscaling badge to image container');
 							const imageContainer = activeImageTrigger.closest('.image-upload-container');
@@ -1130,7 +1115,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						{
 							console.log('No active image trigger found for upscaling badge.');
 						}
-						// END MODIFICATION
+						
 						
 						// Simple polling for the modal
 						const checkStatus = async () => {

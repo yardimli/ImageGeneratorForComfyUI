@@ -25,8 +25,8 @@
 		 */
 		public function generate(Request $request, StoryPage $storyPage)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
+			//  Removed authorization check.
+			
 
 			$validated = $request->validate([
 				'model' => 'required|string|max:255',
@@ -148,8 +148,8 @@
 		 */
 		public function checkCharacterStatus(StoryCharacter $character)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
+			//  Removed authorization check.
+			
 			return $this->doCheckStatus('story_character_id', $character->id);
 		}
 
@@ -173,8 +173,8 @@
 		 */
 		public function checkPlaceStatus(StoryPlace $place)
 		{
-			// START MODIFICATION: Removed authorization check.
-			// END MODIFICATION
+			//  Removed authorization check.
+			
 			return $this->doCheckStatus('story_place_id', $place->id);
 		}
 

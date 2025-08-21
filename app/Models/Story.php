@@ -108,12 +108,11 @@
 		/**
 		 * Get the dictionary entries for the story.
 		 */
-		// START MODIFICATION: Update relationship to fetch dictionary entries through pages.
-		public function dictionary()
+\		public function dictionary()
 		{
 			return $this->hasManyThrough(StoryDictionary::class, StoryPage::class);
 		}
-		// END MODIFICATION
+		
 
 		/**
 		 * Get the quiz questions for the story.

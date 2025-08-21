@@ -11,15 +11,14 @@
 
 		protected $table = 'story_places';
 
-		// START MODIFICATION: Add image_prompt to fillable fields.
-		protected $fillable = [
+\		protected $fillable = [
 			'story_id',
 			'name',
 			'description',
 			'image_prompt',
 			'image_path',
 		];
-		// END MODIFICATION
+		
 
 		public function story()
 		{

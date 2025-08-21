@@ -1,7 +1,7 @@
 <?php
 	namespace App\Http\Controllers;
 
-	use App\Models\Prompt; // MODIFICATION: Add Prompt model.
+	use App\Models\Prompt;
 	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Http;
@@ -129,5 +129,5 @@
 				->count();
 			return response()->json(['count' => $count]);
 		}
-		// END MODIFICATION
+
 	}

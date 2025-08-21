@@ -3,7 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Models\LlmLog;
-	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
+	use App\Models\LlmPrompt;
 	use Illuminate\Http\Client\Response;
 	use Illuminate\Support\Facades\DB;
 	use Illuminate\Support\Facades\File;
@@ -70,7 +70,7 @@
 			return $modelsData;
 		}
 
-		// START MODIFICATION: Add method to process models for dropdowns.
+		//  Add method to process models for dropdowns.
 		/**
 		 * Processes the raw models list from OpenRouter to create a view-friendly array.
 		 * It filters models based on positive/negative lists, adds suffixes for image support,
@@ -135,7 +135,7 @@
 			// Sort the final list by name again to correctly order the new variants.
 			return collect($processedModels)->sortBy('name')->values()->all();
 		}
-		// END MODIFICATION
+
 
 		/**
 		 * Calls a specified LLM synchronously, waiting for the full response.
@@ -154,13 +154,13 @@
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
 
-			// START MODIFICATION: Handle 'thinking' model variants by checking for the '--thinking' suffix.
+			//  Handle 'thinking' model variants by checking for the '--thinking' suffix.
 			$useReasoning = false;
 			if (str_ends_with($modelId, '--thinking')) {
 				$modelId = substr($modelId, 0, -10); // Remove '--thinking' to get the real model ID.
 				$useReasoning = true;
 			}
-			// END MODIFICATION
+
 
 			$requestBody = [
 				'model' => $modelId,
@@ -175,11 +175,11 @@
 				$requestBody['temperature'] = $temperature;
 			}
 
-			// START MODIFICATION: Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
+			//  Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
 			if ($useReasoning) {
 				$requestBody['reasoning'] = ['effort' => 'medium'];
 			}
-			// END MODIFICATION
+
 
 			try {
 				$response = Http::withToken($this->apiKey)
@@ -328,7 +328,7 @@
 			}
 		}
 
-		// END MODIFICATION
+
 
 		/**
 		 * Logs an interaction with the LLM to a file for debugging purposes.
@@ -369,7 +369,7 @@
 			}
 		}
 
-		// START MODIFICATION: Added private helper methods for prompt generation.
+		//  Added private helper methods for prompt generation.
 
 		/**
 		 * Helper method to process multi-part prompts.
@@ -444,7 +444,7 @@
 		 * @return array
 		 * @throws \Exception
 		 */
-		// START MODIFICATION: Refactor to use LlmPrompt from the database.
+		//  Refactor to use LlmPrompt from the database.
 		private function retryQueryLlm(string $prompt, int $count, float $temperature, string $modelId): array
 		{
 			$max_retries = 4;
@@ -479,7 +479,7 @@
 			}
 			throw new \Exception("LLM answers doesn't match batch count. Got " . count($answers) . " answers, expected {$count}.");
 		}
-		// END MODIFICATION
+
 
 		/**
 		 * Calls a specified LLM and returns the raw string content, without JSON parsing.
@@ -497,13 +497,13 @@
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
 
-			// START MODIFICATION: Handle 'thinking' model variants by checking for the '--thinking' suffix.
+			//  Handle 'thinking' model variants by checking for the '--thinking' suffix.
 			$useReasoning = false;
 			if (str_ends_with($modelId, '--thinking')) {
 				$modelId = substr($modelId, 0, -10); // Remove '--thinking' to get the real model ID.
 				$useReasoning = true;
 			}
-			// END MODIFICATION
+
 
 			$requestBody = [
 				'model' => $modelId,
@@ -517,11 +517,11 @@
 				$requestBody['temperature'] = $temperature;
 			}
 
-			// START MODIFICATION: Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
+			//  Add the 'reasoning' parameter to the request body if the 'thinking' variant was selected.
 			if ($useReasoning) {
 				$requestBody['reasoning'] = ['effort' => 'medium'];
 			}
-			// END MODIFICATION
+
 
 			try {
 				$response = Http::withToken($this->apiKey)
@@ -628,5 +628,5 @@
 			$text = preg_replace('/\s+/', ' ', $text);
 			return trim($text);
 		}
-		// END MODIFICATION
+
 	}

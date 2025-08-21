@@ -2,14 +2,12 @@ document.addEventListener('DOMContentLoaded', function () {
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	const llmModelKey = 'promptDictAi_model';
 	
-	// START MODIFICATION: Added auto-submit for category filter
 	const categoryFilter = document.getElementById('category-filter');
 	if (categoryFilter) {
 		categoryFilter.addEventListener('change', function () {
 			this.closest('form').submit();
 		});
 	}
-	// END MODIFICATION
 	
 	// --- AI Auto-Generate Entries Modal ---
 	const generateEntriesModalEl = document.getElementById('generateEntriesModal');
@@ -24,7 +22,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const fullPromptTextarea = document.getElementById('generate-entries-full-prompt');
 		let generatedEntriesCache = [];
 		
-		// START MODIFICATION: Updated prompt builder to include category
+		//  Updated prompt builder to include category
 		function buildGenerateEntriesPrompt (userRequest, count, category) {
 			const jsonStructure = `{\n  "entries": [\n    { "name": "Entry Name 1", "description": "Description 1" },\n    { "name": "Entry Name 2", "description": "Description 2" }\n  ]\n}`;
 			const categoryContext = category
@@ -40,13 +38,11 @@ document.addEventListener('DOMContentLoaded', function () {
 			const category = document.getElementById('generate-entries-category').value; // Added category
 			fullPromptTextarea.value = buildGenerateEntriesPrompt(userRequest, count, category);
 		}
-		// END MODIFICATION
 		
-		// START MODIFICATION: Updated preview rendering to show category
 		function renderPreview (entries) {
 			if (!entries || entries.length === 0) {
 				previewArea.innerHTML = '<p class="text-danger">The AI did not return any entries. Please try again or adjust your prompt.</p>';
-				addBtn.classList.add('d-none'); // MODIFICATION: Hide save button if no entries
+				addBtn.classList.add('d-none');
 				return;
 			}
 			let html = '<ul class="list-group">';
@@ -64,7 +60,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			previewArea.innerHTML = html;
 			addBtn.classList.remove('d-none');
 		}
-		// END MODIFICATION
+		
 		
 		generateEntriesModalEl.addEventListener('shown.bs.modal', () => {
 			updateFullGenerateEntriesPrompt();
@@ -86,11 +82,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		promptTextarea.addEventListener('input', updateFullGenerateEntriesPrompt);
 		countSelect.addEventListener('change', updateFullGenerateEntriesPrompt);
-		// START MODIFICATION: Added event listener for category input
 		document.getElementById('generate-entries-category').addEventListener('input', updateFullGenerateEntriesPrompt);
-		// END MODIFICATION
 		
-		// MODIFICATION START: This button now only generates a preview, it does not save.
 		createBtn.addEventListener('click', async () => {
 			const prompt = fullPromptTextarea.value;
 			const model = modelSelect.value;
@@ -126,7 +119,6 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 		});
 		
-		// MODIFICATION START: This button now saves the cached entries and reloads the page.
 		addBtn.addEventListener('click', async () => {
 			if (generatedEntriesCache.length === 0) return;
 			
@@ -153,6 +145,5 @@ document.addEventListener('DOMContentLoaded', function () {
 				addBtn.innerHTML = 'Save Entries & Refresh';
 			}
 		});
-		// MODIFICATION END
 	}
 });

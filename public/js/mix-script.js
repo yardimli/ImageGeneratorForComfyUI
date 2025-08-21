@@ -526,7 +526,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	});
 
-// Modify the existing dualMode event listener
 	document.querySelector('#dualMode').addEventListener('change', function () {
 		if (this.checked) {
 			// Show dual mode elements

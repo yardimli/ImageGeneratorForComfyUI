@@ -180,7 +180,6 @@
 				});
 			}
 			
-			// START MODIFICATION: Handle appending CEFR level to the instructions textarea.
 			const levelSelect = document.getElementById('level');
 			if (levelSelect && instructionsTextarea) {
 				levelSelect.addEventListener('change', function () {
@@ -198,7 +197,7 @@
 					}
 				});
 			}
-			// END MODIFICATION
+			
 		});
 	</script>
 @endsection

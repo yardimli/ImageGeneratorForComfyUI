@@ -52,7 +52,7 @@
 				}
 			}
 
-			// START MODIFICATION: Add logo loading
+			//  Add logo loading
 			$logoPath = resource_path('logos');
 			$logos = [];
 
@@ -64,9 +64,9 @@
 					}
 				}
 			}
-			// END MODIFICATION
 
-			// START MODIFICATION: Add sticker loading
+
+			//  Add sticker loading
 			$stickerPath = resource_path('stickers');
 			$stickers = [];
 
@@ -78,7 +78,7 @@
 					}
 				}
 			}
-			// END MODIFICATION
+
 
 			$fontPath = resource_path('fonts');
 			$fonts = [];
@@ -97,17 +97,17 @@
 
 			$story->load('user');
 			$defaultCopyright = '© ' . date('Y') . ' ' . $story->user->name . ". All rights reserved.\nNo part of this publication may be reproduced, distributed, or transmitted in any form or by any means, including photocopying, recording, or other electronic or mechanical methods, without the prior written permission of the publisher, except in the case of brief quotations embodied in critical reviews and certain other noncommercial uses permitted by copyright law.";
-			// START MODIFICATION: Replace single title page text with structured defaults
+			//  Replace single title page text with structured defaults
 			$defaultTitleTopText = 'An EQ Original';
 			$defaultTitleMainText = $story->title;
 			$defaultTitleAuthorText = 'by ' . $story->user->name;
 			$defaultTitleBottomText = 'EQ Books';
-			// END MODIFICATION
+
 			$defaultIntroduction = "This is the introduction to the story. It can contain a brief overview, background information, or any other relevant details that set the stage for the narrative.\n\nFeel free to customize this text as needed.";
 
-			// START MODIFICATION: Pass new variables to the view
+			//  Pass new variables to the view
 			return view('story.pdf.setup', compact('story', 'wallpapers', 'logos', 'stickers', 'fonts', 'defaultCopyright', 'defaultTitleTopText', 'defaultTitleMainText', 'defaultTitleAuthorText', 'defaultTitleBottomText', 'defaultIntroduction'));
-			// END MODIFICATION
+
 		}
 
 		/**
@@ -120,7 +120,7 @@
 		 */
 		public function generate(Request $request, Story $story)
 		{
-			// START MODIFICATION: Added validation for new title page fields and stickers.
+			//  Added validation for new title page fields and stickers.
 			$validator = Validator::make($request->all(), [
 				// Page Layout
 				'width' => 'required|numeric|min:1|max:50',
@@ -135,8 +135,8 @@
 				'title_main_text' => 'nullable|string|max:255',
 				'title_author_text' => 'nullable|string|max:255',
 				'title_bottom_text' => 'nullable|string|max:255',
-				'stickers' => 'nullable|array|max:3', // MODIFICATION: Add sticker validation
-				'stickers.*' => 'string|max:255', // MODIFICATION: Add sticker validation
+				'stickers' => 'nullable|array|max:3',
+				'stickers.*' => 'string|max:255',
 				'copyright_text' => 'nullable|string|max:5000',
 				'introduction_text' => 'nullable|string|max:10000',
 				'wallpaper' => 'nullable|string',
@@ -177,7 +177,7 @@
 				'dashed_border_width' => 'required_if:enable_dashed_border,1|numeric|min:0',
 				'dashed_border_color' => 'required_if:enable_dashed_border,1|string|regex:/^#[a-fA-F0-9]{6}$/',
 			]);
-			// END MODIFICATION
+
 
 			if ($validator->fails()) {
 				return back()->withErrors($validator)->withInput();
@@ -185,17 +185,17 @@
 
 			$validated = $validator->validated();
 
-			// START MODIFICATION: Create a public temporary directory for images.
+			//  Create a public temporary directory for images.
 			// This allows the Python script to download the processed images via a public URL.
 			$publicTempDirName = 'temp/pdfgen_' . uniqid();
 			$publicTempDir = storage_path('app/public/' . $publicTempDirName);
 			File::makeDirectory($publicTempDir, 0755, true, true);
-			// END MODIFICATION
+
 
 			try {
 				$story->load('pages', 'user');
 
-				// START MODIFICATION: Process images, converting PNGs to JPGs and making them publicly accessible.
+				//  Process images, converting PNGs to JPGs and making them publicly accessible.
 				$processedPages = $story->pages->map(function ($page) use ($publicTempDir, $publicTempDirName) {
 					$sourceUrl = null;
 					$finalImageUrl = null;
@@ -285,7 +285,7 @@
 					'author' => $story->user->name,
 					'pages' => $processedPages->toArray(),
 				];
-				// END MODIFICATION
+
 
 				$dataFile = $publicTempDir . '/data.json';
 				File::put($dataFile, json_encode($storyData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
@@ -316,7 +316,7 @@
 					}
 				}
 
-				// START MODIFICATION: Get paths for title page assets
+				//  Get paths for title page assets
 				$titleWallpaperFile = null;
 				if (!empty($validated['title_wallpaper'])) {
 					$path = resource_path('wallpapers/' . $validated['title_wallpaper']);
@@ -332,7 +332,7 @@
 						$titleLogoFile = $path;
 					}
 				}
-				// END MODIFICATION
+
 
 				$inch_to_mm = 25.4;
 				$width_mm = $validated['width'] * $inch_to_mm;
@@ -352,12 +352,12 @@
 					'--height-mm', $height_mm,
 					'--bleed-mm', $bleed_mm,
 					'--dpi', $validated['dpi'],
-					// START MODIFICATION: Pass new title page text fields
+					//  Pass new title page text fields
 					'--title-top-text', $validated['title_top_text'] ?? '',
 					'--title-main-text', $validated['title_main_text'] ?? '',
 					'--title-author-text', $validated['title_author_text'] ?? '',
 					'--title-bottom-text', $validated['title_bottom_text'] ?? '',
-					// END MODIFICATION
+
 					'--copyright-text', $validated['copyright_text'] ?? '',
 					'--introduction-text', $validated['introduction_text'] ?? '',
 					'--font-size-main', $validated['font_size_main'],
@@ -412,7 +412,7 @@
 					$command[] = $wallpaperFile;
 				}
 
-				// START MODIFICATION: Add new title page asset arguments to the command.
+				//  Add new title page asset arguments to the command.
 				if ($titleWallpaperFile) {
 					$command[] = '--title-wallpaper-file';
 					$command[] = $titleWallpaperFile;
@@ -421,9 +421,9 @@
 					$command[] = '--title-logo-file';
 					$command[] = $titleLogoFile;
 				}
-				// END MODIFICATION
 
-				// START MODIFICATION: Add sticker files to the command.
+
+				//  Add sticker files to the command.
 				if (!empty($validated['stickers'])) {
 					foreach ($validated['stickers'] as $stickerFilename) {
 						$path = resource_path('stickers/' . $stickerFilename);
@@ -433,7 +433,7 @@
 						}
 					}
 				}
-				// END MODIFICATION
+
 
 				$process = new Process($command);
 				$process->setTimeout(300);
@@ -459,15 +459,15 @@
 				Log::error('PDF Generation Failed: ' . $e->getMessage());
 				return back()->with('error', 'An unexpected error occurred: ' . $e->getMessage());
 			} finally {
-				// START MODIFICATION: Clean up both temporary directories
+				//  Clean up both temporary directories
 				if (isset($publicTempDir) && File::isDirectory($publicTempDir)) {
 //					File::deleteDirectory($publicTempDir);
 				}
-				// END MODIFICATION
+
 			}
 		}
 
-		// START MODIFICATION: Add methods to serve assets from the non-public resources directory.
+		//  Add methods to serve assets from the non-public resources directory.
 
 		/**
 		 * Serves a font file from the resources/fonts directory.
@@ -545,5 +545,5 @@
 
 			return response()->file($path);
 		}
-		// END MODIFICATION
+
 	}

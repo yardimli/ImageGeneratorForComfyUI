@@ -22,7 +22,7 @@
 		 */
 		public function index()
 		{
-			// START MODIFICATION: Load Lora data from JSON file.
+			//  Load Lora data from JSON file.
 			$storagePath = 'public/kontext-loras.json';
 			$publicPath = resource_path('lora/kontext-loras.json');
 			$loras = [];
@@ -50,7 +50,7 @@
 			}
 
 			return view('kontext-lora.index', compact('loras'));
-			// END MODIFICATION
+
 		}
 
 		/**
@@ -85,7 +85,7 @@
 				// Store the settings
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
-					'generation_type' => 'kontext-lora', // Modified generation type
+					'generation_type' => 'kontext-lora',
 					'template_path' => '',
 					'prompt_template' => '',
 					'original_prompt' => $validated['prompt'],
@@ -113,7 +113,7 @@
 				for ($i = 0; $i < $validated['render_each_prompt_times']; $i++) {
 					Prompt::create([
 						'user_id' => auth()->id(),
-						'generation_type' => 'kontext-lora', // Modified generation type
+						'generation_type' => 'kontext-lora',
 						'prompt_setting_id' => $promptSetting->id,
 						'original_prompt' => $validated['prompt'],
 						'generated_prompt' => $validated['prompt'],

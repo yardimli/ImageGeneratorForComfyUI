@@ -700,7 +700,6 @@
 			// Sync sticker inputs and display text based on 'selected' classes.
 			updateStickerSelection();
 			
-			// START MODIFICATION: Attach an event listener to the submit button's click event.
 			// This is more reliable than the form's 'submit' event when the response is a file download,
 			// as the click event fires just before the form submission is initiated.
 			const submitButton = document.getElementById('generate-pdf-btn');
@@ -710,7 +709,7 @@
 					// The button's default action (submitting the form) will proceed after this handler runs.
 				});
 			}
-			// END MODIFICATION
+			
 		});
 	</script>
 @endsection

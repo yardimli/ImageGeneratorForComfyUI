@@ -199,9 +199,9 @@
 
 			// Get settings to extract images and their creation dates
 			$settings = PromptSetting::where('user_id', auth()->id())
-				// START MODIFICATION: Include 'kontext-basic' to share upload history
+				//  Include 'kontext-basic' to share upload history
 				->whereIn('generation_type', ['mix', 'mix-one', 'kontext-basic', 'kontext-lora'])
-				// END MODIFICATION
+				
 				->where(function ($query) {
 					$query->whereNotNull('input_images_1')
 						->orWhereNotNull('input_images_2');
@@ -222,7 +222,7 @@
 					if (!is_array($inputImages1)) {
 						continue;
 					}
-					// END MODIFICATION
+					
 					foreach ($inputImages1 as $img) {
 						if (isset($img['path']) && !empty($img['path'])) {
 							$path = $img['path'];

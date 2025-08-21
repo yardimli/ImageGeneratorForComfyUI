@@ -24,8 +24,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 	};
 	
-	// MODIFICATION: Add an optional parameter to control when re-indexing occurs.
-	// This prevents the function from being called unnecessarily inside a loop.
 	function addDictionaryRow (word = '', explanation = '', shouldReindex = true) {
 		if (!template) return;
 		
@@ -38,7 +36,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		container.appendChild(newRow);
 		
-		// MODIFICATION: Only re-index if the flag is true.
 		if (shouldReindex) {
 			reindexRows();
 		}
@@ -86,7 +83,6 @@ document.addEventListener('DOMContentLoaded', function () {
 				}
 				
 				if (data.dictionary && Array.isArray(data.dictionary)) {
-					// START MODIFICATION: Append new entries instead of replacing existing ones.
 					if (data.dictionary.length > 0) {
 						// Add all new rows to the end of the list.
 						data.dictionary.forEach(entry => {
@@ -99,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						// If the AI returns no entries, alert the user without clearing the list.
 						alert('The AI did not return any new entries. Please try adjusting your prompt.');
 					}
-					// END MODIFICATION
+					
 				} else {
 					throw new Error('The AI returned data in an unexpected format.');
 				}

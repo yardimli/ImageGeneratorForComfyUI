@@ -36,7 +36,7 @@ function updateUpscaleQueueCount() {
 		})
 		.catch(error => console.error('Error fetching upscale queue count:', error));
 }
-// END MODIFICATION
+
 
 document.addEventListener('DOMContentLoaded', function () {
 	queueUpdateInterval = setInterval(updateQueueCount, 5000);
@@ -45,7 +45,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	// START MODIFICATION
 	upscaleQueueUpdateInterval = setInterval(updateUpscaleQueueCount, 5000);
 	updateUpscaleQueueCount();
-	// END MODIFICATION
+	
 	
 	window.addEventListener('beforeunload', () => {
 		if (queueUpdateInterval) {
@@ -55,6 +55,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		if (upscaleQueueUpdateInterval) {
 			clearInterval(upscaleQueueUpdateInterval);
 		}
-		// END MODIFICATION
+		
 	});
 });

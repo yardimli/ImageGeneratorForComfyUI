@@ -34,13 +34,12 @@
 			return $this->belongsToMany(StoryPlace::class, 'story_page_place');
 		}
 
-		// START MODIFICATION: Add relationship to dictionary entries.
-		/**
+\		/**
 		 * Get the dictionary entries for this page.
 		 */
 		public function dictionary()
 		{
 			return $this->hasMany(StoryDictionary::class)->orderBy('word');
 		}
-		// END MODIFICATION
+		
 	}

@@ -3,7 +3,7 @@
 	namespace App\Http\Controllers;
 
 	use App\Http\Controllers\LlmController;
-	use App\Models\LlmPrompt; // MODIFICATION: Add LlmPrompt model.
+	use App\Models\LlmPrompt;
 	use App\Models\Story;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
@@ -27,19 +27,16 @@
 			// Prepare the prompt text
 			$storyText = $story->pages->pluck('story_text')->implode("\n\n");
 
-			// START MODIFICATION: Get existing questions to avoid duplicates in AI generation.
+			//  Get existing questions to avoid duplicates in AI generation.
 			$existingQuestions = $story->quiz->pluck('question')->implode("\n");
 			$existingQuestionsPrompt = !empty($existingQuestions) ? "The following questions already exist, so do not add them again:\n{$existingQuestions}" : '';
-			// END MODIFICATION
 
-			// MODIFICATION: Update the initial user request to include the existing questions prompt.
 			$initialUserRequest = "Create 5 multiple-choice quiz questions for the story above. Provide 4 answers for each question. Mark the correct answer with an asterisk (*). Explain the questions in a manner that is understandable for the story's level. {$existingQuestionsPrompt}";
 			$promptText = "Story Title: {$story->title}\nLevel: {$story->level}\n\n---\n\n{$storyText}\n\n---\n\n{$initialUserRequest}";
 
 			// Fetch models for the AI generator
 			try {
 				$modelsResponse = $llmController->getModels();
-				// MODIFICATION: Process models to add variants for image/reasoning support.
 				$models = $llmController->processModelsForView($modelsResponse);
 			} catch (\Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Quiz: ' . $e->getMessage());
@@ -132,12 +129,12 @@
 		 * @param string $userPrompt
 		 * @return string
 		 */
-		// START MODIFICATION: Fetch prompt from the database instead of hardcoding.
+		//  Fetch prompt from the database instead of hardcoding.
 		private function buildQuizPrompt(string $userPrompt): string
 		{
 			$llmPrompt = LlmPrompt::where('name', 'story.quiz.generate')->firstOrFail();
 			// The entire prompt, including JSON structure, is now stored in the system_prompt field.
 			return str_replace('{userPrompt}', $userPrompt, $llmPrompt->system_prompt);
 		}
-		// END MODIFICATION
+
 	}

@@ -19,8 +19,6 @@
 			//     'email' => 'test@example.com',
 			// ]);
 
-			// START MODIFICATION: Call the new LlmPromptsTableSeeder.
-			$this->call(LlmPromptsTableSeeder::class);
-			// END MODIFICATION
-		}
+\			$this->call(LlmPromptsTableSeeder::class);
+\		}
 	}

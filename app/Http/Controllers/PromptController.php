@@ -2,7 +2,7 @@
 
 	namespace App\Http\Controllers;
 
-	use App\Http\Controllers\LlmController; // MODIFICATION: Import LlmController
+	use App\Http\Controllers\LlmController;
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
 	use App\Models\UserTemplate;
@@ -15,7 +15,6 @@
 
 	class PromptController extends Controller
 	{
-		// MODIFICATION: Change property to use LlmController
 		protected $llmController;
 
 		public function __construct(LlmController $llmController)
@@ -70,7 +69,6 @@
 
 				// Only generate prompts if prompt field is not empty
 				if (!empty($request->prompt_template)) {
-					// MODIFICATION: Call the new method on LlmController
 					$generatedPrompts = $this->llmController->generateChatPrompts(
 						$request->prompt_template,
 						(int)$request->count,

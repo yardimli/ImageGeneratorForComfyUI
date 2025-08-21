@@ -7,13 +7,14 @@
 	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
-	use App\Http\Controllers\LlmPromptController; // MODIFICATION: Add LlmPromptController.
+	use App\Http\Controllers\LlmPromptController;
 	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\PromptDictionaryController;
 	use App\Http\Controllers\PromptDictionaryImageController;
 	use App\Http\Controllers\QuizController;
 	use App\Http\Controllers\StoryPdfController;
+	use App\Http\Controllers\CreateStoryController;
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\UpscaleAndNotesController;
@@ -39,13 +40,12 @@
 	Route::middleware('auth')->group(function () {
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
 
-		// START MODIFICATION: Add routes for LLM Prompt Management
+		// LLM Prompt Management
 		Route::prefix('llm-prompts')->name('llm-prompts.')->group(function () {
 			Route::get('/', [LlmPromptController::class, 'index'])->name('index');
 			Route::get('/{prompt}/edit', [LlmPromptController::class, 'edit'])->name('edit');
 			Route::put('/{prompt}', [LlmPromptController::class, 'update'])->name('update');
 		});
-		// END MODIFICATION
 
 		// --- Gallery ---
 		Route::prefix('gallery')->name('gallery.')->group(function () {
@@ -73,7 +73,7 @@
 			});
 		});
 
-		// START MODIFICATION: Updated Prompt Dictionary routes for new generate/save flow and delete.
+		// Prompt Dictionary routes for new generate/save flow and delete.
 		Route::prefix('prompt-dictionary')->name('prompt-dictionary.')->group(function () {
 			Route::get('/', [PromptDictionaryController::class, 'grid'])->name('index');
 			Route::get('/edit', [PromptDictionaryController::class, 'edit'])->name('edit');
@@ -90,7 +90,6 @@
 				Route::get('/image-status', [PromptDictionaryImageController::class, 'checkStatus'])->name('image-status');
 			});
 		});
-		// END MODIFICATION
 
 		// --- Image Actions (Upscale, Notes) ---
 		Route::prefix('images/{prompt}')->name('image.')->group(function () {
@@ -168,8 +167,8 @@
 		Route::prefix('stories')->name('stories.')->group(function () {
 			// Resource routes (except index and show)
 			Route::get('/', [StoryController::class, 'index'])->name('index');
-			Route::get('/create', [StoryController::class, 'create'])->name('create');
-			Route::post('/', [StoryController::class, 'store'])->name('store');
+			Route::get('/create', [CreateStoryController::class, 'create'])->name('create');
+			Route::post('/', [CreateStoryController::class, 'store'])->name('store');
 			Route::get('/{story}/edit', [StoryController::class, 'edit'])->name('edit');
 			Route::put('/{story}', [StoryController::class, 'update'])->name('update');
 			Route::delete('/{story}', [StoryController::class, 'destroy'])->name('destroy');
@@ -177,8 +176,8 @@
 			Route::get('read/{story}', [StoryController::class, 'show'])->name('show');
 
 			// Custom routes
-			Route::get('/create/ai', [StoryController::class, 'createWithAi'])->name('create-ai');
-			Route::post('/create/ai', [StoryController::class, 'storeWithAi'])->name('store-ai');
+			Route::get('/create/ai', [CreateStoryController::class, 'createWithAi'])->name('create-ai');
+			Route::post('/create/ai', [CreateStoryController::class, 'storeWithAi'])->name('store-ai');
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
 			Route::post('/rewrite-asset-description', [StoryController::class, 'rewriteAssetDescription'])->name('rewrite-asset-description');
 			Route::post('/generate-image-prompt', [StoryController::class, 'generateImagePrompt'])->name('generate-image-prompt');
@@ -191,9 +190,7 @@
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
-				// START MODIFICATION: Add new route for page-specific dictionary generation.
 				Route::post('/generate-dictionary', [StoryController::class, 'generateDictionaryForPage'])->name('generate-dictionary');
-				// END MODIFICATION
 			});
 
 			Route::prefix('characters/{character}')->name('characters.')->group(function () {
