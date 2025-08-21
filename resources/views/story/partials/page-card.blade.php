@@ -78,6 +78,28 @@
 						</div>
 					</div>
 				</div>
+				
+				{{-- START MODIFICATION: Add dictionary section for the page. --}}
+				<div class="mt-3">
+					<label class="form-label">Dictionary Entries for this Page</label>
+					<div class="dictionary-container border p-2 rounded">
+						<div class="dictionary-entries-container" style="max-height: 200px; overflow-y: auto;">
+							@if($page && $page->dictionary)
+								@foreach($page->dictionary as $d_index => $entry)
+									@include('story.partials.dictionary-entry-row-page', ['index' => $index, 'd_index' => $d_index, 'entry' => $entry])
+								@endforeach
+							@endif
+						</div>
+						<div class="mt-2">
+							<button type="button" class="btn btn-sm btn-success add-dictionary-entry-btn">Add Entry</button>
+							<button type="button" class="btn btn-sm btn-info generate-dictionary-btn" data-bs-toggle="modal" data-bs-target="#dictionaryModal" data-page-id="{{ $page->id ?? '' }}">
+								Generate with AI
+							</button>
+						</div>
+					</div>
+				</div>
+				{{-- END MODIFICATION --}}
+			
 			</div>
 			<div class="col-md-4">
 				<label class="form-label">Page Image

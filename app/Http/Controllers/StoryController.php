@@ -62,7 +62,8 @@
 		 */
 		public function show(Story $story)
 		{
-			$story->load(['user', 'pages.characters', 'pages.places', 'characters', 'places']);
+			// MODIFICATION: Load dictionary entries for each page.
+			$story->load(['user', 'pages.characters', 'pages.places', 'pages.dictionary', 'characters', 'places']);
 			return view('story.show', compact('story'));
 		}
 
@@ -469,7 +470,8 @@
 		 */
 		public function edit(Story $story, LlmController $llmController)
 		{
-			$story->load(['pages.characters', 'pages.places', 'characters', 'places']);
+			// MODIFICATION: Load dictionary entries for each page.
+			$story->load(['pages.characters', 'pages.places', 'pages.dictionary', 'characters', 'places']);
 
 			foreach ($story->pages as $page) {
 				$page->prompt_data = null; // Initialize
@@ -506,10 +508,11 @@
 				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
 			];
 
-			// START MODIFICATION: Fetch full prompt templates for JS.
+			// START MODIFICATION: Fetch full prompt templates for JS, including the new dictionary prompt.
 			$promptTemplates = LlmPrompt::whereIn('name', [
 				'story.page.rewrite',
-				'story.page.image_prompt'
+				'story.page.image_prompt',
+				'story.page.dictionary.generate' // Add new dictionary prompt
 			])->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
 			// END MODIFICATION
 
@@ -521,6 +524,7 @@
 		 */
 		public function update(Request $request, Story $story)
 		{
+			// START MODIFICATION: Add validation rules for dictionary entries.
 			$validated = $request->validate([
 				'title' => 'required|string|max:255',
 				'short_description' => 'nullable|string',
@@ -534,7 +538,11 @@
 				'pages.*.characters.*' => 'integer|exists:story_characters,id',
 				'pages.*.places' => 'nullable|array',
 				'pages.*.places.*' => 'integer|exists:story_places,id',
+				'pages.*.dictionary' => 'nullable|array',
+				'pages.*.dictionary.*.word' => 'required_with:pages.*.dictionary.*.explanation|string|max:255',
+				'pages.*.dictionary.*.explanation' => 'required_with:pages.*.dictionary.*.word|string',
 			]);
+			// END MODIFICATION
 
 			DB::transaction(function () use ($story, $validated, $request) {
 				$story->update([
@@ -569,6 +577,21 @@
 
 						$page->characters()->sync($pageData['characters'] ?? []);
 						$page->places()->sync($pageData['places'] ?? []);
+
+						// START MODIFICATION: Save dictionary entries for the page.
+						// A "delete and recreate" strategy is simple and effective here.
+						$page->dictionary()->delete();
+						if (isset($pageData['dictionary'])) {
+							foreach ($pageData['dictionary'] as $dictData) {
+								if (!empty($dictData['word']) && !empty($dictData['explanation'])) {
+									$page->dictionary()->create([
+										'word' => $dictData['word'],
+										'explanation' => $dictData['explanation'],
+									]);
+								}
+							}
+						}
+						// END MODIFICATION
 					}
 				}
 				$story->pages()->whereNotIn('id', $incomingPageIds)->delete();
@@ -759,6 +782,64 @@
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
 		}
+
+		// START MODIFICATION: Add method to generate dictionary entries for a single page.
+		/**
+		 * Generate dictionary entries for a story page using AI.
+		 *
+		 * @param Request $request
+		 * @param StoryPage $storyPage
+		 * @param LlmController $llmController
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generateDictionaryForPage(Request $request, StoryPage $storyPage, LlmController $llmController)
+		{
+			// START MODIFICATION: Add 'nullable' to the 'existingWords' validation rule.
+			$validated = $request->validate([
+				'userRequest' => 'required|string',
+				'existingWords' => 'present|nullable|string',
+				'model' => 'required|string',
+			]);
+			// END MODIFICATION
+
+			try {
+				$llmPrompt = LlmPrompt::where('name', 'story.page.dictionary.generate')->firstOrFail();
+
+				// The user prompt template contains placeholders for the user's request, existing words, and the page text.
+				$userPromptContent = str_replace(
+					['{userRequest}', '{existingWords}', '{pageText}'],
+					[$validated['userRequest'], $validated['existingWords'] ?? '', $storyPage->story_text], // Use null coalescing for safety
+					$llmPrompt->user_prompt
+				);
+
+				// For callLlmSync, we combine the system and user prompts into a single string.
+				$finalPromptForLlm = $llmPrompt->system_prompt . "\n\n" . $userPromptContent;
+
+				$response = $llmController->callLlmSync(
+					$finalPromptForLlm,
+					$validated['model'],
+					'AI Page Dictionary Generation',
+					0.7,
+					'json_object'
+				);
+
+				$dictionaryEntries = $response['dictionary'] ?? null;
+
+				if (!is_array($dictionaryEntries)) {
+					Log::error('AI Page Dictionary Generation failed to return a valid array.', ['response' => $response]);
+					return response()->json(['success' => false, 'message' => 'The AI returned data in an unexpected format. Please try again.'], 422);
+				}
+
+				return response()->json([
+					'success' => true,
+					'dictionary' => $dictionaryEntries
+				]);
+			} catch (\Exception $e) {
+				Log::error('AI Page Dictionary Generation Failed: ' . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An error occurred while generating the dictionary. Please try again.'], 500);
+			}
+		}
+		// END MODIFICATION
 
 		/**
 		 * Generate an image prompt for a story character using AI.

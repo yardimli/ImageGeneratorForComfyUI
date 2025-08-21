@@ -652,6 +652,180 @@ document.addEventListener('DOMContentLoaded', function () {
 	}
 	// END MODIFICATION
 	
+	// START MODIFICATION: Add logic for page-specific dictionary management.
+	const dictionaryModalEl = document.getElementById('dictionaryModal');
+	if (dictionaryModalEl) {
+		const dictionaryModal = new bootstrap.Modal(dictionaryModalEl);
+		const dictionaryPromptTextarea = document.getElementById('dictionary-prompt-text');
+		const dictionaryModelSelect = document.getElementById('dictionary-model');
+		const generateDictionaryBtn = document.getElementById('generate-dictionary-btn');
+		const dictionaryResultContainer = document.getElementById('dictionary-result-container');
+		let activePageCard = null;
+		
+		const dictionaryModelKey = 'storyCreateAi_model'; // Reuse same key for consistency.
+		
+		// Handle opening the modal
+		pagesContainer.addEventListener('click', (e) => {
+			if (e.target.matches('.generate-dictionary-btn')) {
+				activePageCard = e.target.closest('.page-card');
+				const pageId = e.target.dataset.pageId;
+				
+				if (!pageId) {
+					alert('Please save the story first to create this page. The dictionary can only be generated for saved pages.');
+					e.preventDefault();
+					e.stopPropagation();
+					return;
+				}
+				
+				// Populate the prompt textarea
+				const existingWordNodes = activePageCard.querySelectorAll('.dictionary-entry-row input[name*="[word]"]');
+				const existingWords = Array.from(existingWordNodes).map(input => input.value).filter(Boolean).join(', ');
+				
+				const initialUserRequest = `Create 5 new dictionary entries for the page text. The story is for an English learner with a level of ${window.storyLevel}. Explain the words simply.`;
+				
+				dictionaryPromptTextarea.value = initialUserRequest;
+				// Store context for the generation call
+				dictionaryModalEl.dataset.existingWords = existingWords;
+				dictionaryModalEl.dataset.pageId = pageId;
+			}
+		});
+		
+		// Load saved model on modal show
+		dictionaryModalEl.addEventListener('shown.bs.modal', () => {
+			const savedModel = localStorage.getItem(dictionaryModelKey);
+			if (savedModel && dictionaryModelSelect) {
+				dictionaryModelSelect.value = savedModel;
+			}
+		});
+		
+		// Save model on change
+		if (dictionaryModelSelect) {
+			dictionaryModelSelect.addEventListener('change', (e) => {
+				localStorage.setItem(dictionaryModelKey, e.target.value);
+			});
+		}
+		
+		// Reset modal on close
+		dictionaryModalEl.addEventListener('hidden.bs.modal', () => {
+			activePageCard = null;
+			dictionaryPromptTextarea.value = '';
+			dictionaryResultContainer.innerHTML = '';
+			generateDictionaryBtn.disabled = false;
+			generateDictionaryBtn.querySelector('.spinner-border').classList.add('d-none');
+			delete dictionaryModalEl.dataset.existingWords;
+			delete dictionaryModalEl.dataset.pageId;
+		});
+		
+		// Handle the "Generate" button click
+		generateDictionaryBtn.addEventListener('click', async () => {
+			const pageId = dictionaryModalEl.dataset.pageId;
+			if (!pageId || !activePageCard) {
+				alert('Error: No active page selected.');
+				return;
+			}
+			
+			const userRequest = dictionaryPromptTextarea.value;
+			const model = dictionaryModelSelect.value;
+			const existingWords = dictionaryModalEl.dataset.existingWords || '';
+			
+			generateDictionaryBtn.disabled = true;
+			generateDictionaryBtn.querySelector('.spinner-border').classList.remove('d-none');
+			dictionaryResultContainer.innerHTML = '';
+			
+			try {
+				const response = await fetch(`/stories/pages/${pageId}/generate-dictionary`, {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						'X-CSRF-TOKEN': csrfToken,
+						'Accept': 'application/json',
+					},
+					body: JSON.stringify({
+						userRequest: userRequest,
+						existingWords: existingWords,
+						model: model,
+					}),
+				});
+				
+				const data = await response.json();
+				
+				if (response.ok && data.success) {
+					if (data.dictionary && data.dictionary.length > 0) {
+						data.dictionary.forEach(entry => {
+							addDictionaryRowToPage(activePageCard, entry.word, entry.explanation);
+						});
+						dictionaryModal.hide();
+					} else {
+						alert('The AI did not return any new dictionary entries.');
+					}
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				console.error('Dictionary generation error:', error);
+				alert('A network error occurred. Please try again.');
+			} finally {
+				generateDictionaryBtn.disabled = false;
+				generateDictionaryBtn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+	}
+	
+	// START MODIFICATION: This is the corrected function.
+	/**
+	 * Re-indexes the name attributes of dictionary entry inputs within a specific page card.
+	 * This is crucial after adding or removing an entry to ensure data is submitted correctly.
+	 * @param {HTMLElement} pageCard - The .page-card element containing the dictionary rows.
+	 */
+	function reindexDictionaryRows(pageCard) {
+		const pageIndex = Array.from(pagesContainer.children).indexOf(pageCard);
+		const rows = pageCard.querySelectorAll('.dictionary-entry-row');
+		
+		rows.forEach((row, dictIndex) => {
+			row.querySelectorAll('[name]').forEach(input => {
+				const name = input.getAttribute('name');
+				if (name) {
+					// This robust regex finds and replaces both the page index and the dictionary index.
+					// It matches `pages[__INDEX__]` or `pages[123]`
+					// and `[dictionary][__D_INDEX__]` or `[dictionary][456]`
+					let newName = name.replace(/pages\[(\d+|__INDEX__)]/, `pages[${pageIndex}]`);
+					newName = newName.replace(/\[dictionary]\[(\d+|__D_INDEX__)]/, `[dictionary][${dictIndex}]`);
+					input.setAttribute('name', newName);
+				}
+			});
+		});
+	}
+	// END MODIFICATION
+	
+	function addDictionaryRowToPage(pageCard, word = '', explanation = '') {
+		const template = document.getElementById('dictionary-entry-template');
+		if (!template) return;
+		
+		const container = pageCard.querySelector('.dictionary-entries-container');
+		const newRowHtml = template.innerHTML.replace(/__D_INDEX__/g, container.children.length);
+		container.insertAdjacentHTML('beforeend', newRowHtml);
+		
+		const newRow = container.lastElementChild;
+		newRow.querySelector('input[name*="[word]"]').value = word;
+		newRow.querySelector('input[name*="[explanation]"]').value = explanation;
+		
+		reindexDictionaryRows(pageCard);
+	}
+	
+	pagesContainer.addEventListener('click', (e) => {
+		if (e.target.matches('.add-dictionary-entry-btn')) {
+			const pageCard = e.target.closest('.page-card');
+			addDictionaryRowToPage(pageCard);
+		}
+		
+		if (e.target.matches('.remove-dictionary-entry-btn')) {
+			const pageCard = e.target.closest('.page-card');
+			e.target.closest('.dictionary-entry-row').remove();
+			reindexDictionaryRows(pageCard);
+		}
+	});
+	// END MODIFICATION
+	
 	// Logic for "Draw with AI" Modal
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {

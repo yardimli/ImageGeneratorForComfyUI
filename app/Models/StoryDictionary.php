@@ -17,17 +17,29 @@
 		 *
 		 * @var array
 		 */
+		// START MODIFICATION: Link to story_page_id instead of story_id.
 		protected $fillable = [
-			'story_id',
+			'story_page_id',
 			'word',
 			'explanation',
 		];
+		// END MODIFICATION
 
 		/**
 		 * Get the story that this dictionary entry belongs to.
 		 */
+		// START MODIFICATION: Change relationship to belong to a StoryPage.
+		public function page()
+		{
+			return $this->belongsTo(StoryPage::class, 'story_page_id');
+		}
+
+		/**
+		 * Get the story through the page.
+		 */
 		public function story()
 		{
-			return $this->belongsTo(Story::class);
+			return $this->hasOneThrough(Story::class, StoryPage::class, 'id', 'id', 'story_page_id', 'story_id');
 		}
+		// END MODIFICATION
 	}

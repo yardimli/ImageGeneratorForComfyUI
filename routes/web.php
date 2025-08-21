@@ -1,7 +1,6 @@
 <?php
 
 	use App\Http\Controllers\AlbumCoverController;
-	use App\Http\Controllers\StoryDictionaryController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
@@ -192,6 +191,9 @@
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
+				// START MODIFICATION: Add new route for page-specific dictionary generation.
+				Route::post('/generate-dictionary', [StoryController::class, 'generateDictionaryForPage'])->name('generate-dictionary');
+				// END MODIFICATION
 			});
 
 			Route::prefix('characters/{character}')->name('characters.')->group(function () {
@@ -208,10 +210,6 @@
 			Route::post('/{story}/characters', [StoryController::class, 'updateCharacters'])->name('characters.update');
 			Route::get('/{story}/places', [StoryController::class, 'places'])->name('places');
 			Route::post('/{story}/places', [StoryController::class, 'updatePlaces'])->name('places.update');
-
-			Route::get('/{story}/dictionary', [StoryDictionaryController::class, 'dictionary'])->name('dictionary');
-			Route::post('/{story}/dictionary/generate', [StoryDictionaryController::class, 'generateDictionary'])->name('dictionary.generate');
-			Route::post('/{story}/dictionary', [StoryDictionaryController::class, 'updateDictionary'])->name('dictionary.update');
 
 			Route::get('/{story}/quiz', [QuizController::class, 'quiz'])->name('quiz');
 			Route::post('/{story}/quiz/generate', [QuizController::class, 'generateQuiz'])->name('quiz.generate');

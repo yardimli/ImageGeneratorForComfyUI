@@ -169,10 +169,20 @@
 	
 	@include('story.partials.modals.image-detail-modal')
 	
+	{{-- START MODIFICATION: Add the new dictionary modal. --}}
+	@include('story.partials.modals.dictionary-modal', ['models' => $models])
+	{{-- END MODIFICATION --}}
+	
 	{{-- Template for new pages --}}
 	<template id="page-template">
 		@include('story.partials.page-card', ['page' => null, 'index' => '__INDEX__', 'story' => $story])
 	</template>
+	
+	{{-- START MODIFICATION: Add template for new dictionary rows. --}}
+	<template id="dictionary-entry-template">
+		@include('story.partials.dictionary-entry-row-page', ['index' => '__INDEX__', 'd_index' => '__D_INDEX__', 'entry' => null])
+	</template>
+	{{-- END MODIFICATION --}}
 @endsection
 
 @section('styles')
@@ -200,9 +210,10 @@
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
-	{{-- START MODIFICATION: Pass prompt templates to JS --}}
+	{{-- START MODIFICATION: Pass prompt templates and story level to JS --}}
 	<script>
 		window.promptTemplates = @json($promptTemplates ?? []);
+		window.storyLevel = @json($story->level ?? 'B1');
 	</script>
 	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/story-editor.js') }}"></script>
