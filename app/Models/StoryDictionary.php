@@ -17,12 +17,12 @@
 		 *
 		 * @var array
 		 */
-\		protected $fillable = [
+		protected $fillable = [
 			'story_page_id',
 			'word',
 			'explanation',
 		];
-\
+
 		/**
 		 * Get the story that this dictionary entry belongs to.
 		 */
@@ -38,5 +38,5 @@
 		{
 			return $this->hasOneThrough(Story::class, StoryPage::class, 'id', 'id', 'story_page_id', 'story_id');
 		}
-		
+
 	}

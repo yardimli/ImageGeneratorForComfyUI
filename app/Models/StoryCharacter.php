@@ -11,14 +11,14 @@
 
 		protected $table = 'story_characters';
 
-\		protected $fillable = [
+		protected $fillable = [
 			'story_id',
 			'name',
 			'description',
 			'image_prompt',
 			'image_path',
 		];
-		
+
 
 		public function story()
 		{
