@@ -108,11 +108,11 @@
 		/**
 		 * Get the dictionary entries for the story.
 		 */
-\		public function dictionary()
+		public function dictionary()
 		{
 			return $this->hasManyThrough(StoryDictionary::class, StoryPage::class);
 		}
-		
+
 
 		/**
 		 * Get the quiz questions for the story.
