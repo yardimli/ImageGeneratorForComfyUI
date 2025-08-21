@@ -34,12 +34,12 @@
 			return $this->belongsToMany(StoryPlace::class, 'story_page_place');
 		}
 
-\		/**
+		/**
 		 * Get the dictionary entries for this page.
 		 */
 		public function dictionary()
 		{
 			return $this->hasMany(StoryDictionary::class)->orderBy('word');
 		}
-		
+
 	}
