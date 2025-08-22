@@ -45,7 +45,7 @@
 					<div id="entity-results" class="d-none mt-4">
 						<hr>
 						<h3 class="mb-3">Review & Edit Identified Entities</h3>
-						<p class="text-muted">The AI has identified the following characters and places. You can edit their names and the pages they appear on. Page numbers must be separated by commas.</p>
+						<p class="text-muted">The AI has identified the following characters and places. You can edit their names, the pages they appear on, or delete them. Page numbers must be separated by commas.</p>
 						<div class="row">
 							<div class="col-md-6" id="characters-container">
 								<h4>Characters</h4>
@@ -80,15 +80,34 @@
 			const placesContainer = document.getElementById('places-container');
 			const originalButtonText = generateButton.innerHTML;
 			
-			form.addEventListener('submit', async function (e) {
-				e.preventDefault();
-				
-				if (!nextStepButton.classList.contains('d-none')) {
-					nextStepButton.disabled = true;
-					nextStepButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
-					form.submit();
-					return;
+			const generateEntitiesAction = "{{ route('stories.ai-generate.entities', $story) }}";
+			const storeEntitiesAction = "{{ route('stories.ai-store.entities', $story) }}";
+			
+			const createEntityInputs = (entity, index, type, container) => {
+				const entityHtml = `
+					<div class="entity-row mb-2">
+						<div class="input-group">
+							<span class="input-group-text">Name</span>
+							<input type="text" class="form-control" name="${type}[${index}][name]" value="${entity.name}">
+							<span class="input-group-text">Pages</span>
+							<input type="text" class="form-control" data-role="pages-str" data-type="${type}" data-index="${index}" value="${entity.pages.join(', ')}">
+							<button type="button" class="btn btn-danger btn-delete-entity" title="Delete this item">&times;</button>
+						</div>
+						<div data-role="hidden-pages-container" data-type="${type}" data-index="${index}"></div>
+					</div>
+				`;
+				container.insertAdjacentHTML('beforeend', entityHtml);
+			};
+			
+			resultsContainer.addEventListener('click', function (e) {
+				if (e.target && e.target.classList.contains('btn-delete-entity')) {
+					e.target.closest('.entity-row').remove();
 				}
+			});
+			
+			// MODIFIED: This function handles the AJAX call for generation/regeneration.
+			async function handleGeneration(e) {
+				e.preventDefault();
 				
 				generateButton.disabled = true;
 				generateButton.innerHTML = `
@@ -102,7 +121,7 @@
 				
 				try {
 					const formData = new FormData(form);
-					const response = await fetch(form.action, {
+					const response = await fetch(generateEntitiesAction, { // Always use generation action
 						method: 'POST',
 						body: formData,
 						headers: {
@@ -118,19 +137,6 @@
 						throw new Error(data.message);
 					}
 					
-					const createEntityInputs = (entity, index, type, container) => {
-						const entityHtml = `
-							<div class="input-group mb-2">
-								<span class="input-group-text">Name</span>
-								<input type="text" class="form-control" name="${type}[${index}][name]" value="${entity.name}">
-								<span class="input-group-text">Pages</span>
-								<input type="text" class="form-control" data-role="pages-str" data-type="${type}" data-index="${index}" value="${entity.pages.join(', ')}">
-							</div>
-							<div data-role="hidden-pages-container" data-type="${type}" data-index="${index}"></div>
-						`;
-						container.insertAdjacentHTML('beforeend', entityHtml);
-					};
-					
 					data.characters.forEach((char, index) => createEntityInputs(char, index, 'characters', charactersContainer));
 					data.places.forEach((place, index) => createEntityInputs(place, index, 'places', placesContainer));
 					
@@ -138,6 +144,7 @@
 						const type = inputElement.dataset.type;
 						const index = inputElement.dataset.index;
 						const hiddenContainer = document.querySelector(`div[data-role="hidden-pages-container"][data-type="${type}"][data-index="${index}"]`);
+						if (!hiddenContainer) return; // In case the row was deleted
 						hiddenContainer.innerHTML = ''; // Clear old hidden inputs
 						
 						const pages = inputElement.value.split(',').map(p => p.trim()).filter(p => p && !isNaN(p));
@@ -157,7 +164,6 @@
 					
 					resultsContainer.classList.remove('d-none');
 					nextStepButton.classList.remove('d-none');
-					form.action = "{{ route('stories.ai-store.entities', $story) }}";
 					
 					generateButton.innerHTML = 'Regenerate Entities';
 					generateButton.classList.remove('btn-primary');
@@ -165,13 +171,28 @@
 					
 				} catch (error) {
 					console.error('Entity generation failed:', error);
-				} finally {
-					generateButton.disabled = false;
 					if (nextStepButton.classList.contains('d-none')) {
 						generateButton.innerHTML = originalButtonText;
 					}
+				} finally {
+					generateButton.disabled = false;
 				}
-			});
+			}
+			
+			// MODIFIED: This function handles the final submission to the next step.
+			function handleNextStep(e) {
+				e.preventDefault();
+				
+				nextStepButton.disabled = true;
+				nextStepButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
+				
+				form.action = storeEntitiesAction; // Ensure correct action before submitting
+				form.submit();
+			}
+			
+			// MODIFIED: Removed the single form 'submit' listener and attached separate 'click' listeners to each button.
+			generateButton.addEventListener('click', handleGeneration);
+			nextStepButton.addEventListener('click', handleNextStep);
 		});
 	</script>
 @endsection

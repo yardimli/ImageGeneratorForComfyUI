@@ -142,16 +142,12 @@
 			const pagesContainer = document.getElementById('generated_pages_container');
 			const originalButtonText = generateButton.innerHTML;
 			
-			form.addEventListener('submit', async function (e) {
+			const generateContentAction = "{{ route('stories.ai-generate.content') }}";
+			const storeContentAction = "{{ route('stories.ai-store.content') }}";
+			
+			// MODIFIED: This function handles the AJAX call for generation/regeneration.
+			async function handleGeneration(e) {
 				e.preventDefault();
-				
-				// If the next step button is visible, it means we are submitting the final form.
-				if (!nextStepButton.classList.contains('d-none')) {
-					nextStepButton.disabled = true;
-					nextStepButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
-					form.submit(); // Regular form submission
-					return;
-				}
 				
 				generateButton.disabled = true;
 				generateButton.innerHTML = `
@@ -165,7 +161,7 @@
 				
 				try {
 					const formData = new FormData(form);
-					const response = await fetch(form.action, {
+					const response = await fetch(generateContentAction, { // Always use the generation action
 						method: 'POST',
 						body: formData,
 						headers: {
@@ -207,9 +203,6 @@
 					resultContainer.classList.remove('d-none');
 					nextStepButton.classList.remove('d-none');
 					
-					// Change form action for the next submission
-					form.action = "{{ route('stories.ai-store.content') }}";
-					
 					// Change the generate button to a "Regenerate" button
 					generateButton.innerHTML = 'Regenerate Content';
 					generateButton.classList.remove('btn-primary');
@@ -217,14 +210,29 @@
 					
 				} catch (error) {
 					console.error('Generation failed:', error);
-				} finally {
-					generateButton.disabled = false;
 					// If it's a regenerate button, keep the text, otherwise reset it.
 					if (nextStepButton.classList.contains('d-none')) {
 						generateButton.innerHTML = originalButtonText;
 					}
+				} finally {
+					generateButton.disabled = false;
 				}
-			});
+			}
+			
+			// MODIFIED: This function handles the final submission to the next step.
+			function handleNextStep(e) {
+				e.preventDefault();
+				
+				nextStepButton.disabled = true;
+				nextStepButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
+				
+				form.action = storeContentAction; // Ensure correct action before submitting
+				form.submit(); // Regular form submission
+			}
+			
+			// MODIFIED: Removed the single form 'submit' listener and attached separate 'click' listeners to each button.
+			generateButton.addEventListener('click', handleGeneration);
+			nextStepButton.addEventListener('click', handleNextStep);
 			
 			// --- Helper scripts for form usability ---
 			const modelSelect = document.getElementById('model');

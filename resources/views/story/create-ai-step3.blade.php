@@ -227,14 +227,27 @@
 					generateDescriptionFor(item);
 				});
 				
-				// MODIFIED: Accept button now saves before proceeding
 				acceptBtn.addEventListener('click', async () => {
 					const success = await saveDescriptionFor(item);
 					if (success) {
 						const statusBadge = item.querySelector('.status-badge');
+						const descriptionContainer = item.querySelector('.description-container');
+						
+						// Update status badge
 						statusBadge.className = 'badge bg-success status-badge';
 						statusBadge.textContent = 'Saved';
-						item.querySelector('.description-container').classList.add('d-none');
+						
+						// MODIFIED: Instead of hiding the container, make the textarea readonly and hide the buttons.
+						// This keeps the saved text visible for context.
+						const textarea = descriptionContainer.querySelector('textarea');
+						const buttonContainer = descriptionContainer.querySelector('.mt-2.text-end');
+						
+						textarea.readOnly = true;
+						if (buttonContainer) {
+							buttonContainer.classList.add('d-none');
+						}
+						
+						// Move to the next item
 						currentItemIndex++;
 						processNextItem();
 					}
