@@ -67,8 +67,8 @@
 			Route::delete('/{prompt}', [PromptController::class, 'deletePrompt'])->name('delete');
 
 			Route::prefix('settings')->name('settings.')->group(function () {
-				Route::get('/latest', [PromptController::class, 'getLatestSetting'])->name('latest');
-				Route::get('/{id}', [PromptController::class, 'loadSettings'])->name('load');
+				Route::get('/latest', [PromptController::class, 'getLatestSetting'])->name('settings.latest');
+				Route::get('/{id}', [PromptController::class, 'loadSettings'])->name('settings.load');
 				// Note: The delete route for settings is now outside this group.
 			});
 		});
@@ -175,12 +175,14 @@
 
 			Route::get('read/{story}', [StoryController::class, 'show'])->name('show');
 
-			// Custom routes
-			Route::get('/create/ai', [CreateStoryController::class, 'createWithAi'])->name('create-ai');
+			// MODIFIED: AI Story Creation Wizard Routes
+			Route::get('/create/ai', [CreateStoryController::class, 'createWithAiStep1'])->name('create-ai.step1');
+			Route::get('/create/ai/step2/{story}', [CreateStoryController::class, 'createWithAiStep2'])->name('create-ai.step2');
+			Route::get('/create/ai/step3/{story}', [CreateStoryController::class, 'createWithAiStep3'])->name('create-ai.step3');
 
-			// MODIFIED: Replaced single AI store route with a multi-step generation process
+			// MODIFIED: AI Generation POST routes
 			Route::post('/ai-generate/content', [CreateStoryController::class, 'generateContent'])->name('ai-generate.content');
-			Route::post('/ai-generate/entities', [CreateStoryController::class, 'generateEntities'])->name('ai-generate.entities');
+			Route::post('/{story}/ai-generate/entities', [CreateStoryController::class, 'generateEntities'])->name('ai-generate.entities'); // MODIFIED: Added story context
 			Route::post('/ai-generate/description', [CreateStoryController::class, 'generateDescription'])->name('ai-generate.description');
 
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
