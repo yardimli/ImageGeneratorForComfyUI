@@ -153,6 +153,7 @@
 		 */
 		public function callLlmSync(string $prompt, string $modelId, string $callReason = 'Unknown', ?float $temperature = null, ?string $responseFormat = 'json_object'): array
 		{
+			set_time_limit(300); // 5-minute timeout for long LLM calls.
 			if (!$this->apiKey) {
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
@@ -191,7 +192,7 @@
 						'HTTP-Referer' => config('app.url'),
 						'X-Title' => config('app.name'),
 					])
-					->timeout(180) // 3-minute timeout for long generations
+					->timeout(240) // 4-minute timeout for long generations
 					->post($this->apiBaseUrl . '/chat/completions', $requestBody);
 
 				Log::info('LLM API response body: ' . $response->body());
@@ -236,6 +237,7 @@
 		 */
 		public function generateChatPrompts(string $promptTemplate, int $count, string $precision, string $originalPrompt = '', string $modelId = 'openai/gpt-4o-mini'): array
 		{
+			set_time_limit(300); // 5-minute timeout for long generations
 			// Set temperature based on precision
 			$temperature = 1.0;
 			switch ($precision) {
@@ -276,6 +278,7 @@
 		 */
 		public function generatePromptFromImage(string $prompt, string $base64Image, string $mimeType = 'image/jpeg', string $modelId = 'openai/gpt-4o'): string
 		{
+			set_time_limit(300); // 5-minute timeout for long generations
 			if (!$this->apiKey) {
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
@@ -304,7 +307,7 @@
 						'HTTP-Referer' => config('app.url'),
 						'X-Title' => config('app.name'),
 					])
-					->timeout(180)
+					->timeout(240)
 					->post($this->apiBaseUrl . '/chat/completions', $requestBody);
 
 				if ($response->failed()) {
@@ -387,6 +390,7 @@
 		 */
 		private function processMultiPrompts(string $chatgptPrompt, int $batchCount, string $originalPrompt, float $temperature, string $modelId): array
 		{
+			set_time_limit(300); // 5-minute timeout for long generations
 			$promptSplit = explode("::", $chatgptPrompt);
 			$prompts = [];
 			$explodePrompts = false;
@@ -450,6 +454,7 @@
 		//  Refactor to use LlmPrompt from the database.
 		private function retryQueryLlm(string $prompt, int $count, float $temperature, string $modelId): array
 		{
+			set_time_limit(300); // 5-minute timeout for long generations
 			$max_retries = 4;
 			$answers = [];
 			for ($i = 0; $i < $max_retries; $i++) {
@@ -496,6 +501,7 @@
 		 */
 		private function callLlmRaw(string $systemPrompt, string $userPrompt, string $modelId, ?float $temperature = null): string
 		{
+			set_time_limit(300); // 5-minute timeout for long generations
 			if (!$this->apiKey) {
 				throw new \Exception('OpenRouter API key is not configured. Please add it to your .env file.');
 			}
@@ -533,7 +539,7 @@
 						'HTTP-Referer' => config('app.url'),
 						'X-Title' => config('app.name'),
 					])
-					->timeout(180)
+					->timeout(240)
 					->post($this->apiBaseUrl . '/chat/completions', $requestBody);
 
 				if ($response->failed()) {
