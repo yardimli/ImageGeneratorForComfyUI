@@ -7,7 +7,7 @@
 			
 			@auth
 				<div class="d-flex gap-2">
-					<a href="{{ route('stories.create-ai') }}" class="btn btn-info">Create Story with AI</a>
+					<a href="{{ route('stories.create-ai.step1') }}" class="btn btn-info">Create Story with AI</a>
 					<a href="{{ route('stories.create') }}" class="btn btn-primary">Create New Story</a>
 				</div>
 			@endauth
