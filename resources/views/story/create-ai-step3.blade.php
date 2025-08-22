@@ -10,7 +10,6 @@
 		
 		@include('story.partials.alerts')
 		
-		{{-- NEW: Added prompts for character and place descriptions --}}
 		<div class="card mb-4">
 			<div class="card-body">
 				<div class="row">
@@ -46,10 +45,12 @@
 									<span class="badge bg-secondary status-badge">Pending</span>
 								</div>
 								<div class="description-container mt-2 d-none">
+									{{-- MODIFIED: Textarea is now enabled for editing --}}
 									<textarea class="form-control" rows="4" aria-label="Description for {{ $character->name }}"></textarea>
 									<div class="mt-2 text-end">
 										<button class="btn btn-sm btn-secondary btn-regenerate">Regenerate</button>
-										<button class="btn btn-sm btn-success btn-accept">Accept</button>
+										{{-- MODIFIED: Button text updated --}}
+										<button class="btn btn-sm btn-success btn-accept">Accept & Save</button>
 									</div>
 								</div>
 							</li>
@@ -72,10 +73,12 @@
 									<span class="badge bg-secondary status-badge">Pending</span>
 								</div>
 								<div class="description-container mt-2 d-none">
+									{{-- MODIFIED: Textarea is now enabled for editing --}}
 									<textarea class="form-control" rows="4" aria-label="Description for {{ $place->name }}"></textarea>
 									<div class="mt-2 text-end">
 										<button class="btn btn-sm btn-secondary btn-regenerate">Regenerate</button>
-										<button class="btn btn-sm btn-success btn-accept">Accept</button>
+										{{-- MODIFIED: Button text updated --}}
+										<button class="btn btn-sm btn-success btn-accept">Accept & Save</button>
 									</div>
 								</div>
 							</li>
@@ -113,7 +116,7 @@
 				generateDescriptionFor(itemElement);
 			}
 			
-			async function generateDescriptionFor(element, isRegeneration = false) {
+			async function generateDescriptionFor(element) {
 				const type = element.dataset.type;
 				const name = element.dataset.name;
 				const statusBadge = element.querySelector('.status-badge');
@@ -123,10 +126,8 @@
 				
 				statusBadge.className = 'badge bg-info text-dark status-badge';
 				statusBadge.textContent = 'Generating...';
-				if (isRegeneration) {
-					textarea.disabled = true;
-					buttons.forEach(b => b.disabled = true);
-				}
+				textarea.disabled = true; // Disable textarea during generation
+				buttons.forEach(b => b.disabled = true);
 				
 				try {
 					const formData = new FormData();
@@ -135,7 +136,6 @@
 					formData.append('name', name);
 					formData.append('_token', csrfToken);
 					
-					// MODIFIED: Read the current prompt from the textareas and send it with the request.
 					if (type === 'character') {
 						const promptText = document.getElementById('prompt_character_description').value;
 						formData.append('prompt', promptText);
@@ -165,12 +165,57 @@
 					console.error('Description generation failed:', error);
 					statusBadge.className = 'badge bg-danger status-badge';
 					statusBadge.textContent = 'Error';
-					// Allow user to try again by not disabling buttons on error
 				} finally {
-					if (isRegeneration) {
-						textarea.disabled = false;
-						buttons.forEach(b => b.disabled = false);
+					textarea.disabled = false; // Re-enable textarea after generation
+					buttons.forEach(b => b.disabled = false);
+				}
+			}
+			
+			// NEW: Function to save the description via AJAX
+			async function saveDescriptionFor(element) {
+				const type = element.dataset.type;
+				const name = element.dataset.name;
+				const descriptionContainer = element.querySelector('.description-container');
+				const textarea = descriptionContainer.querySelector('textarea');
+				const acceptBtn = element.querySelector('.btn-accept');
+				const originalBtnText = acceptBtn.innerHTML;
+				
+				acceptBtn.disabled = true;
+				acceptBtn.innerHTML = `<span class="spinner-border spinner-border-sm"></span> Saving...`;
+				
+				try {
+					const formData = new FormData();
+					formData.append('story_id', storyId);
+					formData.append('type', type);
+					formData.append('name', name);
+					formData.append('description', textarea.value);
+					formData.append('_token', csrfToken);
+					
+					// Also send the current prompts to be saved
+					formData.append('prompt_character_description', document.getElementById('prompt_character_description').value);
+					formData.append('prompt_place_description', document.getElementById('prompt_place_description').value);
+					
+					const response = await fetch("{{ route('stories.ai-store.description') }}", {
+						method: 'POST',
+						body: formData,
+						headers: { 'Accept': 'application/json' },
+					});
+					
+					const data = await response.json();
+					
+					if (!response.ok) {
+						throw new Error(data.message || 'Failed to save description.');
 					}
+					
+					return true; // Indicate success
+					
+				} catch (error) {
+					console.error('Description saving failed:', error);
+					alert('Could not save description: ' + error.message);
+					return false; // Indicate failure
+				} finally {
+					acceptBtn.disabled = false;
+					acceptBtn.innerHTML = originalBtnText;
 				}
 			}
 			
@@ -179,16 +224,20 @@
 				const acceptBtn = item.querySelector('.btn-accept');
 				
 				regenerateBtn.addEventListener('click', () => {
-					generateDescriptionFor(item, true);
+					generateDescriptionFor(item);
 				});
 				
-				acceptBtn.addEventListener('click', () => {
-					const statusBadge = item.querySelector('.status-badge');
-					statusBadge.className = 'badge bg-success status-badge';
-					statusBadge.textContent = 'Accepted';
-					item.querySelector('.description-container').classList.add('d-none'); // Hide controls after accepting
-					currentItemIndex++;
-					processNextItem();
+				// MODIFIED: Accept button now saves before proceeding
+				acceptBtn.addEventListener('click', async () => {
+					const success = await saveDescriptionFor(item);
+					if (success) {
+						const statusBadge = item.querySelector('.status-badge');
+						statusBadge.className = 'badge bg-success status-badge';
+						statusBadge.textContent = 'Saved';
+						item.querySelector('.description-container').classList.add('d-none');
+						currentItemIndex++;
+						processNextItem();
+					}
 				});
 			});
 			

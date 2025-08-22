@@ -114,15 +114,14 @@
 		}
 
 		/**
-		 * Step 1 of AI generation. Generates story content (title, desc, pages).
+		 * MODIFIED: Step 1 of AI generation. Generates story content (title, desc, pages) via AJAX.
 		 *
 		 * @param Request $request
 		 * @param LlmController $llmController
-		 * @return \Illuminate\Http\RedirectResponse
+		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generateContent(Request $request, LlmController $llmController)
 		{
-			// MODIFIED: Only validate the prompt submitted from this step's form.
 			$validated = $request->validate([
 				'model' => 'required|string',
 				'level' => 'required|string|max:50',
@@ -142,36 +141,70 @@
 
 				$this->validateContentData($storyContentData);
 
-				// NEW: Fetch the default prompts for the other steps directly from the database.
+				// MODIFIED: Return the generated data as JSON instead of saving and redirecting.
+				return response()->json($storyContentData);
+			} catch (ValidationException $e) {
+				// MODIFIED: Return JSON error
+				return response()->json(['message' => 'The AI returned story content in an invalid format. Please try again.', 'errors' => $e->errors()], 422);
+			} catch (\Exception $e) {
+				Log::error('AI Story Content Generation Failed: ' . $e->getMessage());
+				// MODIFIED: Return JSON error
+				return response()->json(['message' => 'An error occurred while generating the story content. Error: ' . $e->getMessage()], 500);
+			}
+		}
+
+		/**
+		 * NEW: Step 1 continuation. Stores the generated/edited content and proceeds to step 2.
+		 *
+		 * @param Request $request
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function storeContent(Request $request)
+		{
+			$validated = $request->validate([
+				'title' => 'required|string|max:255',
+				'short_description' => 'required|string',
+				'pages' => 'required|array|min:1',
+				'pages.*' => 'required|string', // Pages are submitted as simple strings
+				'level' => 'required|string|max:50',
+				'model' => 'required|string',
+				'prompt_content_generation' => 'required|string',
+			]);
+
+			try {
+				// Re-structure page data to match the format expected by saveStoryFromAiContent
+				$contentData = [
+					'title' => $validated['title'],
+					'description' => $validated['short_description'],
+					'pages' => array_map(fn ($content) => ['content' => $content], $validated['pages']),
+				];
+
+				// Fetch the default prompts for the other steps directly from the database.
 				$defaultPrompts = [
 					'entities' => LlmPrompt::where('name', 'story.generate.entities')->firstOrFail()->system_prompt,
 					'character' => LlmPrompt::where('name', 'story.character.describe')->firstOrFail()->system_prompt,
 					'place' => LlmPrompt::where('name', 'story.place.describe')->firstOrFail()->system_prompt,
 				];
 
-				// MODIFIED: Pass the default prompts to the save method.
-				$story = $this->saveStoryFromAiContent($storyContentData, $validated, $defaultPrompts);
+				$story = $this->saveStoryFromAiContent($contentData, $validated, $defaultPrompts);
 
-				return redirect()->route('stories.create-ai.step2', $story)->with('success', 'Story content generated successfully! Please review.');
-			} catch (ValidationException $e) {
-				return back()->withInput()->with('error', 'The AI returned story content in an invalid format. Please try again.');
+				return redirect()->route('stories.create-ai.step2', $story)->with('success', 'Story content saved! Now, let\'s identify characters and places.');
 			} catch (\Exception $e) {
-				Log::error('AI Story Content Generation Failed: ' . $e->getMessage());
-				return back()->with('error', 'An error occurred while generating the story content. Error: ' . $e->getMessage());
+				Log::error('AI Story Content Saving Failed: ' . $e->getMessage());
+				return back()->withInput()->with('error', 'An error occurred while saving the story content. Please try again.');
 			}
 		}
 
 		/**
-		 * MODIFIED: Step 2 of AI generation. Generates characters and places from story text.
+		 * MODIFIED: Step 2 of AI generation. Generates characters and places from story text via AJAX.
 		 *
 		 * @param Request $request
-		 * @param Story $story // MODIFIED: Injected via route model binding
+		 * @param Story $story
 		 * @param LlmController $llmController
-		 * @return \Illuminate\Http\RedirectResponse // MODIFIED: Returns a redirect instead of JSON
+		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generateEntities(Request $request, Story $story, LlmController $llmController)
 		{
-			// MODIFIED: Validate the prompt submitted from the step 2 form
 			$validated = $request->validate([
 				'prompt_entity_generation' => 'required|string',
 			]);
@@ -180,13 +213,7 @@
 				$story->load('pages');
 				$fullStoryText = $story->pages->pluck('story_text')->implode("\n\n");
 
-				// MODIFIED: Update the story's prompt if it was edited in step 2
-				if ($story->prompt_entity_generation !== $validated['prompt_entity_generation']) {
-					$story->prompt_entity_generation = $validated['prompt_entity_generation'];
-					$story->save();
-				}
-
-				$entityPrompt = str_replace('{fullStoryText}', $fullStoryText, $story->prompt_entity_generation);
+				$entityPrompt = str_replace('{fullStoryText}', $fullStoryText, $validated['prompt_entity_generation']);
 
 				$entityData = $llmController->callLlmSync(
 					$entityPrompt,
@@ -198,23 +225,69 @@
 
 				$this->validateEntityData($entityData);
 
-				$this->saveEntitiesAndLinks($story, $entityData);
-
-				// MODIFIED: Redirect to the final step of the wizard
-				return redirect()->route('stories.create-ai.step3', $story)->with('success', 'Characters and places identified! Now let\'s describe them.');
+				// MODIFIED: Return JSON instead of saving.
+				return response()->json($entityData);
 			} catch (ValidationException $e) {
-				// MODIFIED: Redirect back with error
-				return back()->withInput()->with('error', 'The AI returned characters/places in an invalid format. Please try again.');
+				// MODIFIED: Return JSON error
+				return response()->json(['message' => 'The AI returned characters/places in an invalid format. Please try again.', 'errors' => $e->errors()], 422);
 			} catch (\Exception $e) {
 				Log::error('AI Story Entity Generation Failed: ' . $e->getMessage());
-				// MODIFIED: Redirect back with error
-				return back()->with('error', 'An error occurred while generating characters and places. Error: ' . $e->getMessage());
+				// MODIFIED: Return JSON error
+				return response()->json(['message' => 'An error occurred while generating characters and places. Error: ' . $e->getMessage()], 500);
+			}
+		}
+
+		/**
+		 * NEW: Step 2 continuation. Stores the generated/edited entities and proceeds to step 3.
+		 *
+		 * @param Request $request
+		 * @param Story $story
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function storeEntities(Request $request, Story $story)
+		{
+			$validated = $request->validate([
+				'prompt_entity_generation' => 'required|string',
+				'characters' => 'present|array',
+				'characters.*.name' => 'required|string',
+				'characters.*.pages' => 'present|array',
+				'characters.*.pages.*' => 'integer',
+				'places' => 'present|array',
+				'places.*.name' => 'required|string',
+				'places.*.pages' => 'present|array',
+				'places.*.pages.*' => 'integer',
+			]);
+
+			try {
+				DB::transaction(function () use ($story, $validated) {
+					// Update the story's prompt if it was edited
+					if ($story->prompt_entity_generation !== $validated['prompt_entity_generation']) {
+						$story->prompt_entity_generation = $validated['prompt_entity_generation'];
+						$story->save();
+					}
+
+					// Clear existing entities to prevent duplicates if user goes back and forth
+					$story->characters()->delete();
+					$story->places()->delete();
+
+					$entityData = [
+						'characters' => $validated['characters'],
+						'places' => $validated['places'],
+					];
+
+					$this->saveEntitiesAndLinks($story, $entityData);
+				});
+
+				return redirect()->route('stories.create-ai.step3', $story)->with('success', 'Characters and places saved! Now let\'s describe them.');
+			} catch (\Exception $e) {
+				Log::error('AI Story Entity Saving Failed: ' . $e->getMessage());
+				return back()->withInput()->with('error', 'An error occurred while saving the entities. Error: ' . $e->getMessage());
 			}
 		}
 
 
 		/**
-		 * Step 3 of AI generation. Generates a description for a single character or place.
+		 * MODIFIED: Step 3 of AI generation. Generates a description for a single entity. Does not save.
 		 *
 		 * @param Request $request
 		 * @param LlmController $llmController
@@ -226,7 +299,7 @@
 				'story_id' => 'required|integer|exists:stories,id',
 				'type' => 'required|string|in:character,place',
 				'name' => 'required|string',
-				'prompt' => 'required|string', // MODIFIED: Prompt is now sent with each request
+				'prompt' => 'required|string',
 			]);
 
 			try {
@@ -253,18 +326,59 @@
 
 				$this->validateSingleEntityData($descriptionData, $validated['name']);
 
-				if ($validated['type'] === 'character') {
-					$story->characters()->where('name', $validated['name'])->update(['description' => $descriptionData['description']]);
-				} else {
-					$story->places()->where('name', $validated['name'])->update(['description' => $descriptionData['description']]);
-				}
-
+				// MODIFIED: Do not save here. Just return the generated description.
+				// The frontend will send a separate request to save it after user review/edit.
 				return response()->json(['success' => true, 'description' => $descriptionData['description']]);
 			} catch (ValidationException $e) {
 				return response()->json(['message' => 'The AI returned data in an invalid format for ' . $validated['name'] . '. Please try again.', 'errors' => $e->errors()], 422);
 			} catch (\Exception $e) {
 				Log::error('AI Description Generation Failed: ' . $e->getMessage());
 				return response()->json(['message' => 'An error occurred while generating a description for ' . $validated['name'] . '. Error: ' . $e->getMessage()], 500);
+			}
+		}
+
+		/**
+		 * NEW: Step 3 action. Stores the final description for a single entity.
+		 *
+		 * @param Request $request
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function storeDescription(Request $request)
+		{
+			$validated = $request->validate([
+				'story_id' => 'required|integer|exists:stories,id',
+				'type' => 'required|string|in:character,place',
+				'name' => 'required|string',
+				'description' => 'required|string',
+			]);
+
+			try {
+				$story = Story::findOrFail($validated['story_id']);
+
+				if ($validated['type'] === 'character') {
+					$entity = $story->characters()->where('name', $validated['name'])->firstOrFail();
+				} else { // place
+					$entity = $story->places()->where('name', $validated['name'])->firstOrFail();
+				}
+
+				$entity->description = $validated['description'];
+				$entity->save();
+
+				// Also update the prompts on the story model if they were changed on the frontend
+				if ($request->has('prompt_character_description')) {
+					$story->prompt_character_description = $request->input('prompt_character_description');
+				}
+				if ($request->has('prompt_place_description')) {
+					$story->prompt_place_description = $request->input('prompt_place_description');
+				}
+				if ($story->isDirty()) {
+					$story->save();
+				}
+
+				return response()->json(['success' => true, 'message' => 'Description for ' . $validated['name'] . ' saved.']);
+			} catch (\Exception $e) {
+				Log::error('AI Description Saving Failed: ' . $e->getMessage());
+				return response()->json(['message' => 'An error occurred while saving the description for ' . $validated['name'] . '. Error: ' . $e->getMessage()], 500);
 			}
 		}
 
@@ -412,10 +526,10 @@
 		 *
 		 * @param array $data
 		 * @param array $validatedRequestData
-		 * @param array $defaultPrompts // MODIFIED: Added parameter for default prompts
+		 * @param array $defaultPrompts
 		 * @return Story
 		 */
-		private function saveStoryFromAiContent(array $data, array $validatedRequestData, array $defaultPrompts): Story // MODIFIED: Signature updated
+		private function saveStoryFromAiContent(array $data, array $validatedRequestData, array $defaultPrompts): Story
 		{
 			$story = Story::create([
 				'user_id' => auth()->id(),
@@ -425,7 +539,6 @@
 				'initial_prompt' => $validatedRequestData['prompt_content_generation'],
 				'model' => $validatedRequestData['model'],
 				'prompt_content_generation' => $validatedRequestData['prompt_content_generation'],
-				// MODIFIED: Use the passed default prompts instead of expecting them from the request.
 				'prompt_entity_generation' => $defaultPrompts['entities'],
 				'prompt_character_description' => $defaultPrompts['character'],
 				'prompt_place_description' => $defaultPrompts['place'],

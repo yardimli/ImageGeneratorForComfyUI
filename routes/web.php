@@ -180,10 +180,18 @@
 			Route::get('/create/ai/step2/{story}', [CreateStoryController::class, 'createWithAiStep2'])->name('create-ai.step2');
 			Route::get('/create/ai/step3/{story}', [CreateStoryController::class, 'createWithAiStep3'])->name('create-ai.step3');
 
-			// MODIFIED: AI Generation POST routes
-			Route::post('/ai-generate/content', [CreateStoryController::class, 'generateContent'])->name('ai-generate.content');
-			Route::post('/{story}/ai-generate/entities', [CreateStoryController::class, 'generateEntities'])->name('ai-generate.entities'); // MODIFIED: Added story context
-			Route::post('/ai-generate/description', [CreateStoryController::class, 'generateDescription'])->name('ai-generate.description');
+			// MODIFIED: AI Generation POST routes are now split into generate (AJAX) and store (Form Submit)
+			// Step 1
+			Route::post('/ai-generate/content', [CreateStoryController::class, 'generateContent'])->name('ai-generate.content'); // AJAX
+			Route::post('/ai-store/content', [CreateStoryController::class, 'storeContent'])->name('ai-store.content'); // Form submit to next step
+
+			// Step 2
+			Route::post('/{story}/ai-generate/entities', [CreateStoryController::class, 'generateEntities'])->name('ai-generate.entities'); // AJAX
+			Route::post('/{story}/ai-store/entities', [CreateStoryController::class, 'storeEntities'])->name('ai-store.entities'); // Form submit to next step
+
+			// Step 3
+			Route::post('/ai-generate/description', [CreateStoryController::class, 'generateDescription'])->name('ai-generate.description'); // AJAX
+			Route::post('/ai-store/description', [CreateStoryController::class, 'storeDescription'])->name('ai-store.description'); // NEW: AJAX to save a single description
 
 			Route::post('/rewrite-text', [StoryController::class, 'rewriteText'])->name('rewrite-text');
 			Route::post('/rewrite-asset-description', [StoryController::class, 'rewriteAssetDescription'])->name('rewrite-asset-description');

@@ -3,10 +3,10 @@
 @section('content')
 	<div class="container py-4">
 		<div class="d-flex justify-content-between align-items-center">
-			<h1>Create a Story with AI - Step 2: Review Content</h1>
+			<h1>Create a Story with AI - Step 2: Identify Entities</h1>
 			<span class="badge bg-primary fs-6">Step 2 of 3</span>
 		</div>
-		<p class="text-muted">Review the generated story content below. If it looks good, proceed to the next step to identify characters and places. You can also edit the prompt that will be used for this next step.</p>
+		<p class="text-muted">Review the story content below. If it looks good, click "Identify Characters & Places". You can edit the prompt that will be used for this step. After generation, you can edit the results before proceeding.</p>
 		
 		@include('story.partials.alerts')
 		
@@ -32,6 +32,7 @@
 		
 		<div class="card">
 			<div class="card-body">
+				{{-- MODIFIED: Form action will be changed by JS. --}}
 				<form action="{{ route('stories.ai-generate.entities', $story) }}" method="POST" id="entity-form">
 					@csrf
 					<div class="mb-3">
@@ -40,8 +41,27 @@
 						<small class="form-text text-muted">This prompt will be used to extract characters and places from the story text above.</small>
 					</div>
 					
-					<div class="d-flex justify-content-end">
-						<button type="submit" class="btn btn-primary btn-lg">Identify Characters & Places</button>
+					{{-- NEW: This section will be populated by AJAX after generation --}}
+					<div id="entity-results" class="d-none mt-4">
+						<hr>
+						<h3 class="mb-3">Review & Edit Identified Entities</h3>
+						<p class="text-muted">The AI has identified the following characters and places. You can edit their names and the pages they appear on. Page numbers must be separated by commas.</p>
+						<div class="row">
+							<div class="col-md-6" id="characters-container">
+								<h4>Characters</h4>
+								{{-- Character fields will be added here --}}
+							</div>
+							<div class="col-md-6" id="places-container">
+								<h4>Places</h4>
+								{{-- Place fields will be added here --}}
+							</div>
+						</div>
+					</div>
+					
+					<div class="d-flex justify-content-end align-items-center gap-3 mt-3">
+						<button type="submit" class="btn btn-primary btn-lg" id="generate-button">Identify Characters & Places</button>
+						{{-- NEW: This button is initially hidden --}}
+						<button type="submit" class="btn btn-success btn-lg d-none" id="next-step-button">Save & Continue to Step 3</button>
 					</div>
 				</form>
 			</div>
@@ -51,19 +71,107 @@
 
 @section('scripts')
 	<script>
-		// Add a loading state to the submit button to prevent double-clicks.
 		document.addEventListener('DOMContentLoaded', function () {
 			const form = document.getElementById('entity-form');
-			if (form) {
-				form.addEventListener('submit', function () {
-					const button = form.querySelector('button[type="submit"]');
-					button.disabled = true;
-					button.innerHTML = `
-              <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-              Identifying...
-            `;
-				});
-			}
+			const generateButton = document.getElementById('generate-button');
+			const nextStepButton = document.getElementById('next-step-button');
+			const resultsContainer = document.getElementById('entity-results');
+			const charactersContainer = document.getElementById('characters-container');
+			const placesContainer = document.getElementById('places-container');
+			const originalButtonText = generateButton.innerHTML;
+			
+			form.addEventListener('submit', async function (e) {
+				e.preventDefault();
+				
+				if (!nextStepButton.classList.contains('d-none')) {
+					nextStepButton.disabled = true;
+					nextStepButton.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Saving...`;
+					form.submit();
+					return;
+				}
+				
+				generateButton.disabled = true;
+				generateButton.innerHTML = `
+					<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+					Identifying...
+				`;
+				
+				resultsContainer.classList.add('d-none');
+				charactersContainer.innerHTML = '<h4>Characters</h4>'; // Reset with header
+				placesContainer.innerHTML = '<h4>Places</h4>'; // Reset with header
+				
+				try {
+					const formData = new FormData(form);
+					const response = await fetch(form.action, {
+						method: 'POST',
+						body: formData,
+						headers: {
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('input[name="_token"]').value
+						}
+					});
+					
+					const data = await response.json();
+					
+					if (!response.ok) {
+						alert(data.message || 'An error occurred during entity identification.');
+						throw new Error(data.message);
+					}
+					
+					const createEntityInputs = (entity, index, type, container) => {
+						const entityHtml = `
+							<div class="input-group mb-2">
+								<span class="input-group-text">Name</span>
+								<input type="text" class="form-control" name="${type}[${index}][name]" value="${entity.name}">
+								<span class="input-group-text">Pages</span>
+								<input type="text" class="form-control" data-role="pages-str" data-type="${type}" data-index="${index}" value="${entity.pages.join(', ')}">
+							</div>
+							<div data-role="hidden-pages-container" data-type="${type}" data-index="${index}"></div>
+						`;
+						container.insertAdjacentHTML('beforeend', entityHtml);
+					};
+					
+					data.characters.forEach((char, index) => createEntityInputs(char, index, 'characters', charactersContainer));
+					data.places.forEach((place, index) => createEntityInputs(place, index, 'places', placesContainer));
+					
+					const updateHiddenPageInputs = (inputElement) => {
+						const type = inputElement.dataset.type;
+						const index = inputElement.dataset.index;
+						const hiddenContainer = document.querySelector(`div[data-role="hidden-pages-container"][data-type="${type}"][data-index="${index}"]`);
+						hiddenContainer.innerHTML = ''; // Clear old hidden inputs
+						
+						const pages = inputElement.value.split(',').map(p => p.trim()).filter(p => p && !isNaN(p));
+						pages.forEach(p => {
+							const hiddenInput = document.createElement('input');
+							hiddenInput.type = 'hidden';
+							hiddenInput.name = `${type}[${index}][pages][]`;
+							hiddenInput.value = p;
+							hiddenContainer.appendChild(hiddenInput);
+						});
+					};
+					
+					document.querySelectorAll('input[data-role="pages-str"]').forEach(input => {
+						updateHiddenPageInputs(input); // Initial population
+						input.addEventListener('input', () => updateHiddenPageInputs(input));
+					});
+					
+					resultsContainer.classList.remove('d-none');
+					nextStepButton.classList.remove('d-none');
+					form.action = "{{ route('stories.ai-store.entities', $story) }}";
+					
+					generateButton.innerHTML = 'Regenerate Entities';
+					generateButton.classList.remove('btn-primary');
+					generateButton.classList.add('btn-secondary');
+					
+				} catch (error) {
+					console.error('Entity generation failed:', error);
+				} finally {
+					generateButton.disabled = false;
+					if (nextStepButton.classList.contains('d-none')) {
+						generateButton.innerHTML = originalButtonText;
+					}
+				}
+			});
 		});
 	</script>
 @endsection
