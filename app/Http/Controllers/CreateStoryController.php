@@ -405,11 +405,13 @@
 			$existingCharacterContext = $story->characters
 				->where('name', '!=', $characterName)
 				->whereNotNull('description')
+				->where('description', '!=', '') // MODIFIED: Also check for empty strings
 				->map(fn ($char) => "Character: {$char->name}\nDescription: {$char->description}")
 				->implode("\n\n");
 
 			$existingPlaceContext = $story->places
 				->whereNotNull('description')
+				->where('description', '!=', '') // MODIFIED: Also check for empty strings
 				->map(fn ($place) => "Place: {$place->name}\nDescription: {$place->description}")
 				->implode("\n\n");
 
