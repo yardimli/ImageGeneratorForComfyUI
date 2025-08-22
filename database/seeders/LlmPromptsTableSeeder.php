@@ -38,7 +38,6 @@ You are an expert at writing image generation prompts for AI art models like DAL
 Your task is to create a single, concise, and descriptive image prompt for a dictionary {assetType}.
 
 **Instructions:**
-- {assetInstructions}
 - The prompt should be a single paragraph of comma-separated descriptive phrases.
 - Focus on visual details: appearance, key features, mood, and lighting.
 - Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
@@ -57,7 +56,7 @@ PROMPT,
 2.  **User Guidance:**
     {userInstructions}
 PROMPT,
-					'placeholders' => json_encode(['{assetType}', '{assetInstructions}', '{assetDescription}', '{userInstructions}']),
+					'placeholders' => json_encode(['{assetType}', '{assetDescription}', '{userInstructions}']),
 					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),
@@ -104,7 +103,6 @@ You are an expert at writing image generation prompts for AI art models like DAL
 Your task is to create a single, concise, and descriptive image prompt for a story {assetType}.
 
 **Instructions:**
-- {assetInstructions}
 - The prompt should be a single paragraph of comma-separated descriptive phrases.
 - Focus on visual details: appearance, key features, mood, and lighting.
 - Provide the output in a single, valid JSON object. Do not include any text, markdown, or explanation outside of the JSON object itself.
@@ -123,7 +121,7 @@ PROMPT,
 2.  **User Guidance:**
     {userInstructions}
 PROMPT,
-					'placeholders' => json_encode(['{assetType}', '{assetInstructions}', '{assetDescription}', '{userInstructions}']),
+					'placeholders' => json_encode(['{assetType}', '{assetDescription}', '{userInstructions}']),
 					'options' => null, // Added this line
 					'created_at' => now(),
 					'updated_at' => now(),

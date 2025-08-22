@@ -394,10 +394,6 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
-		let assetInstructions = "Output should be a high-quality image that captures the essence of the asset.";
-		if (assetType === "entry") {
-			assetInstructions = "Output should be a high-quality image that captures the essence of the dictionary entry.";
-		}
 		
 		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
@@ -405,8 +401,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			.replace('{userInstructions}', instructionsText);
 		
 		const systemPrompt = templateData.system_prompt
-			.replace('{assetType}', assetType)
-			.replace('{assetInstructions}', assetInstructions);
+			.replace('{assetType}', assetType);
 		
 		return `${systemPrompt}\n\n${userPrompt}`;
 	}

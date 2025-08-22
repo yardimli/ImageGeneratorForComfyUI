@@ -494,23 +494,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		let assetInstructions = "Output should be a high-quality image that captures the essence of the asset.";
-		
-		if (assetType === "character") {
-			assetInstructions = "Output should be a portrait with clear background, focusing on the character's face and upper body.";
-		}
-		else if (assetType === "place") {
-			assetInstructions = "Output should be a scene with clear background, focusing on the place's key features and atmosphere. No people should be included in the image.";
-		}
-		
 		const userPrompt = templateData.user_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
 			.replace('{userInstructions}', instructionsText);
 		
 		const systemPrompt = templateData.system_prompt
-			.replace('{assetType}', assetType)
-			.replace('{assetInstructions}', assetInstructions);
+			.replace('{assetType}', assetType);
 		
 		return `${systemPrompt}\n\n${userPrompt}`;
 	}
