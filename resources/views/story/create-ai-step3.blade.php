@@ -39,17 +39,23 @@
 					</div>
 					<ul class="list-group list-group-flush" id="characters-list">
 						@forelse($story->characters as $character)
-							<li class="list-group-item" data-type="character" data-name="{{ $character->name }}">
+							{{-- MODIFIED: Check for existing description to set initial state --}}
+							@php
+								$hasDescription = !empty($character->description);
+							@endphp
+							<li class="list-group-item" data-type="character" data-name="{{ $character->name }}" {{ $hasDescription ? 'data-is-complete="true"' : '' }}>
 								<div class="d-flex justify-content-between align-items-center">
 									<strong>{{ $character->name }}</strong>
-									<span class="badge bg-secondary status-badge">Pending</span>
+									{{-- MODIFIED: Badge is green and says "Saved" if description exists --}}
+									<span class="badge {{ $hasDescription ? 'bg-success' : 'bg-secondary' }} status-badge">{{ $hasDescription ? 'Saved' : 'Pending' }}</span>
 								</div>
-								<div class="description-container mt-2 d-none">
-									{{-- MODIFIED: Textarea is now enabled for editing --}}
-									<textarea class="form-control" rows="4" aria-label="Description for {{ $character->name }}"></textarea>
-									<div class="mt-2 text-end">
+								{{-- MODIFIED: Description container is visible if description exists --}}
+								<div class="description-container mt-2 {{ $hasDescription ? '' : 'd-none' }}">
+									{{-- MODIFIED: Textarea shows existing description and is readonly if it exists --}}
+									<textarea class="form-control" rows="4" aria-label="Description for {{ $character->name }}" {{ $hasDescription ? 'readonly' : '' }}>{{ $character->description }}</textarea>
+									{{-- MODIFIED: Buttons are hidden if description exists --}}
+									<div class="mt-2 text-end {{ $hasDescription ? 'd-none' : '' }}">
 										<button class="btn btn-sm btn-secondary btn-regenerate">Regenerate</button>
-										{{-- MODIFIED: Button text updated --}}
 										<button class="btn btn-sm btn-success btn-accept">Accept & Save</button>
 									</div>
 								</div>
@@ -67,17 +73,23 @@
 					</div>
 					<ul class="list-group list-group-flush" id="places-list">
 						@forelse($story->places as $place)
-							<li class="list-group-item" data-type="place" data-name="{{ $place->name }}">
+							{{-- MODIFIED: Check for existing description to set initial state --}}
+							@php
+								$hasDescription = !empty($place->description);
+							@endphp
+							<li class="list-group-item" data-type="place" data-name="{{ $place->name }}" {{ $hasDescription ? 'data-is-complete="true"' : '' }}>
 								<div class="d-flex justify-content-between align-items-center">
 									<strong>{{ $place->name }}</strong>
-									<span class="badge bg-secondary status-badge">Pending</span>
+									{{-- MODIFIED: Badge is green and says "Saved" if description exists --}}
+									<span class="badge {{ $hasDescription ? 'bg-success' : 'bg-secondary' }} status-badge">{{ $hasDescription ? 'Saved' : 'Pending' }}</span>
 								</div>
-								<div class="description-container mt-2 d-none">
-									{{-- MODIFIED: Textarea is now enabled for editing --}}
-									<textarea class="form-control" rows="4" aria-label="Description for {{ $place->name }}"></textarea>
-									<div class="mt-2 text-end">
+								{{-- MODIFIED: Description container is visible if description exists --}}
+								<div class="description-container mt-2 {{ $hasDescription ? '' : 'd-none' }}">
+									{{-- MODIFIED: Textarea shows existing description and is readonly if it exists --}}
+									<textarea class="form-control" rows="4" aria-label="Description for {{ $place->name }}" {{ $hasDescription ? 'readonly' : '' }}>{{ $place->description }}</textarea>
+									{{-- MODIFIED: Buttons are hidden if description exists --}}
+									<div class="mt-2 text-end {{ $hasDescription ? 'd-none' : '' }}">
 										<button class="btn btn-sm btn-secondary btn-regenerate">Regenerate</button>
-										{{-- MODIFIED: Button text updated --}}
 										<button class="btn btn-sm btn-success btn-accept">Accept & Save</button>
 									</div>
 								</div>
@@ -103,13 +115,18 @@
 		document.addEventListener('DOMContentLoaded', function () {
 			const storyId = {{ $story->id }};
 			const csrfToken = '{{ csrf_token() }}';
-			const itemsToProcess = Array.from(document.querySelectorAll('#characters-list li[data-type], #places-list li[data-type]'));
+			// MODIFIED: Select only items that do NOT have the 'data-is-complete' attribute.
+			const itemsToProcess = Array.from(document.querySelectorAll('#characters-list li[data-type]:not([data-is-complete]), #places-list li[data-type]:not([data-is-complete])'));
 			const finishContainer = document.getElementById('finish-container');
 			let currentItemIndex = 0;
 			
 			function processNextItem() {
 				if (currentItemIndex >= itemsToProcess.length) {
-					finishContainer.classList.remove('d-none');
+					// MODIFIED: Also check if there were any items to begin with before showing the finish button.
+					const totalItems = document.querySelectorAll('#characters-list li[data-type], #places-list li[data-type]').length;
+					if (totalItems > 0) {
+						finishContainer.classList.remove('d-none');
+					}
 					return;
 				}
 				const itemElement = itemsToProcess[currentItemIndex];
@@ -171,7 +188,6 @@
 				}
 			}
 			
-			// NEW: Function to save the description via AJAX
 			async function saveDescriptionFor(element) {
 				const type = element.dataset.type;
 				const name = element.dataset.name;
@@ -237,8 +253,6 @@
 						statusBadge.className = 'badge bg-success status-badge';
 						statusBadge.textContent = 'Saved';
 						
-						// MODIFIED: Instead of hiding the container, make the textarea readonly and hide the buttons.
-						// This keeps the saved text visible for context.
 						const textarea = descriptionContainer.querySelector('textarea');
 						const buttonContainer = descriptionContainer.querySelector('.mt-2.text-end');
 						
@@ -258,7 +272,19 @@
 			if (itemsToProcess.length > 0) {
 				processNextItem();
 			} else {
-				finishContainer.classList.remove('d-none');
+				// MODIFIED: If there are no items to process, check if it's because they are all complete.
+				const totalItems = document.querySelectorAll('#characters-list li[data-type], #places-list li[data-type]').length;
+				if (totalItems > 0) {
+					finishContainer.classList.remove('d-none');
+				} else {
+					// If there are no entities at all, we can still show the finish button.
+					const finishText = document.querySelector('#finish-container p');
+					if (finishText) {
+						finishText.textContent = 'No entities were identified. You can now finish the story creation.';
+						finishText.classList.remove('text-success');
+					}
+					finishContainer.classList.remove('d-none');
+				}
 			}
 		});
 	</script>
