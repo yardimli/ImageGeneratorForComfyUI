@@ -266,18 +266,16 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		function buildAssetRewritePrompt(text, styleKey) {
 			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
+			if (!templateData || !templateData.system_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "prompt_dictionary.entry.rewrite" not found or is incomplete.';
 			}
 			
 			const instruction = templateData.options[config.assetType]?.[styleKey] || 'Improve grammar and clarity.';
-			
-			const userPrompt = templateData.user_prompt
-				.replace('{instruction}', styleKey)
+
+			return templateData.system_prompt
+				.replace('{instruction}', instruction)
 				.replace('{text}', text);
-			
-			return `${templateData.system_prompt}\n\n${userPrompt}`;
 		}
 		
 		function updateRewritePromptPreview() {
@@ -286,12 +284,11 @@ document.addEventListener('DOMContentLoaded', function () {
 			const templateData = window.promptTemplates['prompt_dictionary.entry.rewrite'];
 			const instruction = templateData.options[config.assetType]?.[selectedStyleKey] || '';
 			
-			const userPrompt = templateData.user_prompt
+			const systemPrompt = templateData.system_prompt
 				.replace('{instruction}', instruction)
 				.replace('{text}', originalDescription);
 			
-			const fullPrompt = `${templateData.system_prompt}\n\n${userPrompt}`;
-			rewriteFullPromptTextarea.value = fullPrompt;
+			rewriteFullPromptTextarea.value = systemPrompt;
 		}
 		
 		if (container) {
@@ -388,22 +385,19 @@ document.addEventListener('DOMContentLoaded', function () {
 	//  Use both system and user prompts from the backend template.
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
 		const templateData = window.promptTemplates['prompt_dictionary.entry.image_prompt'];
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
+		if (!templateData || !templateData.system_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "prompt_dictionary.entry.image_prompt" not found or is incomplete.';
 		}
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		const userPrompt = templateData.user_prompt
+		const systemPrompt = templateData.system_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
 			.replace('{userInstructions}', instructionsText);
 		
-		const systemPrompt = templateData.system_prompt
-			.replace('{assetType}', assetType);
-		
-		return `${systemPrompt}\n\n${userPrompt}`;
+		return systemPrompt;
 	}
 	
 	

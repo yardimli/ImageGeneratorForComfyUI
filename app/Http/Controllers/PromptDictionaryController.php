@@ -75,7 +75,7 @@
 			}
 
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entries.generate%')
-				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
+				->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 			return view('prompt-dictionary.grid', compact('entries', 'models', 'wordCategories', 'category', 'promptTemplates'));
 		}
@@ -134,7 +134,7 @@
 			];
 
 			$promptTemplates = LlmPrompt::where('name', 'like', 'prompt_dictionary.entry.%')
-				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
+				->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 			return view('prompt-dictionary.edit', compact('entry', 'models', 'imageModels', 'wordCategories', 'promptTemplates'));
 		}

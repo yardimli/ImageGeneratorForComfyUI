@@ -112,7 +112,7 @@
 				'story.page.rewrite',
 				'story.page.image_prompt',
 				'story.page.dictionary.generate' // Add new dictionary prompt
-			])->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
+			])->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 
 			return view('story.edit', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -405,17 +405,14 @@
 				$llmPrompt = LlmPrompt::where('name', 'story.page.dictionary.generate')->firstOrFail();
 
 				// The user prompt template contains placeholders for the user's request, existing words, and the page text.
-				$userPromptContent = str_replace(
+				$systemPromptContent = str_replace(
 					['{userRequest}', '{existingWords}', '{pageText}'],
-					[$validated['userRequest'], $validated['existingWords'] ?? '', $storyPage->story_text], // Use null coalescing for safety
-					$llmPrompt->user_prompt
+					[$validated['userRequest'], $validated['existingWords'] ?? '', $storyPage->story_text],
+					$llmPrompt->system_prompt
 				);
 
-				// For callLlmSync, we combine the system and user prompts into a single string.
-				$finalPromptForLlm = $llmPrompt->system_prompt . "\n\n" . $userPromptContent;
-
 				$response = $llmController->callLlmSync(
-					$finalPromptForLlm,
+					$systemPromptContent,
 					$validated['model'],
 					'AI Page Dictionary Generation',
 					0.7,
@@ -546,7 +543,7 @@
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
+				->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 
 			return view('story.characters', compact('story', 'models', 'imageModels', 'promptTemplates'));
@@ -628,7 +625,7 @@
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
-				->get(['name', 'system_prompt', 'user_prompt', 'options'])->keyBy('name');
+				->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 
 			return view('story.places', compact('story', 'models', 'imageModels', 'promptTemplates'));

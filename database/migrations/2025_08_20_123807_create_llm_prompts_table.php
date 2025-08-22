@@ -17,7 +17,6 @@
 				$table->string('label')->comment('A user-friendly name for the prompt UI (e.g., Story Core Generation)');
 				$table->text('description')->nullable()->comment('A short explanation of what the prompt does and where it is used.');
 				$table->longText('system_prompt')->nullable()->comment('Contains system-level instructions, role-playing, JSON structure, etc.');
-				$table->longText('user_prompt')->comment('The main prompt template with {placeholders}.');
 				$table->json('placeholders')->nullable()->comment('An array of available placeholders for display in the UI.');
 				$table->json('options')->nullable()->comment('A JSON object for dynamic options, like dropdowns in the UI.');
 				$table->timestamps();

@@ -335,7 +335,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	 */
 	function buildImageGenerationPrompt(pageText, characterDescriptions, placeDescriptions, userInstructions) {
 		const templateData = window.promptTemplates['story.page.image_prompt'];
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
+		if (!templateData || !templateData.system_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "story.page.image_prompt" not found or is incomplete.';
 		}
@@ -344,13 +344,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		const placeText = placeDescriptions.length > 0 ? "Places in this scene:\n- " + placeDescriptions.join("\n- ") : "No specific places are described for this scene.";
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		const userPrompt = templateData.user_prompt
+		const systemPrompt = templateData.system_prompt
 			.replace('{pageText}', pageText)
 			.replace('{characterDescriptions}', characterText)
 			.replace('{placeDescriptions}', placeText)
 			.replace('{userInstructions}', instructionsText);
 		
-		return `${templateData.system_prompt}\n\n${userPrompt}`;
+		return systemPrompt;
 	}
 	
 	
@@ -524,18 +524,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		 */
 		function buildRewritePrompt(text, style) {
 			const templateData = window.promptTemplates['story.page.rewrite'];
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
+			if (!templateData || !templateData.system_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "story.page.rewrite" not found or is incomplete.';
 			}
 			
 			const instruction = templateData.options[style] || 'Improve grammar and clarity.';
 			
-			const userPrompt = templateData.user_prompt
+			const systemPrompt = templateData.system_prompt
 				.replace('{instruction}', instruction)
 				.replace('{text}', text);
 			
-			return `${templateData.system_prompt}\n\n${userPrompt}`;
+			return systemPrompt;
 		}
 		
 		function updateRewritePromptPreview() {

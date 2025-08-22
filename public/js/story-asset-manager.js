@@ -341,18 +341,18 @@ document.addEventListener('DOMContentLoaded', function () {
 		function buildAssetRewritePrompt(text, styleKey) {
 			const templateData = window.promptTemplates['story.asset.rewrite'];
 			console.log(templateData);
-			if (!templateData || !templateData.system_prompt || !templateData.user_prompt || !templateData.options) {
+			if (!templateData || !templateData.system_prompt || !templateData.options) {
 				console.error('Rewrite prompt template not found or is incomplete!');
 				return 'Error: Template "story.asset.rewrite" not found or is incomplete.';
 			}
 			
 			const instruction = templateData.options[config.assetType]?.[styleKey] || 'Improve grammar and clarity.';
 			
-			const userPrompt = templateData.user_prompt
+			const systemPrompt = templateData.system_prompt
 				.replace('{instruction}', instruction)
 				.replace('{text}', text);
 			
-			return `${templateData.system_prompt}\n\n${userPrompt}`;
+			return system_prompt;
 		}
 		
 		/**
@@ -487,22 +487,19 @@ document.addEventListener('DOMContentLoaded', function () {
 	 */
 	function buildAssetImageGenerationPrompt(assetDescription, assetType, userInstructions) {
 		const templateData = window.promptTemplates['story.asset.image_prompt'];
-		if (!templateData || !templateData.system_prompt || !templateData.user_prompt) {
+		if (!templateData || !templateData.system_prompt) {
 			console.error('Image prompt template not found or is incomplete!');
 			return 'Error: Template "story.asset.image_prompt" not found or is incomplete.';
 		}
 		
 		const instructionsText = userInstructions ? `User's specific instructions: "${userInstructions}"` : "No specific instructions from the user.";
 		
-		const userPrompt = templateData.user_prompt
+		const systemPrompt = templateData.system_prompt
 			.replace('{assetDescription}', assetDescription)
 			.replace('{assetType}', assetType)
 			.replace('{userInstructions}', instructionsText);
 		
-		const systemPrompt = templateData.system_prompt
-			.replace('{assetType}', assetType);
-		
-		return `${systemPrompt}\n\n${userPrompt}`;
+		return systemPrompt;
 	}
 	
 	

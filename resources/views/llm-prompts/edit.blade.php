@@ -43,20 +43,11 @@
 					</div>
 					
 					<div class="mb-3">
-						<label for="user_prompt" class="form-label">User Prompt Template</label>
-						<textarea id="user_prompt" name="user_prompt" class="form-control @error('user_prompt') is-invalid @enderror" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('user_prompt', $prompt->user_prompt) }}</textarea>
-						<small class="form-text text-muted">This is the main prompt template. Use placeholders like <code>{variable}</code> which will be replaced by the application.</small>
-						@error('user_prompt') <div class="invalid-feedback">{{ $message }}</div> @enderror
-					</div>
-					
-					{{-- START MODIFICATION: Add textarea for the 'options' field. --}}
-					<div class="mb-3">
 						<label for="options" class="form-label">UI Options (JSON)</label>
 						<textarea id="options" name="options" class="form-control @error('options') is-invalid @enderror" rows="10" style="font-family: monospace; font-size: 0.9rem;">{{ old('options', json_encode($prompt->options, JSON_PRETTY_PRINT)) }}</textarea>
 						<small class="form-text text-muted">Valid JSON used to populate UI elements like dropdowns. For example, rewrite styles.</small>
 						@error('options') <div class="invalid-feedback">{{ $message }}</div> @enderror
 					</div>
-					{{-- END MODIFICATION --}}
 					
 					@if($prompt->placeholders)
 						<div class="mb-3">

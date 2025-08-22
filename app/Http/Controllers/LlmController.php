@@ -465,13 +465,13 @@
 					$llmPrompt = LlmPrompt::where('name', 'prompt.generate.creative')->firstOrFail();
 
 					$system_prompt = str_replace('{count}', $count, $llmPrompt->system_prompt);
-					$user_prompt = str_replace(
+					$system_prompt = str_replace(
 						['{count}', '{prompt}', '{retry_instruction}'],
 						[$count, $prompt, ($is_last_retry ? "\nReturn exactly {$count} answers to my question." : "")],
-						$llmPrompt->user_prompt
+						$llmPrompt->system_prompt
 					);
 
-					$rawResponse = $this->callLlmRaw($system_prompt, $user_prompt, $modelId, $temperature);
+					$rawResponse = $this->callLlmRaw($system_prompt, $modelId, $temperature);
 
 					$answers = $this->parseResponse($rawResponse);
 					if (count($answers) === $count) {
@@ -499,7 +499,7 @@
 		 * @return string
 		 * @throws \Exception
 		 */
-		private function callLlmRaw(string $systemPrompt, string $userPrompt, string $modelId, ?float $temperature = null): string
+		private function callLlmRaw(string $systemPrompt, string $modelId, ?float $temperature = null): string
 		{
 			set_time_limit(300); // 5-minute timeout for long generations
 			if (!$this->apiKey) {
@@ -517,8 +517,8 @@
 			$requestBody = [
 				'model' => $modelId,
 				'messages' => [
-					['role' => 'system', 'content' => $systemPrompt],
-					['role' => 'user', 'content' => $userPrompt]
+					['role' => 'system', 'content' => ''],
+					['role' => 'user', 'content' => $systemPrompt]
 				],
 			];
 

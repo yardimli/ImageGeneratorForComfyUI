@@ -19,7 +19,6 @@
 			'label',
 			'description',
 			'system_prompt',
-			'user_prompt',
 			'placeholders',
 			'options',
 		];

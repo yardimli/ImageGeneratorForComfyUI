@@ -45,7 +45,6 @@
 				'label' => 'required|string|max:255',
 				'description' => 'nullable|string',
 				'system_prompt' => 'nullable|string',
-				'user_prompt' => 'nullable|string',
 				'options' => 'nullable|string', // Validation still expects a string from the textarea.
 			]);
 
@@ -65,7 +64,7 @@
 				// Ensure that if the field is empty, we store null.
 				$validated['options'] = null;
 			}
-			
+
 
 			$prompt->update($validated);
 
