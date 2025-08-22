@@ -83,42 +83,45 @@
 		{
 			$processedModels = [];
 			// Define the filter lists. The model 'id' will be checked against these.
-			$positiveList = ['openai', 'anthropic', 'mistral', 'google', 'deepseek', 'mistral'];
-			$negativeList = ['free', '8b', '3b', '7b', '12b', '22b', '24b', 'gpt-4 turbo', 'oss', 'tng', 'lite', '1.5', '2.0', 'tiny', 'gemma', 'small', 'nemo', 'distill', '3.5', 'dolphin', 'codestral', 'devstral', 'magistral', 'o1-pro', 'o3-pro'];
+			$positiveList = ['openai', 'anthropic', 'mistral', 'google', 'deepseek', 'mistral', 'moonshot', 'glm'];
+			$negativeList = ['free', '8b', '9b', '3b', '7b', '12b', '22b', '24b', '32b', 'gpt-4 turbo', 'oss', 'tng', 'lite', '1.5', '2.0', 'tiny', 'gemma', 'small', 'nano', ' mini', '-mini', 'nemo', 'chat', 'distill', '3.5', 'dolphin', 'codestral', 'devstral', 'magistral', 'pixtral', 'codex', 'o1-pro', 'o3-pro', 'experimental', 'preview'];
 
 			// Use collect on the 'data' key and sort by name.
 			$models = collect($modelsData['data'] ?? [])->sortBy('name');
 
 			foreach ($models as $model) {
 				$id = $model['id'];
+				$name = $model['name'];
 				$idLower = strtolower($id);
+				$nameLower = strtolower($name);
 
 				// Negative check: Skip if the ID contains any word from the negative list.
 				$isNegativeMatch = collect($negativeList)->contains(fn($word) => str_contains($idLower, $word));
+				$isNegativeMatch = $isNegativeMatch || collect($negativeList)->contains(fn($word) => str_contains($nameLower, $word));
 				if ($isNegativeMatch) {
 					continue;
 				}
 
 				// Positive check: Must contain at least one word from the positive list.
 				$isPositiveMatch = collect($positiveList)->contains(fn($word) => str_contains($idLower, $word));
+				$isPositiveMatch = $isPositiveMatch || collect($positiveList)->contains(fn($word) => str_contains($nameLower, $word));
 				if (!$isPositiveMatch) {
 					continue;
 				}
 
-				$name = $model['name'];
 				// Check for image and reasoning support in the model's metadata.
 				$hasImageSupport = in_array('image', $model['architecture']['input_modalities'] ?? []);
 				$hasReasoningSupport = in_array('reasoning', $model['supported_parameters'] ?? []);
 
 				if ($hasImageSupport) {
-					$name .= ' (image)';
+					$name .= ' (i)';
 				}
 
-				if ($hasReasoningSupport) {
+				if ($hasReasoningSupport && stripos($name, 'think') === false) {
 					// Create a 'non-thinking' version.
 					$processedModels[] = [
 						'id' => $id,
-						'name' => $name . ' (non-thinking)'
+						'name' => $name
 					];
 					// Create a 'thinking' version with a special suffix in the ID.
 					$processedModels[] = [

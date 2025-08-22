@@ -3,7 +3,8 @@
 @section('content')
 	<div class="container py-4">
 		<h1>Create a Story with AI</h1>
-		<p class="text-muted">Provide instructions for the story, choose the number of pages and an AI model, and let the magic happen.</p>
+		{{-- MODIFIED: Help text updated for new layout --}}
+		<p class="text-muted">Use the prompts below to generate your story. You can edit them to customize the generation process. Start by describing your story in the first prompt.</p>
 		
 		<div id="error-container" class="alert alert-danger d-none"></div>
 		
@@ -26,7 +27,8 @@
 		
 		<div class="card">
 			<div class="card-body">
-				<form action="{{ route('stories.store-ai') }}" method="POST" id="ai-story-form">
+				{{-- MODIFIED: Form action points to the new first step --}}
+				<form action="{{ route('stories.ai-generate.content') }}" method="POST" id="ai-story-form">
 					@csrf
 					
 					@if(!empty($summaries))
@@ -38,32 +40,17 @@
 									<option value="{{ $summary['filename'] }}">{{ $summary['name'] }}</option>
 								@endforeach
 							</select>
-							<div class="form-text">Select a pre-written summary to prepend to your instructions below.</div>
+							{{-- MODIFIED: Help text updated --}}
+							<div class="form-text">Select a pre-written summary to prepend to the instructions in the first prompt below.</div>
 						</div>
 					@endif
 					
-					<div class="mb-3">
-						<label for="instructions" class="form-label">Story Instructions</label>
-						<textarea class="form-control @error('instructions') is-invalid @enderror" id="instructions" name="instructions" rows="6" placeholder="e.g., A story about a brave knight who befriends a shy dragon to save a kingdom from an evil sorcerer. Include a wise old owl as a character." required>{{ old('instructions') }}</textarea>
-						<div class="form-text">Describe the plot, characters, and setting you want in your story. Be as descriptive as you like.</div>
-						@error('instructions')
-						<div class="invalid-feedback">{{ $message }}</div>
-						@enderror
-					</div>
+					{{-- REMOVED: The main 'instructions' textarea has been removed. The first prompt textarea below now serves as the main input. --}}
 					
 					<div class="row">
-						<div class="col-md-4 mb-3">
-							<label for="num_pages" class="form-label">Number of Pages</label>
-							<select class="form-select @error('num_pages') is-invalid @enderror" id="num_pages" name="num_pages" required>
-								@for ($i = 1; $i <= 20; $i++)
-									<option value="{{ $i }}" {{ old('num_pages', 5) == $i ? 'selected' : '' }}>{{ $i }}</option>
-								@endfor
-							</select>
-							@error('num_pages')
-							<div class="invalid-feedback">{{ $message }}</div>
-							@enderror
-						</div>
-						<div class="col-md-4 mb-3">
+						{{-- REMOVED: Number of Pages dropdown is no longer needed --}}
+						{{-- MODIFIED: Changed from col-md-4 to col-md-6 for better layout --}}
+						<div class="col-md-6 mb-3">
 							<label for="level" class="form-label">English Proficiency Level (CEFR)</label>
 							<select class="form-select @error('level') is-invalid @enderror" id="level" name="level" required>
 								<option value="" disabled {{ old('level') ? '' : 'selected' }}>Select a level...</option>
@@ -99,7 +86,8 @@
 							<div class="invalid-feedback">{{ $message }}</div>
 							@enderror
 						</div>
-						<div class="col-md-4 mb-3">
+						{{-- MODIFIED: Changed from col-md-4 to col-md-6 for better layout --}}
+						<div class="col-md-6 mb-3">
 							<label for="model" class="form-label">AI Model</label>
 							<select class="form-select @error('model') is-invalid @enderror" id="model" name="model" required>
 								<option value="">-- Select a Model --</option>
@@ -116,6 +104,39 @@
 							<div class="invalid-feedback">{{ $message }}</div>
 							@enderror
 						</div>
+					</div>
+					
+					{{-- MODIFIED: Accordion removed, prompts are now always visible. --}}
+					<p class="text-muted">The prompts below are used in sequence to generate the story. You can edit them to customize the generation process.</p>
+					
+					<!-- Prompt 1: Story Content Generation -->
+					<div class="mb-3">
+						{{-- MODIFIED: Label changed to reflect its new role. --}}
+						<label for="prompt_content_generation" class="form-label">1. Story Instructions & Content Generation Prompt</label>
+						{{-- MODIFIED: Textarea now contains a default instruction for the user to edit, replacing the {instructions} placeholder. --}}
+						<textarea class="form-control" id="prompt_content_generation" name="prompt_content_generation" rows="10">{{ str_replace('{instructions}', 'Generate a 16 page story for the given CEFR level.', $prompts['content']->system_prompt) }}</textarea>
+						<small class="form-text text-muted">{{ $prompts['content']->description }}</small>
+					</div>
+					
+					<!-- Prompt 2: Entity Identification -->
+					<div class="mb-3">
+						<label for="prompt_entity_generation" class="form-label">{{ $prompts['entities']->label }}</label>
+						<textarea class="form-control" id="prompt_entity_generation" name="prompt_entity_generation" rows="10">{{ $prompts['entities']->system_prompt }}</textarea>
+						<small class="form-text text-muted">{{ $prompts['entities']->description }}</small>
+					</div>
+					
+					<!-- Prompt 3: Character Description -->
+					<div class="mb-3">
+						<label for="prompt_character_description" class="form-label">{{ $prompts['character']->label }}</label>
+						<textarea class="form-control" id="prompt_character_description" name="prompt_character_description" rows="10">{{ $prompts['character']->system_prompt }}</textarea>
+						<small class="form-text text-muted">{{ $prompts['character']->description }}</small>
+					</div>
+					
+					<!-- Prompt 4: Place Description -->
+					<div class="mb-3">
+						<label for="prompt_place_description" class="form-label">{{ $prompts['place']->label }}</label>
+						<textarea class="form-control" id="prompt_place_description" name="prompt_place_description" rows="10">{{ $prompts['place']->system_prompt }}</textarea>
+						<small class="form-text text-muted">{{ $prompts['place']->description }}</small>
 					</div>
 					
 					<div class="d-flex justify-content-end align-items-center gap-3">
@@ -165,22 +186,40 @@
 					updateProgress(0, 'Initializing...');
 					
 					try {
-						// --- STEP 1: Create the core story ---
-						updateProgress(5, 'Generating story core...');
-						const coreFormData = new FormData(form);
-						const coreResponse = await fetch("{{ route('stories.store-ai') }}", {
+						// --- STEP 1: Generate Story Content ---
+						updateProgress(5, 'Generating story content...');
+						const contentFormData = new FormData(form);
+						const contentResponse = await fetch("{{ route('stories.ai-generate.content') }}", {
 							method: 'POST',
-							body: coreFormData,
+							body: contentFormData,
 							headers: { 'Accept': 'application/json' },
 						});
 						
-						const coreData = await coreResponse.json();
-						if (!coreResponse.ok) {
-							throw new Error(coreData.message || 'Failed to create the story structure.');
+						const contentData = await contentResponse.json();
+						if (!contentResponse.ok) {
+							throw new Error(contentData.message || 'Failed to generate story content.');
+						}
+						const { story_id } = contentData;
+						
+						// --- STEP 2: Generate Story Entities (Characters & Places) ---
+						updateProgress(15, 'Identifying characters and places...');
+						const entityFormData = new FormData();
+						entityFormData.append('story_id', story_id);
+						entityFormData.append('_token', form.querySelector('input[name="_token"]').value);
+						
+						const entityResponse = await fetch("{{ route('stories.ai-generate.entities') }}", {
+							method: 'POST',
+							body: entityFormData,
+							headers: { 'Accept': 'application/json' },
+						});
+						
+						const entityData = await entityResponse.json();
+						if (!entityResponse.ok) {
+							throw new Error(entityData.message || 'Failed to identify characters and places.');
 						}
 						
-						// --- STEP 2: Sequentially generate descriptions with retries ---
-						const { story_id, characters_to_process, places_to_process } = coreData;
+						// --- STEP 3: Sequentially generate descriptions with retries ---
+						const { characters_to_process, places_to_process } = entityData;
 						const itemsToProcess = [
 							...characters_to_process.map(name => ({ type: 'character', name })),
 							...places_to_process.map(name => ({ type: 'place', name })),
@@ -193,8 +232,10 @@
 						}
 						
 						const totalItems = itemsToProcess.length;
-						const progressStep = 95 / totalItems; // Remaining 95% of progress
-						const maxRetries = 3; // Define max number of retries
+						const progressStart = 20; // Progress for this step starts at 20%
+						const progressRange = 80; // This step takes up the remaining 80% of the bar
+						const progressStep = totalItems > 0 ? progressRange / totalItems : 0;
+						const maxRetries = 3;
 						
 						for (let i = 0; i < totalItems; i++) {
 							const item = itemsToProcess[i];
@@ -202,7 +243,7 @@
 							
 							// --- Retry loop for each item ---
 							for (let attempt = 1; attempt <= maxRetries; attempt++) {
-								const currentProgress = 5 + ((i) * progressStep);
+								const currentProgress = progressStart + (i * progressStep);
 								let progressMessage = `Generating description for ${item.type}: ${item.name} (${i + 1}/${totalItems})`;
 								if (attempt > 1) {
 									progressMessage += ` - Attempt ${attempt}/${maxRetries}`;
@@ -227,25 +268,20 @@
 										break; // Successful, exit the retry loop
 									}
 									
-									// Handle non-ok HTTP responses (e.g., 422, 500)
 									const errorData = await descResponse.json();
 									console.error(`Attempt ${attempt} failed for ${item.type} '${item.name}':`, errorData.message || `Server returned status ${descResponse.status}`);
 									
 								} catch (networkError) {
-									// Handle network errors (e.g., fetch fails completely)
 									console.error(`Attempt ${attempt} failed for ${item.type} '${item.name}' with a network error:`, networkError);
 								}
-								
-								// If not successful, the loop will continue to the next attempt
 							}
 							
 							if (!success) {
 								console.warn(`Skipping ${item.type} '${item.name}' after ${maxRetries} failed attempts.`);
-								// The main loop will automatically continue to the next item
 							}
 						}
 						
-						// --- STEP 3: Finalize and redirect ---
+						// --- Finalize and redirect ---
 						updateProgress(100, 'Generation complete! Redirecting...');
 						window.location.href = `/stories/${story_id}/edit`;
 						
@@ -292,10 +328,11 @@
 				});
 			}
 			
-			const instructionsTextarea = document.getElementById('instructions');
+			// MODIFIED: Target the first prompt textarea instead of the removed 'instructions' textarea.
+			const mainPromptTextarea = document.getElementById('prompt_content_generation');
 			
 			const summarySelect = document.getElementById('summary_file');
-			if (summarySelect && instructionsTextarea) {
+			if (summarySelect && mainPromptTextarea) {
 				const summaries = @json($summaries ?? []);
 				const summaryMap = new Map(summaries.map(s => [s.filename, s.content]));
 				
@@ -303,23 +340,47 @@
 					const selectedFilename = this.value;
 					if (selectedFilename && summaryMap.has(selectedFilename)) {
 						const summaryContent = summaryMap.get(selectedFilename);
-						const currentInstructions = instructionsTextarea.value;
+						const currentInstructions = mainPromptTextarea.value;
 						
-						instructionsTextarea.value = summaryContent + "\n\n---\n\n" + currentInstructions;
-						this.value = '';
+						// MODIFIED: Prepend summary to the main prompt textarea.
+						mainPromptTextarea.value = summaryContent + "\n\n---\n\n" + currentInstructions;
+						this.value = ''; // Reset dropdown
 					}
 				});
 			}
 			
 			const levelSelect = document.getElementById('level');
-			if (levelSelect && instructionsTextarea) {
+			if (levelSelect && mainPromptTextarea) {
 				levelSelect.addEventListener('change', function () {
 					const selectedLevel = this.value;
 					const selectedOption = this.options[this.selectedIndex];
 					if (selectedLevel) {
-						const textToAppend = (instructionsTextarea.value.length > 0 ? '\n\n' : '') + `CEFR Level: ${selectedLevel} - ${selectedOption.text.trim()}`;
-						instructionsTextarea.value += textToAppend;
-						instructionsTextarea.scrollTop = instructionsTextarea.scrollHeight;
+						// MODIFIED: Add detailed instructions based on the selected CEFR level.
+						const levelInstructions = {
+							'A1': 'Each page should have 1-2 simple sentences. Use very basic vocabulary.',
+							'A2': 'Each page should have 2-3 sentences. Use common vocabulary and basic sentence structures.',
+							'B1': 'Each page should have 3-5 sentences. Use a mix of simple and compound sentences and intermediate vocabulary.',
+							'B2': 'Each page should have 4-6 sentences. Include complex sentences and a wider range of vocabulary. Introduce some idiomatic expressions.',
+							'C1': 'Each page should be a full paragraph with complex sentence structures and nuanced vocabulary. The tone can be more sophisticated.',
+							'C2': 'Each page should be a well-developed paragraph, using sophisticated language and literary devices where appropriate. Assume a near-native level of understanding.'
+						};
+						
+						const levelDescription = `CEFR Level: ${selectedLevel} - ${selectedOption.text.trim()}`;
+						const specificInstruction = levelInstructions[selectedLevel] || '';
+						const textToPrepend = `${levelDescription}\n${specificInstruction}\n\n`;
+						
+						const existingValue = mainPromptTextarea.value;
+						// Regex to find and replace a previously added CEFR instruction block.
+						// This handles both the old format (one line) and the new format (two lines).
+						const levelRegex = /^CEFR Level: (A1|A2|B1|B2|C1|C2) - .+\n(?:.+\n)?\n/m;
+						
+						if (levelRegex.test(existingValue)) {
+							mainPromptTextarea.value = existingValue.replace(levelRegex, textToPrepend);
+						} else {
+							mainPromptTextarea.value = textToPrepend + existingValue;
+						}
+						
+						mainPromptTextarea.scrollTop = 0; // Scroll to top to show the newly added text
 					}
 				});
 			}

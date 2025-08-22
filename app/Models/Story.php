@@ -22,6 +22,11 @@
 			'level',
 			'initial_prompt',
 			'model',
+			// ADDED: New fields to store the prompts used for generation
+			'prompt_content_generation',
+			'prompt_entity_generation',
+			'prompt_character_description',
+			'prompt_place_description',
 		];
 
 		/**
