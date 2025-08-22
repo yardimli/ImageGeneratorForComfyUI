@@ -211,7 +211,10 @@
 
 			try {
 				$story->load('pages');
-				$fullStoryText = $story->pages->pluck('story_text')->implode("\n\n");
+				// MODIFIED: Prepend page numbers to the story text for better context for the LLM.
+				$fullStoryText = $story->pages
+					->map(fn ($page) => "Page {$page->page_number}: {$page->story_text}")
+					->implode("\n\n");
 
 				$entityPrompt = str_replace('{fullStoryText}', $fullStoryText, $validated['prompt_entity_generation']);
 
