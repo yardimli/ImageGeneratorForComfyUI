@@ -116,18 +116,4 @@
 				'notes' => $prompt->notes,
 			]);
 		}
-
-		// START MODIFICATION
-		/**
-		 * Get the number of images currently being upscaled by the user.
-		 *
-		 * @return \Illuminate\Http\JsonResponse
-		 */
-		public function getUpscaleQueueCount()
-		{
-			$count = Prompt::where('upscale_status', 1)
-				->count();
-			return response()->json(['count' => $count]);
-		}
-
 	}

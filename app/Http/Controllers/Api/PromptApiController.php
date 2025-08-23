@@ -114,8 +114,12 @@
 				$pendingCount++;
 			}
 
+			$count = Prompt::where('upscale_status', 1)
+				->count();
+
 			return response()->json([
-				'count' => $pendingCount
+				'count' => $pendingCount,
+				'upscale_count' => $count
 			]);
 		}
 	}
