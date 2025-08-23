@@ -515,7 +515,12 @@
 		private function validateSingleEntityData(?array $data, string $expectedName): void
 		{
 			$validator = Validator::make($data ?? [], [
-				'name' => 'required|string|in:' . $expectedName,
+				// MODIFIED: Use the Rule object for robust validation
+				'name' => [
+					'required',
+					'string',
+					Rule::in([$expectedName]) // <-- This is the fix
+				],
 				'description' => 'required|string|min:1',
 			]);
 
