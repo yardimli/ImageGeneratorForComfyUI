@@ -13,12 +13,7 @@ function updateQueueCount() {
 			document.querySelectorAll('#navUpscaleQueueCount').forEach(element => {
 				if (element) {
 					element.textContent = data.upscale_count;
-					// Hide badge if count is 0, otherwise show it with a warning color.
-					if (data.upscale_count > 0) {
-						element.className = 'badge bg-warning';
-					} else {
-						element.className = 'badge bg-warning d-none';
-					}
+					element.className = 'badge ' + (data.upscale_count > 10 ? 'bg-danger' : data.upscale_count > 5 ? 'bg-info' : 'bg-primary');
 				}
 			});
 		})

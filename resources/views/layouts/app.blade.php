@@ -134,7 +134,7 @@
 					@endphp
 					<li class="nav-item">
 						<a class="nav-link" href="#">
-							Upscaling <span class="badge bg-warning @if($upscaleCount == 0) d-none @endif"
+							Upscaling <span class="badge bg-warning"
 							                id="navUpscaleQueueCount">{{ $upscaleCount }}</span>
 						</a>
 					</li>
