@@ -1,0 +1,443 @@
+[
+  {
+    "name": "imagen4/preview",
+    "description": "Google’s highest quality image generation model",
+    "tags": [],
+    "price": 0.04
+  },
+  {
+    "name": "flux-pro/v1.1-ultra",
+    "description": "FLUX1.1 [pro] ultra is the newest version of FLUX1.1 [pro], maintaining professional-grade image quality while delivering up to 2K resolution with improved photo realism.",
+    "tags": [
+      "high-res",
+      "realism"
+    ],
+    "price": 0.06
+  },
+  {
+    "name": "recraft/v3/",
+    "description": "Recraft V3 is a model with the ability to generate long texts, vector art, images in brand style, and much more. As of today, it is SOTA in image generation, proven by Hugging Face's industry-leading Benchmark by Artificial Analysis.",
+    "tags": [
+      "vector",
+      "typography",
+      "style"
+    ],
+    "extra": "Your request will cost $0.04 per image (or $0.08 if you are using a vector style).",
+    "price": 0.04
+  },
+  {
+    "name": "bria/text-to-image/3.2",
+    "description": "Bria’s model, trained exclusively on licensed data for safe and risk-free commercial use. Excels in Text-Rendering and Aesthetics.",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.04
+  },
+  {
+    "name": "imagen4/preview/fast",
+    "description": "Google’s highest quality image generation model",
+    "tags": [],
+    "price": 0.02
+  },
+  {
+    "name": "hidream-i1-full",
+    "description": "HiDream-I1 full is a new open-source image generative foundation model with 17B parameters that achieves state-of-the-art image generation quality within seconds.",
+    "tags": [],
+    "price": 0.05
+  },
+  {
+    "name": "hidream-i1-dev",
+    "description": "HiDream-I1 dev is a new open-source image generative foundation model with 17B parameters that achieves state-of-the-art image generation quality within seconds.",
+    "tags": [],
+    "price": 0.03
+  },
+  {
+    "name": "hidream-i1-fast",
+    "description": "HiDream-I1 fast is a new open-source image generative foundation model with 17B parameters that achieves state-of-the-art image generation quality within 16 steps.",
+    "tags": [],
+    "price": 0.01
+  },
+  {
+    "name": "flux/dev",
+    "description": "FLUX.1 [dev] is a 12 billion parameter flow transformer that generates high-quality images from text. It is suitable for personal and commercial use.",
+    "tags": [],
+    "price": 0.025
+  },
+  {
+    "name": "ideogram/v2",
+    "description": "Generate high-quality images, posters, and logos with Ideogram V2. Features exceptional typography handling and realistic outputs optimized for commercial and creative use.",
+    "tags": [
+      "realism",
+      "typography"
+    ],
+    "price": 0.08
+  },
+  {
+    "name": "stable-diffusion-v35-large",
+    "description": "Stable Diffusion 3.5 Large is a Multimodal Diffusion Transformer (MMDiT) model that features improved performance in image quality, typography, complex prompt understanding, and resource-efficiency.",
+    "tags": [
+      "diffusion",
+      "typography",
+      "style"
+    ],
+    "price": 0.065
+  },
+  {
+    "name": "bytedance/dreamina/v3.1/text-to-image",
+    "description": "Dreamina showcases superior picture effects, with significant improvements in picture aesthetics, precise and diverse styles, and rich details.",
+    "tags": [
+      "new"
+    ],
+    "price": 0.03
+  },
+  {
+    "name": "wan/v2.2-5b/text-to-image",
+    "description": "Wan 2.2's 5B model generates high-resolution, photorealistic images with powerful prompt understanding and fine-grained visual detail",
+    "tags": [
+      "new"
+    ],
+    "price": 0.016
+  },
+  {
+    "name": "wan/v2.2-a14b/text-to-image",
+    "description": "Wan 2.2's 14B model generates high-resolution, photorealistic images with powerful prompt understanding and fine-grained visual detail",
+    "tags": [
+      "new"
+    ],
+    "price": 0.025
+  },
+  {
+    "name": "qwen-image",
+    "description": "Qwen-Image is an image generation foundation model in the Qwen series that achieves significant advances in complex text rendering and precise image editing.",
+    "tags": [
+      "new"
+    ],
+    "price": 0.02
+  },
+  {
+    "name": "flux/krea",
+    "description": "FLUX.1 Krea [dev] is a 12 billion parameter flow transformer that generates high-quality images from text with incredible aesthetics. It is suitable for personal and commercial use.",
+    "tags": [
+      "new"
+    ],
+    "price": 0.025
+  },
+  {
+    "name": "flux-1/krea",
+    "description": "FLUX.1 Krea [dev] is a 12 billion parameter flow transformer that generates high-quality images from text with incredible aesthetics. It is suitable for personal and commercial use.",
+    "tags": [
+      "new"
+    ],
+    "price": 0.025
+  },
+  {
+    "name": "sky-raccoon",
+    "description": "Generate images from a text prompt.",
+    "tags": [
+      "new"
+    ],
+    "price": 0.06
+  },
+  {
+    "name": "bytedance/seedream/v3/text-to-image",
+    "description": "Seedream 3.0 is a bilingual (Chinese and English) model that excels at generation.",
+    "tags": [],
+    "price": 0.03
+  },
+  {
+    "name": "flux-1/schnell",
+    "description": "Fastest inference in the world for the 12 billion parameter FLUX.1 [schnell] model.",
+    "tags": [],
+    "price": 0.003
+  },
+  {
+    "name": "flux-1/dev",
+    "description": "FLUX.1 [dev] is a 12 billion parameter flow transformer that generates high-quality images from text. It is suitable for personal and commercial use.",
+    "tags": [],
+    "price": 0.025
+  },
+  {
+    "name": "flux-pro/kontext/max/text-to-image",
+    "description": "FLUX.1 Kontext [max] is a new premium model brings maximum performance across all aspects – greatly improved prompt adherence.",
+    "tags": [],
+    "price": 0.08
+  },
+  {
+    "name": "flux-pro/kontext/text-to-image",
+    "description": "The FLUX.1 Kontext [pro] delivers state-of-the-art image generation results with unprecedented prompt following, photorealistic rendering, and flawless typography.",
+    "tags": [],
+    "price": 0.04
+  },
+  {
+    "name": "bagel",
+    "description": "Bagel is a 7B parameter from Bytedance-Seed multimodal model that can generate both text and images.",
+    "tags": [
+      "multimodal"
+    ],
+    "price": 0.10
+  },
+  {
+    "name": "imagen4/preview/ultra",
+    "description": "Google’s highest quality image generation model",
+    "tags": [],
+    "price": 0.06
+  },
+  {
+    "name": "dreamo",
+    "description": "DreamO is an image customization framework designed to support a wide range of tasks while facilitating seamless integration of multiple conditions.",
+    "tags": [
+      "stylized",
+      "realism"
+    ],
+    "price": 0.05
+  },
+  {
+    "name": "minimax/image-01",
+    "description": "Generate high quality images from text prompts using MiniMax Image-01. Longer text prompts will result in better quality images.",
+    "tags": [
+      "stylized",
+      "realism"
+    ],
+    "price": 0.01
+  },
+  {
+    "name": "ideogram/v3",
+    "description": "Generate high-quality images, posters, and logos with Ideogram V3. Features exceptional typography handling and realistic outputs optimized for commercial and creative use.",
+    "tags": [
+      "realism",
+      "typography"
+    ],
+    "price": 0.06
+  },
+  {
+    "name": "f-lite/standard",
+    "description": "F Lite is a 10B parameter diffusion model created by Fal and Freepik, trained exclusively on copyright-safe and SFW content.",
+    "tags": [],
+    "price": 0.025
+  },
+  {
+    "name": "f-lite/texture",
+    "description": "F Lite is a 10B parameter diffusion model created by Fal and Freepik, trained exclusively on copyright-safe and SFW content. This is a high texture density variant of the model.",
+    "tags": [],
+    "price": 0.025
+  },
+  {
+    "name": "sana/v1.5/1.6b",
+    "description": "Sana v1.5 1.6B is a lightweight model that delivers 4K image generation with impressive efficiency.",
+    "tags": [
+      "text to image",
+      "4k",
+      "lightweight"
+    ],
+    "price": 0.0075
+  },
+  {
+    "name": "sana/v1.5/4.8b",
+    "description": "Sana v1.5 4.8B is a powerful model that generates ultra-high quality 4K images with remarkable detail.",
+    "tags": [
+      "text to image",
+      "4k",
+      "high-quality"
+    ],
+    "price": 0.01
+  },
+  {
+    "name": "sana/sprint",
+    "description": "Sana Sprint is a model capable of generating 4K images with exceptional speed.",
+    "tags": [
+      "text to image",
+      "4k",
+      "high-speed"
+    ],
+    "price": 0.0025
+  },
+  {
+    "name": "rundiffusion-fal/juggernaut-flux/lightning",
+    "description": "Juggernaut Lightning Flux by RunDiffusion provides blazing-fast, high-quality images rendered at five times the speed of Flux. Perfect for mood boards and mass ideation, this model excels in both realism and prompt adherence.",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.006
+  },
+  {
+    "name": "rundiffusion-fal/juggernaut-flux/pro",
+    "description": "Juggernaut Pro Flux by RunDiffusion is the flagship Juggernaut model rivaling some of the most advanced image models available, often surpassing them in realism. It combines Juggernaut Base with RunDiffusion Photo and features enhancements like reduced background blurriness.",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.055
+  },
+  {
+    "name": "rundiffusion-fal/juggernaut-flux/base",
+    "description": "Juggernaut Base Flux by RunDiffusion is a drop-in replacement for Flux [Dev] that delivers sharper details, richer colors, and enhanced realism, while instantly boosting LoRAs and LyCORIS with full compatibility.",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.035
+  },
+  {
+    "name": "cogview4",
+    "description": "Generate high quality images from text prompts using CogView4. Longer text prompts will result in better quality images.",
+    "tags": [
+      "stylized"
+    ],
+    "price": 0.1
+  },
+  {
+    "name": "ideogram/v2a/turbo",
+    "description": "Accelerated image generation with Ideogram V2A Turbo. Create high-quality visuals, posters, and logos with enhanced speed while maintaining Ideogram's signature quality.",
+    "tags": [
+      "realism",
+      "typography"
+    ],
+    "price": 0.025
+  },
+  {
+    "name": "ideogram/v2a",
+    "description": "Generate high-quality images, posters, and logos with Ideogram V2A. Features exceptional typography handling and realistic outputs optimized for commercial and creative use.",
+    "tags": [
+      "realism",
+      "typography"
+    ],
+    "price": 0.04
+  },
+  {
+    "name": "imagen3",
+    "description": "Imagen3 is a high-quality model that generates realistic images from text prompts.",
+    "tags": [],
+    "price": 0.05
+  },
+  {
+    "name": "imagen3/fast",
+    "description": "Imagen3 Fast is a high-quality model that generates realistic images from text prompts.",
+    "tags": [],
+    "price": 0.025
+  },
+  {
+    "name": "lumina-image/v2",
+    "description": "Lumina-Image-2.0 is a 2 billion parameter flow-based diffusion transforer which features improved performance in image quality, typography, complex prompt understanding, and resource-efficiency.",
+    "tags": [
+      "diffusion",
+      "typography",
+      "style"
+    ],
+    "price": 0.075
+  },
+  {
+    "name": "flux-pro/v1.1",
+    "description": "FLUX1.1 [pro] is an enhanced version of FLUX.1 [pro], improved image generation capabilities, delivering superior composition, detail, and artistic fidelity compared to its predecessor.",
+    "tags": [],
+    "price": 0.04
+  },
+  {
+    "name": "bria/text-to-image/fast",
+    "description": "Bria's model with perfect harmony of latency and quality. Trained exclusively on licensed data for safe and risk-free commercial use. Available also as source code and weights. For access to weights: https://bria.ai/contact-us",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.028
+  },
+  {
+    "name": "bria/text-to-image/base",
+    "description": "Bria's model, trained exclusively on licensed data for safe and risk-free commercial use. Available also as source code and weights. For access to weights: https://bria.ai/contact-us",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.04
+  },
+  {
+    "name": "bria/text-to-image/hd",
+    "description": "Bria's model for HD images. Trained exclusively on licensed data for safe and risk-free commercial use. Available also as source code and weights. For access to weights: https://bria.ai/contact-us",
+    "tags": [
+      "image generation"
+    ],
+    "price": 0.04
+  },
+  {
+    "name": "recraft-20b",
+    "description": "Recraft 20b is a new and affordable model.",
+    "tags": [
+      "image generation",
+      "vector art",
+      "typograph",
+      "style"
+    ],
+    "price": 0.022
+  },
+  {
+    "name": "ideogram/v2/turbo",
+    "description": "Accelerated image generation with Ideogram V2 Turbo. Create high-quality visuals, posters, and logos with enhanced speed while maintaining Ideogram's signature quality.",
+    "tags": [
+      "realism",
+      "typography"
+    ],
+    "price": 0.05
+  },
+  {
+    "name": "luma-photon/flash",
+    "description": "Generate images from your prompts using Luma Photon Flash. Photon Flash is the most creative, personalizable, and intelligent visual models for creatives, bringing a step-function change in the cost of high-quality image generation.",
+    "tags": [],
+    "price": 0.005
+  },
+  {
+    "name": "aura-flow",
+    "description": "AuraFlow v0.3 is an open-source flow-based generation model that achieves state-of-the-art results on GenEval. The model is currently in beta.",
+    "tags": [
+      "typography",
+      "style"
+    ],
+    "price": 0.01
+  },
+  {
+    "name": "flux/schnell",
+    "description": "FLUX.1 [schnell] is a 12 billion parameter flow transformer that generates high-quality images from text in 1 to 4 steps, suitable for personal and commercial use.",
+    "tags": [],
+    "price": 0.003
+  },
+  {
+    "name": "stable-diffusion-v35-medium",
+    "description": "Stable Diffusion 3.5 Medium is a Multimodal Diffusion Transformer (MMDiT) model that features improved performance in image quality, typography, complex prompt understanding, and resource-efficiency.",
+    "tags": [
+      "diffusion",
+      "typography",
+      "style"
+    ],
+    "price": 0.02
+  },
+  {
+    "name": "flux-pro/new",
+    "description": "FLUX.1 [pro] new is an accelerated version of FLUX.1 [pro], maintaining professional-grade image quality while delivering significantly faster generation speeds.",
+    "tags": [],
+    "price": 0.05
+  },
+  {
+    "name": "stable-diffusion-v3-medium",
+    "description": "Stable Diffusion 3 Medium (Text to Image) is a Multimodal Diffusion Transformer (MMDiT) model that improves image quality, typography, prompt understanding, and efficiency.",
+    "tags": [
+      "diffusion",
+      "style"
+    ],
+    "price": 0.035
+  },
+  {
+    "name": "sana",
+    "description": "Sana can synthesize high-resolution, high-quality images with strong text-image alignment at a remarkably fast speed, with the ability to generate 4K images in less than a second.",
+    "tags": [],
+    "price": 0.001
+  },
+  {
+    "name": "kolors",
+    "description": "Photorealistic",
+    "tags": [
+      "realism",
+      "diffusion"
+    ],
+    "price": 0.01
+  },
+  {
+    "name": "luma-photon",
+    "description": "Generate images from your prompts using Luma Photon. Photon is the most creative, personalizable, and intelligent visual models for creatives, bringing a step-function change in the cost of high-quality image generation.",
+    "tags": [],
+    "price": 0.02
+  }
+]
