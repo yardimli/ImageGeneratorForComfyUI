@@ -971,7 +971,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					spinner.classList.remove('d-none');
 					
 					let pollAttempts = 0;
-					const maxPollAttempts = 60; // 5 minutes
+					const maxPollAttempts = 180; // 15 minutes
 					
 					const pollInterval = setInterval(async () => {
 						pollAttempts++;

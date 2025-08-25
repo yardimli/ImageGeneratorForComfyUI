@@ -723,7 +723,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			
 			let pollAttempts = 0;
 			const pollInterval = setInterval(async () => {
-				if (++pollAttempts > 60) {
+				if (++pollAttempts > 180) {
 					clearInterval(pollInterval);
 					spinner.classList.add('d-none');
 					alert('Image generation is taking longer than expected.');
