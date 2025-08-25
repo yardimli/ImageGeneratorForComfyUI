@@ -42,8 +42,10 @@
 										By: {{ $story->user->name ?? 'Unknown Author' }} |
 										Level: {{ $story->level ?? 'N/A' }} |
 										@php
-											$imageCount = $story->image_count;
+											// MODIFICATION START: Calculate total image count from eager-loaded counts.
+											$imageCount = $story->page_prompts_count + $story->character_prompts_count + $story->place_prompts_count;
 											$cost = $story->image_cost;
+											// MODIFICATION END
 										@endphp
 										Images: {{ $imageCount }} (${{ number_format($cost, 2) }}) |
 										Last updated: {{ $story->updated_at->format('M d, Y') }}

@@ -23,10 +23,12 @@
 								<ul class="list-group">
 									{{-- MODIFICATION START: Replaced hardcoded model list with a dynamic loop. --}}
 									@foreach($supportedModels as $model)
-										<li class="list-group-item d-flex justify-content-between align-items-center">
-											{{ ucfirst(str_replace(['-', '_', '/'], ' ', $model)) }}
-											<span class="badge bg-primary rounded-pill">{{ $modelStats[$model] ?? 0 }}</span>
-										</li>
+										@if(isset($modelStats[$model]) && $modelStats[$model] > 0)
+											<li class="list-group-item d-flex justify-content-between align-items-center">
+												{{ ucfirst(str_replace(['-', '_', '/'], ' ', $model)) }}
+												<span class="badge bg-primary rounded-pill">{{ $modelStats[$model] }}</span>
+											</li>
+										@endif
 									@endforeach
 									{{-- MODIFICATION END --}}
 								</ul>

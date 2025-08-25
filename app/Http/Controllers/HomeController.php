@@ -4,6 +4,8 @@
 
 	use App\Models\Prompt;
 	use Exception;
+	use Illuminate\Contracts\Support\Renderable;
+	use Illuminate\Support\Facades\DB;
 	use Illuminate\Support\Facades\Log;
 
 	class HomeController extends Controller
@@ -19,84 +21,61 @@
 		}
 
 		/**
-		 * Gets a list of all supported model short names from the JSON file.
-		 * This ensures the dashboard stats page is always in sync with the models the app supports.
+		 * Show the application dashboard.
 		 *
-		 * @return array
+		 * @return Renderable
 		 */
-		private function getSupportedModels(): array
+		public function index(): Renderable
 		{
+			// MODIFICATION START: Load models from JSON file to display stats.
+			$supportedModels = [];
 			try {
 				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
 				$allModels = json_decode($jsonString, true);
-			} catch (Exception $e) {
-				Log::error('Failed to load image models from JSON for home page stats: ' . $e->getMessage());
-				// Fallback to a hardcoded list if the file is missing or invalid
-				return ['schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b', 'fal-ai/qwen-image'];
-			}
+				if (json_last_error() === JSON_ERROR_NONE) {
+					// This map defines which models get a "short name".
+					$supportedModelsMap = [
+						'schnell' => 'flux-1/schnell',
+						'dev' => 'flux-1/dev',
+						'minimax' => 'minimax/image-01',
+						'imagen3' => 'imagen4/preview/ultra',
+						'aura-flow' => 'aura-flow',
+						'ideogram-v2a' => 'ideogram/v2a',
+						'luma-photon' => 'luma-photon',
+						'recraft-20b' => 'recraft-20b',
+						'fal-ai/qwen-image' => 'qwen-image',
+					];
 
-			// Mapping from DB short name to full model name in JSON
-			$supportedModelsMap = [
-				'schnell' => 'flux-1/schnell',
-				'dev' => 'flux-1/dev',
-				'minimax' => 'minimax/image-01',
-				'imagen3' => 'imagen4/preview/ultra',
-				'aura-flow' => 'aura-flow',
-				'ideogram-v2a' => 'ideogram/v2a',
-				'luma-photon' => 'luma-photon',
-				'recraft-20b' => 'recraft-20b',
-				'fal-ai/qwen-image' => 'qwen-image',
-			];
-
-			$modelShortNames = [];
-			$foundModels = [];
-
-			foreach ($allModels as $modelData) {
-				$shortName = array_search($modelData['name'], $supportedModelsMap);
-				if ($shortName !== false) {
-					$modelShortNames[] = $shortName;
-					$foundModels[$shortName] = true;
+					// Get all full names from JSON
+					$fullNames = array_column($allModels, 'name');
+					// Get all short names from our map
+					$shortNames = array_keys($supportedModelsMap);
+					// Combine them, including special cases
+					$supportedModels = array_unique(array_merge($fullNames, $shortNames, ['minimax-expand']));
+					sort($supportedModels);
+				} else {
+					Log::error('Failed to parse models.json: ' . json_last_error_msg());
 				}
+			} catch (Exception $e) {
+				Log::error('Failed to load image models from JSON for home page: ' . $e->getMessage());
 			}
+			// MODIFICATION END
 
-			// Manually add minimax-expand if minimax was found, as it's a variant
-			if (isset($foundModels['minimax'])) {
-				$modelShortNames[] = 'minimax-expand';
-			}
-
-			// Sort for consistent display
-			sort($modelShortNames);
-			return array_unique($modelShortNames);
-		}
-
-		/**
-		 * Show the application dashboard.
-		 *
-		 * @return \Illuminate\Contracts\Support\Renderable
-		 */
-		public function index()
-		{
-			$userId = auth()->id();
-
-			// Fetch statistics for the authenticated user
-			$modelStats = Prompt::where('user_id', $userId)
+			$modelStats = Prompt::where('user_id', auth()->id())
 				->whereNotNull('filename')
 				->groupBy('model')
-				->selectRaw('model, count(*) as count')
-				->pluck('count', 'model');
+				->select('model', DB::raw('count(*) as total'))
+				->pluck('total', 'model');
 
-			$generationTypeStats = Prompt::where('user_id', $userId)
+			$generationTypeStats = Prompt::where('user_id', auth()->id())
 				->whereNotNull('filename')
 				->groupBy('generation_type')
-				->selectRaw('generation_type, count(*) as count')
-				->pluck('count', 'generation_type');
+				->select('generation_type', DB::raw('count(*) as total'))
+				->pluck('total', 'generation_type');
 
-			$totalImages = Prompt::where('user_id', $userId)->whereNotNull('filename')->count();
-			$upscaledImages = Prompt::where('user_id', $userId)->where('upscale_status', 2)->count();
-			$imagesWithNotes = Prompt::where('user_id', $userId)->whereNotNull('notes')->where('notes', '!=', '')->count();
-
-			// MODIFICATION: Get the model list dynamically instead of hardcoding in the view
-			$supportedModels = $this->getSupportedModels();
+			$totalImages = Prompt::where('user_id', auth()->id())->whereNotNull('filename')->count();
+			$upscaledImages = Prompt::where('user_id', auth()->id())->where('upscale_status', 2)->count();
+			$imagesWithNotes = Prompt::where('user_id', auth()->id())->whereNotNull('notes')->where('notes', '!=', '')->count();
 
 			return view('home', compact(
 				'modelStats',
@@ -104,7 +83,7 @@
 				'totalImages',
 				'upscaledImages',
 				'imagesWithNotes',
-				'supportedModels' // Pass the dynamic list to the view
+				'supportedModels' // MODIFICATION: Pass supported models to the view.
 			));
 		}
 	}

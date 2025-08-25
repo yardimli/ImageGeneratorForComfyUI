@@ -88,22 +88,92 @@
 		}
 		// MODIFICATION END
 
+		// MODIFICATION START: New method to generate SQL for cost calculation.
+		/**
+		 * Loads model prices from JSON and generates a SQL CASE statement for cost calculation.
+		 *
+		 * @return string
+		 */
+		private function getCostSqlCaseStatement(): string
+		{
+			try {
+				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
+				$allModels = json_decode($jsonString, true);
+
+				if (json_last_error() !== JSON_ERROR_NONE) {
+					Log::error('Failed to parse models.json for cost calculation: ' . json_last_error_msg());
+					return '0.00'; // Fallback
+				}
+
+				// This map defines which models get a "short name".
+				$supportedModelsMap = [
+					'schnell' => 'flux-1/schnell',
+					'dev' => 'flux-1/dev',
+					'minimax' => 'minimax/image-01',
+					'imagen3' => 'imagen4/preview/ultra',
+					'aura-flow' => 'aura-flow',
+					'ideogram-v2a' => 'ideogram/v2a',
+					'luma-photon' => 'luma-photon',
+					'recraft-20b' => 'recraft-20b',
+					'fal-ai/qwen-image' => 'qwen-image',
+				];
+
+				$priceMap = [];
+				// Map full names to prices
+				foreach ($allModels as $modelData) {
+					if (isset($modelData['name']) && isset($modelData['price'])) {
+						$priceMap[$modelData['name']] = (float)$modelData['price'];
+					}
+				}
+
+				// Map short names to prices
+				foreach ($supportedModelsMap as $shortName => $fullName) {
+					if (isset($priceMap[$fullName])) {
+						$priceMap[$shortName] = $priceMap[$fullName];
+					}
+				}
+
+				// Handle special cases like minimax-expand
+				if (isset($priceMap['minimax/image-01'])) {
+					$priceMap['minimax-expand'] = $priceMap['minimax/image-01'];
+				}
+
+				if (empty($priceMap)) {
+					return '0.00';
+				}
+
+				$sql = 'CASE model ';
+				foreach ($priceMap as $modelName => $price) {
+					// Basic sanitization for model name
+					$sanitizedModelName = str_replace("'", "''", $modelName);
+					$sql .= "WHEN '{$sanitizedModelName}' THEN {$price} ";
+				}
+				$sql .= 'ELSE 0.00 END'; // Default cost for any other model not in the list
+
+				return $sql;
+			} catch (Exception $e) {
+				Log::error('Failed to load image models from JSON for cost calculation: ' . $e->getMessage());
+				return '0.00'; // Fallback
+			}
+		}
+		// MODIFICATION END
+
 		/**
 		 * Display a listing of the user's stories.
 		 */
 		public function index()
 		{
+			// MODIFICATION START: Generate cost calculation dynamically from models.json
+			$costSql = $this->getCostSqlCaseStatement();
+			// MODIFICATION END
+
 			// Eager load prompt counts and calculate cost via subquery.
 			$stories = Story::with('user')
 				->withCount(['pagePrompts', 'characterPrompts', 'placePrompts'])
 				->addSelect([
-					'image_cost' => Prompt::selectRaw('COALESCE(SUM(
-                        CASE
-                            WHEN model = "dev" THEN 0.00
-                            WHEN model LIKE "%imagen%" THEN 0.07
-                            ELSE 0.04
-                        END
-                    ), 0)')
+					// MODIFICATION START: Use the dynamically generated SQL CASE statement.
+					'image_cost' => Prompt::selectRaw("COALESCE(SUM({$costSql}), 0)")
+						// MODIFICATION END
 						->where(function ($query) {
 							// Link prompts to the story through its pages
 							$query->whereIn('story_page_id', function ($subQuery) {
@@ -250,7 +320,6 @@
 								}
 							}
 						}
-
 					}
 				}
 				$story->pages()->whereNotIn('id', $incomingPageIds)->delete();
