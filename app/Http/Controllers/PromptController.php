@@ -12,6 +12,7 @@
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Storage;
 	use Rolandstarke\Thumbnail\Facades\Thumbnail;
+	use Exception;
 
 	class PromptController extends Controller
 	{
@@ -22,18 +23,82 @@
 			$this->llmController = $llmController;
 		}
 
+		// MODIFICATION START: Added a helper to load and format image models from JSON.
+		/**
+		 * Loads and formats the available image generation models for use in views.
+		 *
+		 * @return array
+		 */
+		protected function getAvailableImageModels(): array
+		{
+			try {
+				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
+				$allModels = json_decode($jsonString, true);
+			} catch (Exception $e) {
+				Log::error('Failed to load image models from JSON: ' . $e->getMessage());
+				return [];
+			}
+
+			// Mapping from DB short name to full model name in JSON
+			$supportedModelsMap = [
+				'schnell' => 'flux-1/schnell',
+				'dev' => 'flux-1/dev',
+				'minimax' => 'minimax/image-01',
+				'imagen3' => 'imagen4/preview/ultra',
+				'aura-flow' => 'aura-flow',
+				'ideogram-v2a' => 'ideogram/v2a',
+				'luma-photon' => 'luma-photon',
+				'recraft-20b' => 'recraft-20b',
+				'fal-ai/qwen-image' => 'qwen-image',
+			];
+
+			$viewModels = [];
+			$foundModels = [];
+
+			foreach ($allModels as $modelData) {
+				$shortName = array_search($modelData['name'], $supportedModelsMap);
+				if ($shortName !== false) {
+					$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $shortName));
+					if (isset($modelData['price'])) {
+						$displayName .= " (\${$modelData['price']})";
+					}
+					$viewModels[] = [
+						'id' => $shortName,
+						'name' => $displayName,
+					];
+					$foundModels[$shortName] = true;
+				}
+			}
+
+			// Manually add minimax-expand if minimax was found
+			if (isset($foundModels['minimax'])) {
+				$viewModels[] = [
+					'id' => 'minimax-expand',
+					'name' => 'Minimax Expand ($0.01)', // Price is hardcoded as it's a variant
+				];
+			}
+
+			usort($viewModels, fn($a, $b) => strcmp($a['name'], $b['name']));
+			return $viewModels;
+		}
+		// MODIFICATION END
+
 		public function index()
 		{
 			$templates = $this->getTemplates(resource_path('templates'));
 			$settings = PromptSetting::where('user_id', auth()->id())->
 			orderBy('created_at', 'desc')->get();
+			// MODIFICATION START: Load image models for the new dropdown.
+			$imageModels = $this->getAvailableImageModels();
 
-			return view('prompts.index', compact('templates', 'settings'));
+			return view('prompts.index', compact('templates', 'settings', 'imageModels'));
+			// MODIFICATION END
 		}
 
 		public function generate(Request $request)
 		{
 			try {
+				// MODIFICATION START: Replaced checkbox validation with a single model dropdown validation.
 				$validated = $request->validate([
 					'prompt_template' => 'nullable',
 					'precision' => 'required',
@@ -42,17 +107,7 @@
 					'width' => 'required|integer',
 					'height' => 'required|integer',
 					'upload_to_s3' => 'required|in:0,1,true,false',
-
-					'create_schnell' => 'required|in:0,1,true,false',
-					'create_dev' => 'required|in:0,1,true,false',
-					'create_minimax' => 'required|in:0,1,true,false',
-					'create_imagen' => 'required|in:0,1,true,false',
-					'create_aura_flow' => 'required|in:0,1,true,false',
-					'create_ideogram_v2a' => 'required|in:0,1,true,false',
-					'create_luma_photon' => 'required|in:0,1,true,false',
-					'create_recraft_20b' => 'required|in:0,1,true,false',
-					'create_fal_qwen_image' => 'required|in:0,1,true,false',
-
+					'model' => 'required|string', // New validation for the model dropdown
 					'aspect_ratio' => 'required|string',
 					'original_prompt' => 'required',
 					'template_path' => 'nullable',
@@ -61,6 +116,7 @@
 					'generate_original_prompt' => 'nullable|boolean',
 					'append_to_prompt' => 'nullable|boolean',
 				]);
+				// MODIFICATION END
 
 				$results = [];
 				if ($request->generate_original_prompt && $request->original_prompt) {
@@ -102,7 +158,7 @@
 					'prompts' => $finalResults,
 					'settings' => $request->all(),
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				return response()->json([
 					'success' => false,
 					'error' => $e->getMessage(),
@@ -120,7 +176,7 @@
 
 				$settings = $request->settings;
 
-				// Store the settings
+				// MODIFICATION START: Store settings using the single 'model' field instead of multiple 'create_*' booleans.
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
 					'generation_type' => 'prompt',
@@ -133,165 +189,40 @@
 					'width' => $settings['width'],
 					'height' => $settings['height'],
 					'upload_to_s3' => filter_var($settings['upload_to_s3'] ?? true, FILTER_VALIDATE_BOOLEAN),
-
-					'create_schnell' => filter_var($settings['create_schnell'] ?? false, FILTER_VALIDATE_BOOLEAN),
-					'create_dev' => filter_var($settings['create_dev'] ?? false, FILTER_VALIDATE_BOOLEAN),
-					'create_minimax' => filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_imagen' => filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_aura_flow' => filter_var($settings['create_aura_flow'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_ideogram_v2a' => filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_luma_photon' => filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_recraft_20b' => filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN),
-					'create_fal_qwen_image' => filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN),
-
+					'model' => $settings['model'], // Store the selected model
 					'aspect_ratio' => $settings['aspect_ratio'],
 					'prepend_text' => $settings['prepend_text'] ?? null,
 					'append_text' => $settings['append_text'] ?? null,
 					'generate_original_prompt' => filter_var($settings['generate_original_prompt'] ?? false, FILTER_VALIDATE_BOOLEAN),
 					'append_to_prompt' => filter_var($settings['append_to_prompt'] ?? false, FILTER_VALIDATE_BOOLEAN),
 				]);
+				// MODIFICATION END
 
 				$prompt_setting_id = $promptSetting->id;
 
+				// MODIFICATION START: Replaced multiple 'if' blocks with a single loop to create prompts for the selected model.
 				foreach ($request->prompts as $finalPrompt) {
 					for ($i = 0; $i < $settings['render_each_prompt_times']; $i++) {
-						if (filter_var($settings['create_schnell'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'schnell',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_dev'] ?? false, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'dev',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_minimax'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'minimax',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'minimax-expand',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_imagen'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'imagen3',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_aura_flow'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'aura-flow',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_ideogram_v2a'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'ideogram-v2a',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_luma_photon'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'luma-photon',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_recraft_20b'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'recraft-20b',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-						if (filter_var($settings['create_fal_qwen_image'] ?? true, FILTER_VALIDATE_BOOLEAN)) {
-							Prompt::create([
-								'user_id' => auth()->id(),
-								'generation_type' => 'prompt',
-								'prompt_setting_id' => $prompt_setting_id,
-								'original_prompt' => $settings['original_prompt'],
-								'generated_prompt' => $finalPrompt,
-								'width' => $settings['width'],
-								'height' => $settings['height'],
-								'model' => 'fal-ai/qwen-image',
-								'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
-							]);
-						}
-
+						Prompt::create([
+							'user_id' => auth()->id(),
+							'generation_type' => 'prompt',
+							'prompt_setting_id' => $prompt_setting_id,
+							'original_prompt' => $settings['original_prompt'],
+							'generated_prompt' => $finalPrompt,
+							'width' => $settings['width'],
+							'height' => $settings['height'],
+							'model' => $settings['model'],
+							'upload_to_s3' => filter_var($settings['upload_to_s3'], FILTER_VALIDATE_BOOLEAN),
+						]);
 					}
 				}
+				// MODIFICATION END
 
 				return response()->json([
 					'success' => true,
 					'setting_id' => $prompt_setting_id,
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				return response()->json([
 					'success' => false,
 					'error' => $e->getMessage(),
@@ -313,6 +244,7 @@
 				return $prompt;
 			});
 
+			// MODIFICATION START: Removed 'create_*' fields and added 'model' to the response.
 			return response()->json([
 				'template_path' => $settings->template_path ?? '',
 				'prompt_template' => $settings->prompt_template ?? '',
@@ -323,17 +255,7 @@
 				'width' => $settings->width,
 				'height' => $settings->height,
 				'upload_to_s3' => $settings->upload_to_s3,
-
-				'create_schnell' => $settings->create_schnell,
-				'create_dev' => $settings->create_dev,
-				'create_minimax' => $settings->create_minimax,
-				'create_imagen' => $settings->create_imagen,
-				'create_aura_flow' => $settings->create_aura_flow,
-				'create_ideogram_v2a' => $settings->create_ideogram_v2a,
-				'create_luma_photon' => $settings->create_luma_photon,
-				'create_recraft_20b' => $settings->create_recraft_20b,
-				'create_fal_qwen_image' => $settings->create_fal_qwen_image,
-
+				'model' => $settings->model,
 				'aspect_ratio' => $settings->aspect_ratio,
 				'prepend_text' => $settings->prepend_text,
 				'append_text' => $settings->append_text,
@@ -341,6 +263,7 @@
 				'append_to_prompt' => $settings->append_to_prompt,
 				'prompts' => $prompts
 			]);
+			// MODIFICATION END
 		}
 
 		public function saveTemplate(Request $request)

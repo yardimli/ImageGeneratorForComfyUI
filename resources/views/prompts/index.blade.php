@@ -96,89 +96,20 @@
 							</div>
 						</div>
 					</div>
+					{{-- MODIFICATION START: Replaced the model checkboxes with a single dropdown menu. --}}
 					<div class="row mb-3">
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_schnell" value="0">
-									<input type="checkbox" class="form-check-input" name="create_schnell" id="createSchnell" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createSchnell">Schnell 0₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_dev" value="0">
-									<input type="checkbox" class="form-check-input" name="create_dev" id="createDev" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createDev">Dev 0₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_minimax" value="0">
-									<input type="checkbox" class="form-check-input" name="create_minimax" id="createMinimax" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createMinimax">MiniMax 0.3₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_imagen" value="0">
-									<input type="checkbox" class="form-check-input" name="create_imagen" id="createImagen" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createImagen">Imagen 3 1.6₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_aura_flow" value="0">
-									<input type="checkbox" class="form-check-input" name="create_aura_flow" id="createAuraFlow" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createAuraFlow">Aura Flow 0.2₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_ideogram_v2a" value="0">
-									<input type="checkbox" class="form-check-input" name="create_ideogram_v2a" id="createIdeogram-v2a" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createIdeogram-v2a">Ideogram v2a 2.0₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_luma_photon" value="0">
-									<input type="checkbox" class="form-check-input" name="create_luma_photon" id="createLuma-photon" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createLuma-photon">Luma Photon 1.0₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_recraft_20b" value="0">
-									<input type="checkbox" class="form-check-input" name="create_recraft_20b" id="createRecraft-20b" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createRecraft-20b">Recraft 20b 1.2₺</label>
-							</div>
-						</div>
-						<div class="col-md-3">
-							<div class="d-flex align-items-center">
-								<div class="form-check me-2">
-									<input type="hidden" name="create_fal_qwen_image" value="0">
-									<input type="checkbox" class="form-check-input" name="create_fal_qwen_image" id="createFalQwenImage" value="1">
-								</div>
-								<label class="form-check-label mb-0" for="createFalQwenImage">Fal Qwen 0.8₺</label>
-							</div>
+						<div class="col-md-4">
+							<label for="model" class="form-label">Image Model</label>
+							<select class="form-select" name="model" id="model">
+								@forelse ($imageModels as $model)
+									<option value="{{ $model['id'] }}">{{ $model['name'] }}</option>
+								@empty
+									<option value="" disabled>No models available.</option>
+								@endforelse
+							</select>
 						</div>
 					</div>
+					{{-- MODIFICATION END --}}
 					
 					
 					<div class="mb-3">

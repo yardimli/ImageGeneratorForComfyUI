@@ -15,9 +15,70 @@
 	use Illuminate\Support\Facades\Log;
 	use Illuminate\Support\Facades\Validator;
 	use Illuminate\Validation\ValidationException;
+	use Exception;
 
 	class StoryController extends Controller
 	{
+		// MODIFICATION START: Added a helper to load and format image models from JSON.
+		/**
+		 * Loads and formats the available image generation models for use in views.
+		 *
+		 * @return array
+		 */
+		protected function getAvailableImageModels(): array
+		{
+			try {
+				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
+				$allModels = json_decode($jsonString, true);
+			} catch (Exception $e) {
+				Log::error('Failed to load image models from JSON: ' . $e->getMessage());
+				return [];
+			}
+
+			// Mapping from DB short name to full model name in JSON
+			$supportedModelsMap = [
+				'schnell' => 'flux-1/schnell',
+				'dev' => 'flux-1/dev',
+				'minimax' => 'minimax/image-01',
+				'imagen3' => 'imagen4/preview/ultra',
+				'aura-flow' => 'aura-flow',
+				'ideogram-v2a' => 'ideogram/v2a',
+				'luma-photon' => 'luma-photon',
+				'recraft-20b' => 'recraft-20b',
+				'fal-ai/qwen-image' => 'qwen-image',
+			];
+
+			$viewModels = [];
+			$foundModels = [];
+
+			foreach ($allModels as $modelData) {
+				$shortName = array_search($modelData['name'], $supportedModelsMap);
+				if ($shortName !== false) {
+					$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $shortName));
+					if (isset($modelData['price'])) {
+						$displayName .= " (\${$modelData['price']})";
+					}
+					$viewModels[] = [
+						'id' => $shortName,
+						'name' => $displayName,
+					];
+					$foundModels[$shortName] = true;
+				}
+			}
+
+			// Manually add minimax-expand if minimax was found
+			if (isset($foundModels['minimax'])) {
+				$viewModels[] = [
+					'id' => 'minimax-expand',
+					'name' => 'Minimax Expand ($0.01)', // Price is hardcoded as it's a variant
+				];
+			}
+
+			usort($viewModels, fn($a, $b) => strcmp($a['name'], $b['name']));
+			return $viewModels;
+		}
+		// MODIFICATION END
+
 		/**
 		 * Display a listing of the user's stories.
 		 */
@@ -87,25 +148,15 @@
 			try {
 				$modelsResponse = $llmController->getModels();
 				$models = $llmController->processModelsForView($modelsResponse);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Editor: ' . $e->getMessage());
 				$models = [];
 				session()->flash('error', 'Could not fetch AI models for the prompt generator. The feature will be unavailable.');
 			}
 
-			$imageModels = [
-				['id' => 'schnell', 'name' => 'Schnell'],
-				['id' => 'dev', 'name' => 'Dev'],
-				['id' => 'outpaint', 'name' => 'Outpaint'],
-				['id' => 'minimax', 'name' => 'MiniMax'],
-				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
-				['id' => 'imagen3', 'name' => 'Imagen 3'],
-				['id' => 'aura-flow', 'name' => 'Aura Flow'],
-				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
-				['id' => 'luma-photon', 'name' => 'Luma Photon'],
-				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-			];
+			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
+			$imageModels = $this->getAvailableImageModels();
+			// MODIFICATION END
 
 			//  Fetch full prompt templates for JS, including the new dictionary prompt.
 			$promptTemplates = LlmPrompt::whereIn('name', [
@@ -296,7 +347,7 @@
 					'success' => true,
 					'rewritten_text' => trim($rewrittenText)
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('AI Text Rewrite Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the text. Please try again.'], 500);
 			}
@@ -336,7 +387,7 @@
 					'success' => true,
 					'rewritten_text' => trim($rewrittenText)
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('AI Asset Description Rewrite Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while rewriting the description. Please try again.'], 500);
 			}
@@ -376,7 +427,7 @@
 					'success' => true,
 					'prompt' => trim($generatedPrompt)
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('AI Image Prompt Generation Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
@@ -430,7 +481,7 @@
 					'success' => true,
 					'dictionary' => $dictionaryEntries
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('AI Page Dictionary Generation Failed: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the dictionary. Please try again.'], 500);
 			}
@@ -496,7 +547,7 @@
 					'success' => true,
 					'prompt' => trim($generatedPrompt)
 				]);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error("AI {$assetType} Image Prompt Generation Failed: " . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while generating the image prompt. Please try again.'], 500);
 			}
@@ -521,25 +572,15 @@
 			try {
 				$modelsResponse = $llmController->getModels();
 				$models = $llmController->processModelsForView($modelsResponse);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Characters: ' . $e->getMessage());
 				$models = [];
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			$imageModels = [
-				['id' => 'schnell', 'name' => 'Schnell'],
-				['id' => 'dev', 'name' => 'Dev'],
-				['id' => 'outpaint', 'name' => 'Outpaint'],
-				['id' => 'minimax', 'name' => 'MiniMax'],
-				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
-				['id' => 'imagen3', 'name' => 'Imagen 3'],
-				['id' => 'aura-flow', 'name' => 'Aura Flow'],
-				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
-				['id' => 'luma-photon', 'name' => 'Luma Photon'],
-				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-			];
+			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
+			$imageModels = $this->getAvailableImageModels();
+			// MODIFICATION END
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
@@ -603,25 +644,15 @@
 			try {
 				$modelsResponse = $llmController->getModels();
 				$models = $llmController->processModelsForView($modelsResponse);
-			} catch (\Exception $e) {
+			} catch (Exception $e) {
 				Log::error('Failed to fetch LLM models for Story Places: ' . $e->getMessage());
 				$models = [];
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			$imageModels = [
-				['id' => 'schnell', 'name' => 'Schnell'],
-				['id' => 'dev', 'name' => 'Dev'],
-				['id' => 'outpaint', 'name' => 'Outpaint'],
-				['id' => 'minimax', 'name' => 'MiniMax'],
-				['id' => 'minimax-expand', 'name' => 'MiniMax Expand'],
-				['id' => 'imagen3', 'name' => 'Imagen 3'],
-				['id' => 'aura-flow', 'name' => 'Aura Flow'],
-				['id' => 'ideogram-v2a', 'name' => 'Ideogram v2a'],
-				['id' => 'luma-photon', 'name' => 'Luma Photon'],
-				['id' => 'recraft-20b', 'name' => 'Recraft 20b'],
-				['id' => 'fal-ai/qwen-image', 'name' => 'Fal Qwen Image'],
-			];
+			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
+			$imageModels = $this->getAvailableImageModels();
+			// MODIFICATION END
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')

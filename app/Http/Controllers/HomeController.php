@@ -3,8 +3,8 @@
 	namespace App\Http\Controllers;
 
 	use App\Models\Prompt;
-	use Illuminate\Http\Request;
-	use Illuminate\Support\Facades\DB;
+	use Exception;
+	use Illuminate\Support\Facades\Log;
 
 	class HomeController extends Controller
 	{
@@ -19,6 +19,57 @@
 		}
 
 		/**
+		 * Gets a list of all supported model short names from the JSON file.
+		 * This ensures the dashboard stats page is always in sync with the models the app supports.
+		 *
+		 * @return array
+		 */
+		private function getSupportedModels(): array
+		{
+			try {
+				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
+				$allModels = json_decode($jsonString, true);
+			} catch (Exception $e) {
+				Log::error('Failed to load image models from JSON for home page stats: ' . $e->getMessage());
+				// Fallback to a hardcoded list if the file is missing or invalid
+				return ['schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b', 'fal-ai/qwen-image'];
+			}
+
+			// Mapping from DB short name to full model name in JSON
+			$supportedModelsMap = [
+				'schnell' => 'flux-1/schnell',
+				'dev' => 'flux-1/dev',
+				'minimax' => 'minimax/image-01',
+				'imagen3' => 'imagen4/preview/ultra',
+				'aura-flow' => 'aura-flow',
+				'ideogram-v2a' => 'ideogram/v2a',
+				'luma-photon' => 'luma-photon',
+				'recraft-20b' => 'recraft-20b',
+				'fal-ai/qwen-image' => 'qwen-image',
+			];
+
+			$modelShortNames = [];
+			$foundModels = [];
+
+			foreach ($allModels as $modelData) {
+				$shortName = array_search($modelData['name'], $supportedModelsMap);
+				if ($shortName !== false) {
+					$modelShortNames[] = $shortName;
+					$foundModels[$shortName] = true;
+				}
+			}
+
+			// Manually add minimax-expand if minimax was found, as it's a variant
+			if (isset($foundModels['minimax'])) {
+				$modelShortNames[] = 'minimax-expand';
+			}
+
+			// Sort for consistent display
+			sort($modelShortNames);
+			return array_unique($modelShortNames);
+		}
+
+		/**
 		 * Show the application dashboard.
 		 *
 		 * @return \Illuminate\Contracts\Support\Renderable
@@ -27,46 +78,33 @@
 		{
 			$userId = auth()->id();
 
-			// Count images by model
+			// Fetch statistics for the authenticated user
 			$modelStats = Prompt::where('user_id', $userId)
 				->whereNotNull('filename')
-				->select('model', DB::raw('count(*) as count'))
 				->groupBy('model')
-				->get()
-				->pluck('count', 'model')
-				->toArray();
+				->selectRaw('model, count(*) as count')
+				->pluck('count', 'model');
 
-			// Count images by generation type
 			$generationTypeStats = Prompt::where('user_id', $userId)
 				->whereNotNull('filename')
-				->select('generation_type', DB::raw('count(*) as count'))
 				->groupBy('generation_type')
-				->get()
-				->pluck('count', 'generation_type')
-				->toArray();
+				->selectRaw('generation_type, count(*) as count')
+				->pluck('count', 'generation_type');
 
-			// Total images
-			$totalImages = Prompt::where('user_id', $userId)
-				->whereNotNull('filename')
-				->count();
+			$totalImages = Prompt::where('user_id', $userId)->whereNotNull('filename')->count();
+			$upscaledImages = Prompt::where('user_id', $userId)->where('upscale_status', 2)->count();
+			$imagesWithNotes = Prompt::where('user_id', $userId)->whereNotNull('notes')->where('notes', '!=', '')->count();
 
-			// Count of upscaled images
-			$upscaledImages = Prompt::where('user_id', $userId)
-				->where('upscale_status', 2)
-				->count();
-
-			// Count of images with notes/comments
-			$imagesWithNotes = Prompt::where('user_id', $userId)
-				->whereNotNull('notes')
-				->whereRaw("LENGTH(TRIM(notes)) > 0")
-				->count();
+			// MODIFICATION: Get the model list dynamically instead of hardcoding in the view
+			$supportedModels = $this->getSupportedModels();
 
 			return view('home', compact(
 				'modelStats',
 				'generationTypeStats',
 				'totalImages',
 				'upscaledImages',
-				'imagesWithNotes'
+				'imagesWithNotes',
+				'supportedModels' // Pass the dynamic list to the view
 			));
 		}
 	}

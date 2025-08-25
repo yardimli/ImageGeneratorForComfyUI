@@ -90,25 +90,40 @@
 		}
 
 		/**
+		 * Returns a mapping of short model names (from DB) to full Fal.ai API model names.
+		 *
+		 * @return array<string, string>
+		 */
+		private function getModelMapping(): array
+		{
+			// Mapping from DB short name to the full model identifier for the API
+			return [
+				'schnell' => 'flux-1/schnell',
+				'dev' => 'flux-1/dev',
+				'minimax' => 'minimax/image-01',
+				'minimax-expand' => 'minimax/image-01',
+				'imagen3' => 'imagen4/preview/ultra',
+				'aura-flow' => 'aura-flow',
+				'ideogram-v2a' => 'ideogram/v2a',
+				'luma-photon' => 'luma-photon',
+				'recraft-20b' => 'recraft-20b',
+				'fal-ai/qwen-image' => 'qwen-image',
+			];
+		}
+
+		/**
 		 * Process a single prompt.
 		 */
 		private function processPrompt(Prompt $prompt, int $idx): void
 		{
-			// Define remote models handled by this worker.
-			$remoteFalModels = [
-				"imagen3" => "fal-ai/imagen4/preview/ultra",
-				"aura-flow" => "fal-ai/aura-flow",
-				"ideogram-v2a" => "fal-ai/ideogram/v2a",
-				"luma-photon" => "fal-ai/luma-photon",
-				"recraft-20b" => "fal-ai/recraft-20b",
-				"fal-ai/qwen-image" => "fal-ai/qwen-image"
-			];
-			$remoteOtherModels = ["minimax", "minimax-expand"];
+			// MODIFICATION START: Replaced hardcoded model lists with a single mapping.
+			$modelMapping = $this->getModelMapping();
 
 			// Filter for prompts this worker can handle.
-			if ($prompt->generation_type !== "prompt" || (!array_key_exists($prompt->model, $remoteFalModels) && !in_array($prompt->model, $remoteOtherModels))) {
+			if ($prompt->generation_type !== "prompt" || !array_key_exists($prompt->model, $modelMapping)) {
 				return; // Skip this prompt.
 			}
+			// MODIFICATION END
 
 			$this->info("Processing prompt #{$idx} (ID: {$prompt->id}) - model: {$prompt->model} - status: {$prompt->render_status} - user: {$prompt->user_id}");
 
@@ -131,14 +146,11 @@
 				// Mark as processing (status 1).
 				$this->updateRenderStatus($prompt, 1);
 
-				$imageUrl = null;
-
+				// MODIFICATION START: Simplified image generation logic to use only Fal.ai.
 				// --- Image Generation Logic ---
-				if (array_key_exists($prompt->model, $remoteFalModels)) {
-					$imageUrl = $this->generateWithFal($remoteFalModels[$prompt->model], $prompt);
-				} elseif (in_array($prompt->model, $remoteOtherModels)) {
-					$imageUrl = $this->generateWithMinimax($prompt);
-				}
+				$modelName = $modelMapping[$prompt->model];
+				$imageUrl = $this->generateWithFal($modelName, $prompt);
+				// MODIFICATION END
 
 				// --- Download, Save, and Upload ---
 				if ($imageUrl) {
@@ -178,7 +190,6 @@
 			}
 		}
 
-		// MODIFICATION START: Replaced the entire method with the correct asynchronous flow.
 		/**
 		 * Generate an image using the Fal.ai asynchronous queue API.
 		 * This method now submits the job, then polls for completion.
@@ -195,9 +206,11 @@
 			}
 
 			$arguments = ['prompt' => $prompt->generated_prompt];
-			if ($modelName === 'fal-ai/qwen-image') {
+			// MODIFICATION START: Updated model name for qwen-image specific arguments.
+			if ($modelName === 'qwen-image') {
 				$arguments['image_size'] = ['width' => $prompt->width, 'height' => $prompt->height];
 			}
+			// MODIFICATION END
 
 			try {
 				// Step 1: Submit the job to the queue endpoint.
@@ -273,37 +286,6 @@
 				return null;
 			}
 		}
-		// MODIFICATION END
-
-		/**
-		 * Generate an image using the Minimax API.
-		 */
-		private function generateWithMinimax(Prompt $prompt): ?string
-		{
-			$this->info("Sending to Minimax...");
-			try {
-				$payload = [
-					"model" => "image-01",
-					"prompt" => $prompt->generated_prompt,
-					"aspect_ratio" => $this->getAspectRatio($prompt->width, $prompt->height),
-					"response_format" => "url",
-					"n" => 1,
-					"prompt_optimizer" => ($prompt->model === "minimax-expand")
-				];
-
-				$response = Http::withToken(env('MINIMAX_KEY'))
-					->timeout(120)
-					->post(env('MINIMAX_KEY_URL'), $payload);
-
-				$response->throw(); // Throw an exception for 4xx/5xx responses.
-
-				return $response->json('data.image_urls.0');
-			} catch (Throwable $e) {
-				$this->error("Error calling Minimax API: " . $e->getMessage());
-				report($e);
-				return null;
-			}
-		}
 
 		/**
 		 * Find the closest standard aspect ratio string for the Minimax API.
@@ -360,7 +342,6 @@
 		private function uploadToS3(string $localFile, string $s3File): ?string
 		{
 			try {
-				// MODIFICATION START: Add diagnostic logging before the attempt.
 				$s3Config = config('filesystems.disks.s3');
 				$this->info("--- S3 Upload Diagnostics ---");
 				$this->info("Attempting to upload to bucket: " . ($s3Config['bucket'] ?? 'NOT SET'));
@@ -374,7 +355,6 @@
 					$this->error("S3 configuration is missing from the application config. Please run 'php artisan config:clear'.");
 					return null;
 				}
-				// MODIFICATION END
 
 				if (!file_exists($localFile) || !is_readable($localFile)) {
 					$this->error("Local file does not exist or is not readable at: {$localFile}");

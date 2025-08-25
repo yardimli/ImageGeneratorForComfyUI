@@ -10,16 +10,19 @@
 	use Throwable;
 
 	/**
-	 * Handles image generation requests for the Prompt Dictionary.
+	 * Handles image generation requests originating from the prompt dictionary editor.
 	 */
 	class PromptDictionaryImageController extends Controller
 	{
 		/**
-		 * Creates a prompt to queue an image for a dictionary entry.
+		 * Creates prompt settings and a prompt to queue an image for a dictionary entry.
+		 *
+		 * @param  Request  $request
+		 * @param  PromptDictionaryEntry  $entry
+		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generate(Request $request, PromptDictionaryEntry $entry)
 		{
-			// Authorization check
 			if ($entry->user_id !== auth()->id()) {
 				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
 			}
@@ -38,32 +41,23 @@
 					return response()->json(['success' => false, 'message' => 'Image prompt for this entry is empty.'], 422);
 				}
 
+				// Create a PromptSetting entry
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
 					'generation_type' => 'prompt',
-					'template_path' => '',
-					'prompt_template' => '',
 					'original_prompt' => $promptText,
 					'precision' => 'Normal',
 					'count' => 1,
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => 'dev',
-					'lora_name' => '',
-					'strength_model' => 0,
-					'guidance' => 7.5,
+					'model' => $validated['model'], // Use the validated model from the request.
 					'upload_to_s3' => $validated['upload_to_s3'],
 					'aspect_ratio' => $validated['aspect_ratio'],
-					'prepend_text' => '',
-					'append_text' => '',
-					'generate_original_prompt' => false,
-					'append_to_prompt' => false,
-					'input_images_1' => '',
-					'input_images_2' => '',
 					'prompt_dictionary_entry_id' => $entry->id,
 				]);
 
+				// Create a Prompt entry
 				Prompt::create([
 					'user_id' => auth()->id(),
 					'prompt_setting_id' => $promptSetting->id,
@@ -79,29 +73,32 @@
 
 				return response()->json(['success' => true, 'message' => 'Image generation has been queued successfully.']);
 			} catch (Throwable $e) {
-				Log::error("Failed to queue dictionary entry image generation: " . $e->getMessage());
+				Log::error('Failed to queue dictionary image generation: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while queueing the image.'], 500);
 			}
 		}
 
 		/**
 		 * Checks the status of the latest image generation for a dictionary entry.
+		 *
+		 * @param  PromptDictionaryEntry  $entry
+		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function checkStatus(PromptDictionaryEntry $entry)
 		{
-			// Authorization check
 			if ($entry->user_id !== auth()->id()) {
 				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
 			}
 
 			try {
-				// Find the latest queued prompt for this entry within the last hour.
+				// Find the latest queued prompt for this entry.
 				$prompt = Prompt::where('prompt_dictionary_entry_id', $entry->id)
 					->where('created_at', '>=', now()->subHour())
 					->latest()
 					->first();
 
 				if ($prompt && $prompt->filename) {
+					// Image is ready
 					return response()->json([
 						'success' => true,
 						'status' => 'ready',
@@ -113,9 +110,10 @@
 					]);
 				}
 
+				// Image not ready yet
 				return response()->json(['success' => true, 'status' => 'pending']);
 			} catch (Throwable $e) {
-				Log::error('Failed to check dictionary entry image status: ' . $e->getMessage());
+				Log::error('Failed to check dictionary image status: ' . $e->getMessage());
 				return response()->json(['success' => false, 'message' => 'An error occurred while checking status.'], 500);
 			}
 		}

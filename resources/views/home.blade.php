@@ -21,12 +21,14 @@
 							<div class="col-md-4">
 								<h6 class="border-bottom pb-2 mb-3">By Model</h6>
 								<ul class="list-group">
-									@foreach(['schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b', 'fal-ai/qwen-image'] as $model)
+									{{-- MODIFICATION START: Replaced hardcoded model list with a dynamic loop. --}}
+									@foreach($supportedModels as $model)
 										<li class="list-group-item d-flex justify-content-between align-items-center">
-											{{ ucfirst(str_replace('-', ' ', $model)) }}
+											{{ ucfirst(str_replace(['-', '_', '/'], ' ', $model)) }}
 											<span class="badge bg-primary rounded-pill">{{ $modelStats[$model] ?? 0 }}</span>
 										</li>
 									@endforeach
+									{{-- MODIFICATION END --}}
 								</ul>
 							</div>
 							

@@ -74,67 +74,19 @@
 									
 									<div class="dropdown-divider"></div>
 									
+									{{-- MODIFICATION START: Replaced hardcoded model list with a dynamic loop. --}}
 									<h6 class="dropdown-header">Models</h6>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="schnell"
-										       id="model-schnell"
-											{{ in_array('schnell', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-schnell">Schnell</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="dev"
-										       id="model-dev"
-											{{ in_array('dev', $selectedTypes ?? ['dev']) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-dev">Dev</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="minimax"
-										       id="model-minimax"
-											{{ in_array('minimax', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-minimax">Minimax</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]"
-										       value="minimax-expand" id="model-minimax-expand"
-											{{ in_array('minimax-expand', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-minimax-expand">Minimax Expand</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="imagen3"
-										       id="model-imagen3"
-											{{ in_array('imagen3', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-imagen3">Imagen3</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="aura-flow"
-										       id="model-aura-flow"
-											{{ in_array('aura-flow', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-aura-flow">Aura Flow</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="ideogram-v2a"
-										       id="model-ideogram-v2a"
-											{{ in_array('ideogram-v2a', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-ideogram-v2a">Ideogram v2a</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="luma-photon"
-										       id="model-luma-photon"
-											{{ in_array('luma-photon', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-luma-photon">Luma Photon</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="recraft-20b"
-										       id="model-recraft-20b"
-											{{ in_array('recraft-20b', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-recraft-20b">Recraft 20b</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="fal-ai/qwen-image"
-										       id="model-fal-ai/qwen-image"
-											{{ in_array('fal-ai/qwen-image', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="model-fal-ai/qwen-image">Fal Qwen Image</label>
-									</div>
+									@isset($viewModels)
+										@foreach($viewModels as $model)
+											<div class="form-check">
+												<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="{{ $model['id'] }}"
+												       id="model-{{ Str::slug($model['id']) }}"
+													{{ in_array($model['id'], $selectedTypes ?? []) ? 'checked' : '' }}>
+												<label class="form-check-label" for="model-{{ Str::slug($model['id']) }}">{{ $model['name'] }}</label>
+											</div>
+										@endforeach
+									@endisset
+									{{-- MODIFICATION END --}}
 									
 									<div class="mt-3">
 										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
@@ -175,7 +127,7 @@
 						<div class="mb-4">
 							<h4 class="border-bottom pb-2">
 								<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at', 'types' => $selectedTypes]) }}" class="text-decoration-none">
-								{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
+									{{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
 								</a>
 								<span class="badge bg-secondary">{{ $dayImages->totalCount ?? $dayImages->count() }} images</span>
 								@if($dayImages->count() > 8)
@@ -440,7 +392,7 @@
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			
 			imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-
+			
 			document.getElementById('selectAllFilters').addEventListener('click', function (e) {
 				e.preventDefault();
 				const checkboxes = document.querySelectorAll('.filter-checkbox');
@@ -470,10 +422,9 @@
 					// Ensure at least one option is selected
 					const anyChecked = document.querySelectorAll('.filter-checkbox:checked').length > 0;
 					if (!anyChecked) {
-						// If nothing is checked, default to "dev"
-						document.getElementById('model-dev').checked = true;
+						// If nothing is checked, default to a sensible option if needed, or allow none.
+						// For now, we allow none to be selected before hitting "Apply".
 					}
-//					document.getElementById('filterForm').submit();
 				});
 			});
 			

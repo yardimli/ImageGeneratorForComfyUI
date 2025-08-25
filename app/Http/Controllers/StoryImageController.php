@@ -4,8 +4,8 @@
 
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
-	use App\Models\StoryPage;
 	use App\Models\StoryCharacter;
+	use App\Models\StoryPage;
 	use App\Models\StoryPlace;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Log;
@@ -19,14 +19,14 @@
 		/**
 		 * Creates prompt settings and a prompt to queue an image for generation.
 		 *
-		 * @param Request $request
-		 * @param StoryPage $storyPage
+		 * @param  Request  $request
+		 * @param  StoryPage  $storyPage
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generate(Request $request, StoryPage $storyPage)
 		{
 			//  Removed authorization check.
-			
+
 
 			$validated = $request->validate([
 				'model' => 'required|string|max:255',
@@ -55,7 +55,7 @@
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => 'dev',
+					'model' => $validated['model'], // MODIFICATION: Use the validated model from the request.
 					'lora_name' => '',
 					'strength_model' => 0,
 					'guidance' => 7.5,
@@ -94,7 +94,7 @@
 		/**
 		 * Checks the status of the latest image generation for a story page.
 		 *
-		 * @param StoryPage $storyPage
+		 * @param  StoryPage  $storyPage
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function checkStatus(StoryPage $storyPage)
@@ -131,8 +131,8 @@
 		/**
 		 * Creates a prompt to queue an image for a character.
 		 *
-		 * @param Request $request
-		 * @param StoryCharacter $character
+		 * @param  Request  $request
+		 * @param  StoryCharacter  $character
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generateForCharacter(Request $request, StoryCharacter $character)
@@ -143,21 +143,21 @@
 		/**
 		 * Checks the status of the latest image generation for a character.
 		 *
-		 * @param StoryCharacter $character
+		 * @param  StoryCharacter  $character
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function checkCharacterStatus(StoryCharacter $character)
 		{
 			//  Removed authorization check.
-			
+
 			return $this->doCheckStatus('story_character_id', $character->id);
 		}
 
 		/**
 		 * Creates a prompt to queue an image for a place.
 		 *
-		 * @param Request $request
-		 * @param StoryPlace $place
+		 * @param  Request  $request
+		 * @param  StoryPlace  $place
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function generateForPlace(Request $request, StoryPlace $place)
@@ -168,22 +168,22 @@
 		/**
 		 * Checks the status of the latest image generation for a place.
 		 *
-		 * @param StoryPlace $place
+		 * @param  StoryPlace  $place
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		public function checkPlaceStatus(StoryPlace $place)
 		{
 			//  Removed authorization check.
-			
+
 			return $this->doCheckStatus('story_place_id', $place->id);
 		}
 
 		/**
 		 * Private helper to handle image generation logic for any asset type.
 		 *
-		 * @param Request $request
-		 * @param \Illuminate\Database\Eloquent\Model $asset
-		 * @param string $assetType
+		 * @param  Request  $request
+		 * @param  \Illuminate\Database\Eloquent\Model  $asset
+		 * @param  string  $assetType
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		private function doGenerate(Request $request, $asset, string $assetType)
@@ -215,7 +215,7 @@
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => 'dev',
+					'model' => $validated['model'], // MODIFICATION: Use the validated model from the request.
 					'lora_name' => '',
 					'strength_model' => 0,
 					'guidance' => 7.5,
@@ -254,8 +254,8 @@
 		/**
 		 * Private helper to check image status for any asset type.
 		 *
-		 * @param string $foreignKey
-		 * @param int $assetId
+		 * @param  string  $foreignKey
+		 * @param  int  $assetId
 		 * @return \Illuminate\Http\JsonResponse
 		 */
 		private function doCheckStatus(string $foreignKey, int $assetId)
