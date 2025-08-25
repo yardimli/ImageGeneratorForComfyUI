@@ -66,8 +66,6 @@
 		{
 			$this->info('Fetching pending prompts...');
 
-			// MODIFICATION START: Efficiently fetch prompts directly from the database.
-			// This replaces the API call and the inefficient N+1 query pattern from the original controller.
 			$statuses = [0, 1, 3]; // 0: pending, 1: processing, 3: retrying
 			$promptsPerUser = 3;
 
@@ -80,7 +78,6 @@
 						return $userPrompts->take($promptsPerUser);
 					});
 				});
-			// MODIFICATION END
 
 			if ($prompts->isEmpty()) {
 				$this->info('No pending prompts found. Waiting...');
@@ -155,7 +152,6 @@
 								$this->updateRenderStatus($prompt, 4);
 							}
 						} else {
-							// If not uploading to S3, save to a local directory defined in .env.
 							$outputDir = env('OUTPUT_DIR', storage_path('app/public/images'));
 							if (!is_dir($outputDir)) {
 								mkdir($outputDir, 0755, true);
@@ -164,7 +160,6 @@
 							copy($localTempPath, $finalLocalPath);
 							$this->updateFilename($prompt, $finalLocalPath);
 						}
-						// Clean up the temporary file.
 						@unlink($localTempPath);
 					} else {
 						$this->error("Failed to download the generated image for prompt {$prompt->id}.");
@@ -175,7 +170,6 @@
 					$this->updateRenderStatus($prompt, 4);
 				}
 
-				// Small delay between jobs to avoid rate limiting.
 				sleep(6);
 			} catch (Throwable $e) {
 				$this->error("CRITICAL ERROR processing prompt {$prompt->id}: {$e->getMessage()}");
@@ -184,13 +178,14 @@
 			}
 		}
 
+		// MODIFICATION START: Replaced the entire method with the correct asynchronous flow.
 		/**
-		 * Generate an image using the Fal.ai asynchronous API.
-		 * NOTE: Requires a FAL_KEY in your .env file.
+		 * Generate an image using the Fal.ai asynchronous queue API.
+		 * This method now submits the job, then polls for completion.
 		 */
 		private function generateWithFal(string $modelName, Prompt $prompt): ?string
 		{
-			$this->info("Sending to Fal/{$modelName}...");
+			$this->info("Submitting job to Fal queue: {$modelName}...");
 			$falTimeout = (int) env('FAL_TIMEOUT', 180);
 			$falKey = env('FAL_KEY');
 
@@ -205,46 +200,72 @@
 			}
 
 			try {
-				// 1. Send the initial request to start the job.
-				// Fal.ai uses a queue system, so we poll for the result.
+				// Step 1: Submit the job to the queue endpoint.
+				$submitUrl = "https://queue.fal.run/{$modelName}";
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
-					'Content-Type' => 'application/json'
-				])->post("https://fal.run/{$modelName}", $arguments);
+					'Content-Type' => 'application/json',
+				])->post($submitUrl, $arguments);
 
-				$response->throw(); // Throw exception on 4xx/5xx errors.
-				$responseData = $response->json();
-				$requestId = $responseData['request_id'] ?? null;
-
-				if (!$requestId) {
-					$this->error("Fal.ai initial request failed to return a request_id.");
+				if ($response->failed()) {
+					$this->error("Fal.ai API error on submit: " . $response->body());
 					return null;
 				}
 
-				$statusUrl = "https://fal.run/requests/{$requestId}/status";
-				$resultUrl = "https://fal.run/requests/{$requestId}";
+				$data = $response->json();
+				$requestId = $data['request_id'] ?? null;
 
-				// 2. Poll the status URL until the job is complete or times out.
+				if (!$requestId) {
+					$this->error("Fal.ai API did not return a request_id: " . $response->body());
+					return null;
+				}
+
+				$this->info("Job submitted successfully. Request ID: {$requestId}. Polling for result...");
+
+				// Step 2: Poll the status URL until the job is complete or times out.
+				$statusUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}/status";
+				$resultUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}";
 				$startTime = time();
+
 				while (time() - $startTime < $falTimeout) {
 					sleep(3); // Poll every 3 seconds.
 					$statusResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($statusUrl);
-					$statusData = $statusResponse->json();
 
-					if (($statusData['status'] ?? 'UNKNOWN') === 'COMPLETED') {
-						// 3. Fetch the final result.
-						$resultResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($resultUrl);
-						$resultData = $resultResponse->json();
-						return $resultData['images'][0]['url'] ?? null;
+					if ($statusResponse->failed()) {
+						$this->warn("Fal.run status check failed for {$requestId}, retrying...");
+						continue;
 					}
 
-					if (in_array($statusData['status'] ?? 'UNKNOWN', ['FAILED', 'ERROR'])) {
-						$this->error("Fal.ai job failed with status: " . $statusData['status']);
+					$statusData = $statusResponse->json();
+					$jobStatus = $statusData['status'] ?? 'UNKNOWN';
+
+					if ($jobStatus === 'COMPLETED') {
+						// Step 3: Fetch the final result.
+						$this->info("Job {$requestId} completed. Fetching result...");
+						$resultResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($resultUrl);
+
+						if ($resultResponse->failed()) {
+							$this->error("Fal.run result fetch failed for {$requestId}: " . $resultResponse->body());
+							return null;
+						}
+
+						$resultData = $resultResponse->json();
+						$imageUrl = $resultData['images'][0]['url'] ?? null;
+
+						if (!$imageUrl) {
+							$this->error("Fal.run result for {$requestId} did not contain an image URL.");
+						}
+						return $imageUrl;
+					}
+
+					if (in_array($jobStatus, ['FAILED', 'ERROR'])) {
+						$this->error("Fal.ai job {$requestId} failed with status: {$jobStatus}");
 						return null;
 					}
+					// If status is IN_PROGRESS or IN_QUEUE, the loop will continue.
 				}
 
-				$this->error("ERROR: Timeout calling {$modelName} after {$falTimeout} seconds.");
+				$this->error("ERROR: Timeout calling {$modelName} after {$falTimeout} seconds for request {$requestId}.");
 				return null;
 			} catch (Throwable $e) {
 				$this->error("ERROR: An unexpected error occurred calling Fal.ai for {$modelName}: {$e->getMessage()}");
@@ -252,6 +273,7 @@
 				return null;
 			}
 		}
+		// MODIFICATION END
 
 		/**
 		 * Generate an image using the Minimax API.
@@ -338,7 +360,6 @@
 		private function uploadToS3(string $localFile, string $s3File): ?string
 		{
 			try {
-				// Use 'public' visibility to make the file accessible via URL.
 				$path = Storage::disk('s3')->put($s3File, fopen($localFile, 'r'), 'public');
 				if ($path) {
 					$cdnUrl = env('AWS_CLOUDFRONT_URL');
