@@ -359,21 +359,50 @@
 		 */
 		private function uploadToS3(string $localFile, string $s3File): ?string
 		{
+			// MODIFICATION START: Added more detailed error logging.
 			try {
-				$path = Storage::disk('s3')->put($s3File, fopen($localFile, 'r'), 'public');
+				// Ensure the local file exists and is readable before attempting to upload.
+				if (!file_exists($localFile) || !is_readable($localFile)) {
+					$this->error("Local file does not exist or is not readable at: {$localFile}");
+					return null;
+				}
+
+				// Use a file stream, which is more memory-efficient for larger files.
+				$fileStream = fopen($localFile, 'r');
+				if (!$fileStream) {
+					$this->error("Failed to open file stream for: {$localFile}");
+					return null;
+				}
+
+				// Use 'public' visibility to make the file accessible via URL.
+				// The third argument sets the visibility.
+				$path = Storage::disk('s3')->put($s3File, $fileStream, 'public');
+
+				// Close the stream after use.
+				if (is_resource($fileStream)) {
+					fclose($fileStream);
+				}
+
 				if ($path) {
+					$this->info("Successfully uploaded {$localFile} to S3 path: {$s3File}");
 					$cdnUrl = env('AWS_CLOUDFRONT_URL');
 					if ($cdnUrl) {
+						// Ensure there are no double slashes in the final URL.
 						return rtrim($cdnUrl, '/') . '/' . ltrim($s3File, '/');
 					}
+					// Fallback to the standard S3 URL if CloudFront is not configured.
 					return Storage::disk('s3')->url($s3File);
 				}
+
+				$this->error("Storage::put returned false for S3 upload of {$s3File}.");
 				return null;
 			} catch (Throwable $e) {
-				$this->error("Error uploading to S3: {$e->getMessage()}");
-				report($e);
+				// This is the most important change. It logs the full exception.
+				$this->error("CRITICAL S3 UPLOAD ERROR: {$e->getMessage()}");
+				report($e); // This sends the full stack trace to your default log (storage/logs/laravel.log)
 				return null;
 			}
+			// MODIFICATION END
 		}
 
 		/**
