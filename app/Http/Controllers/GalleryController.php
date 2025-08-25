@@ -12,111 +12,11 @@
 
 	class GalleryController extends Controller
 	{
-		// MODIFICATION START: Added helper to get all filterable types from JSON.
-		/**
-		 * Gets a list of all filterable types, including models from JSON and static generation types.
-		 *
-		 * @return array
-		 */
-		private function getAllFilterableTypes(): array
-		{
-			try {
-				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
-				$allModels = json_decode($jsonString, true);
-			} catch (Exception $e) {
-				Log::error('Failed to load image models from JSON for gallery filter: ' . $e->getMessage());
-				// Fallback to a hardcoded list if the file is missing or invalid
-				return ['mix', 'mix-one', 'schnell', 'dev', 'minimax', 'minimax-expand', 'imagen3', 'aura-flow', 'ideogram-v2a', 'luma-photon', 'recraft-20b', 'fal-ai/qwen-image'];
-			}
-
-			// Mapping from DB short name to full model name in JSON
-			$supportedModelsMap = [
-				'schnell' => 'flux-1/schnell',
-				'dev' => 'flux-1/dev',
-				'minimax' => 'minimax/image-01',
-				'imagen3' => 'imagen4/preview/ultra',
-				'aura-flow' => 'aura-flow',
-				'ideogram-v2a' => 'ideogram/v2a',
-				'luma-photon' => 'luma-photon',
-				'recraft-20b' => 'recraft-20b',
-				'fal-ai/qwen-image' => 'qwen-image',
-			];
-
-			$modelShortNames = [];
-			$foundModels = [];
-
-			foreach ($allModels as $modelData) {
-				$shortName = array_search($modelData['name'], $supportedModelsMap);
-				if ($shortName !== false) {
-					$modelShortNames[] = $shortName;
-					$foundModels[$shortName] = true;
-				}
-			}
-
-			// Manually add minimax-expand if minimax was found
-			if (isset($foundModels['minimax'])) {
-				$modelShortNames[] = 'minimax-expand';
-			}
-
-			// Add the generation types that are not models
-			$generationTypes = ['mix', 'mix-one'];
-
-			return array_merge($generationTypes, array_unique($modelShortNames));
-		}
-
-		/**
-		 * Prepares a formatted list of models for the view's filter dropdown.
-		 *
-		 * @return array
-		 */
-		private function getModelsForView(): array
-		{
-			$allFilterableTypes = $this->getAllFilterableTypes();
-			$models = array_diff($allFilterableTypes, ['mix', 'mix-one']);
-			$viewModels = [];
-
-			foreach ($models as $modelId) {
-				$viewModels[] = [
-					'id' => $modelId,
-					'name' => ucfirst(str_replace(['-', '_', '/'], ' ', $modelId)),
-				];
-			}
-
-			usort($viewModels, fn($a, $b) => strcmp($a['name'], $b['name']));
-			return $viewModels;
-		}
-		// MODIFICATION END
 
 		public function index(Request $request)
 		{
 			$sort = $request->query('sort', 'updated_at');
 			$search = $request->query('search');
-
-			// MODIFICATION START: Get all filterable types dynamically.
-			$allFilterableTypes = $this->getAllFilterableTypes();
-			// MODIFICATION END
-
-			// If search is active, select all types
-			if (!empty($search)) {
-				// MODIFICATION START: Use dynamic list.
-				$selectedTypes = $allFilterableTypes;
-				// MODIFICATION END
-			} else {
-				// MODIFICATION START: Use dynamic list as default.
-				$selectedTypes = $request->query('types', $allFilterableTypes);
-				// MODIFICATION END
-
-				//check if selectedTypes contains 'all' then select all types
-				if (in_array('all', $selectedTypes)) {
-					// MODIFICATION START: Use dynamic list.
-					$selectedTypes = $allFilterableTypes;
-					// MODIFICATION END
-				}
-
-				if (!is_array($selectedTypes)) {
-					$selectedTypes = [$selectedTypes];
-				}
-			}
 
 			$groupByDay = $request->query('group') !== 'false';
 			$date = $request->query('date');
@@ -132,27 +32,6 @@
 				});
 			}
 
-			// Separate generation types from models
-			$generationTypes = array_intersect($selectedTypes, ['mix', 'mix-one']);
-			$models = array_diff($selectedTypes, ['mix', 'mix-one']);
-
-			// Apply filtering logic
-			if (!empty($generationTypes) || !empty($models)) {
-				$query->where(function ($q) use ($generationTypes, $models) {
-					if (!empty($generationTypes)) {
-						$q->whereIn('generation_type', $generationTypes);
-					}
-
-					if (!empty($models)) {
-						if (!empty($generationTypes)) {
-							$q->orWhereIn('model', $models);
-						} else {
-							$q->whereIn('model', $models);
-						}
-					}
-				});
-			}
-
 			// Apply date filter if viewing a specific day
 			if ($date) {
 				$selectedDate = Carbon::parse($date);
@@ -162,10 +41,6 @@
 
 			// Apply sorting
 			$query->orderBy($sort, 'desc');
-
-			// MODIFICATION START: Get models for the view's filter dropdown.
-			$viewModels = $this->getModelsForView();
-			// MODIFICATION END
 
 			if ($groupByDay && !$date) {
 				// Get distinct days first - now showing 14 days instead of 5
@@ -203,11 +78,9 @@
 					'groupedImages' => $groupedImages,
 					'days' => $days,
 					'sort' => $sort,
-					'selectedTypes' => $selectedTypes,
 					'groupByDay' => $groupByDay,
 					'date' => $date,
 					'search' => $search,
-					'viewModels' => $viewModels, // Pass models to the view
 				]);
 			} else {
 				// Regular pagination for specific day view
@@ -225,11 +98,9 @@
 				return view('gallery.index', [
 					'images' => $images,
 					'sort' => $sort,
-					'selectedTypes' => $selectedTypes,
 					'groupByDay' => $groupByDay,
 					'date' => $date,
 					'search' => $search,
-					'viewModels' => $viewModels, // Pass models to the view
 				]);
 			}
 		}
@@ -240,24 +111,6 @@
 			$sort = $request->query('sort', 'updated_at');
 			$search = $request->query('search');
 
-			// MODIFICATION START: Get all filterable types dynamically.
-			$allFilterableTypes = $this->getAllFilterableTypes();
-			// MODIFICATION END
-
-			// If search is active, select all types
-			if (!empty($search)) {
-				// MODIFICATION START: Use dynamic list.
-				$selectedTypes = $allFilterableTypes;
-				// MODIFICATION END
-			} else {
-				// MODIFICATION START: Use dynamic list as default.
-				$selectedTypes = $request->query('types', $allFilterableTypes);
-				// MODIFICATION END
-				if (!is_array($selectedTypes)) {
-					$selectedTypes = [$selectedTypes];
-				}
-			}
-
 			$query = Prompt::where('user_id', auth()->id())
 				->whereNotNull('filename');
 
@@ -266,27 +119,6 @@
 				$query->where(function ($q) use ($search) {
 					$q->where('generated_prompt', 'like', '%' . $search . '%')
 						->orWhere('notes', 'like', '%' . $search . '%');
-				});
-			}
-
-			// Separate generation types from models
-			$generationTypes = array_intersect($selectedTypes, ['mix', 'mix-one']);
-			$models = array_diff($selectedTypes, ['mix', 'mix-one']);
-
-			// Apply filtering logic
-			if (!empty($generationTypes) || !empty($models)) {
-				$query->where(function ($q) use ($generationTypes, $models) {
-					if (!empty($generationTypes)) {
-						$q->whereIn('generation_type', $generationTypes);
-					}
-
-					if (!empty($models)) {
-						if (!empty($generationTypes)) {
-							$q->orWhereIn('model', $models);
-						} else {
-							$q->whereIn('model', $models);
-						}
-					}
 				});
 			}
 
@@ -309,10 +141,6 @@
 				$filterDescription = "Images generated using source: " . basename($sourceImage);
 			}
 
-			// MODIFICATION START: Get models for the view's filter dropdown.
-			$viewModels = $this->getModelsForView();
-			// MODIFICATION END
-
-			return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort', 'selectedTypes', 'viewModels'));
+			return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort'));
 		}
 	}

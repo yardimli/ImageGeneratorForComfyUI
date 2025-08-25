@@ -38,64 +38,8 @@
 								class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
 								by Creation Date</a>
 						</div>
-						
-						<!-- New dropdown filter -->
-						<div class="dropdown d-inline-block me-2">
-							<button class="btn btn-outline-primary btn-sm dropdown-toggle" type="button" id="filterDropdown"
-							        data-bs-toggle="dropdown" data-bs-auto-close="false" aria-expanded="false">
-								Filter Types & Models
-							</button>
-							<div class="dropdown-menu p-3" style="width: 250px;" aria-labelledby="filterDropdown">
-								<form id="filterForm" action="{{ route('gallery.index') }}" method="GET">
-									<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
-									<input type="hidden" name="group" value="{{ $groupByDay ?? true }}">
-									@if($date)
-										<input type="hidden" name="date" value="{{ $date }}">
-									@endif
-									
-									<!-- Add Select All Button -->
-									<button type="button" id="selectAllFilters" class="btn btn-sm btn-outline-secondary mb-2">Select
-										All Filters
-									</button>
-									
-									<h6 class="dropdown-header">Generation Types</h6>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="mix"
-										       id="type-mix"
-											{{ in_array('mix', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="type-mix">Mix (Dual)</label>
-									</div>
-									<div class="form-check">
-										<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="mix-one"
-										       id="type-mix-one"
-											{{ in_array('mix-one', $selectedTypes ?? []) ? 'checked' : '' }}>
-										<label class="form-check-label" for="type-mix-one">Mix (Single)</label>
-									</div>
-									
-									<div class="dropdown-divider"></div>
-									
-									{{-- MODIFICATION START: Replaced hardcoded model list with a dynamic loop. --}}
-									<h6 class="dropdown-header">Models</h6>
-									@isset($viewModels)
-										@foreach($viewModels as $model)
-											<div class="form-check">
-												<input class="form-check-input filter-checkbox" type="checkbox" name="types[]" value="{{ $model['id'] }}"
-												       id="model-{{ Str::slug($model['id']) }}"
-													{{ in_array($model['id'], $selectedTypes ?? []) ? 'checked' : '' }}>
-												<label class="form-check-label" for="model-{{ Str::slug($model['id']) }}">{{ $model['name'] }}</label>
-											</div>
-										@endforeach
-									@endisset
-									{{-- MODIFICATION END --}}
-									
-									<div class="mt-3">
-										<button type="submit" class="btn btn-primary btn-sm">Apply Filters</button>
-										<a href="{{ route('gallery.index') }}" class="btn btn-outline-secondary btn-sm">Reset</a>
-									</div>
-								</form>
-							</div>
-						</div>
 					</div>
+					
 				</div>
 				
 				<div class="mt-2">
@@ -392,17 +336,7 @@
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			
 			imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
-			
-			document.getElementById('selectAllFilters').addEventListener('click', function (e) {
-				e.preventDefault();
-				const checkboxes = document.querySelectorAll('.filter-checkbox');
-				const allChecked = Array.from(checkboxes).every(checkbox => checkbox.checked);
-				
-				checkboxes.forEach(checkbox => {
-					checkbox.checked = !allChecked;
-				});
-			});
-			
+		
 			document.querySelectorAll('.form-check-label').forEach(label => {
 				label.addEventListener('click', function (e) {
 					const checkboxId = this.getAttribute('for');
@@ -413,17 +347,6 @@
 						const event = new Event('change');
 						checkbox.dispatchEvent(event);
 						e.preventDefault(); // Prevent default label behavior to avoid double toggle
-					}
-				});
-			});
-			
-			document.querySelectorAll('.filter-checkbox').forEach(checkbox => {
-				checkbox.addEventListener('change', function () {
-					// Ensure at least one option is selected
-					const anyChecked = document.querySelectorAll('.filter-checkbox:checked').length > 0;
-					if (!anyChecked) {
-						// If nothing is checked, default to a sensible option if needed, or allow none.
-						// For now, we allow none to be selected before hitting "Apply".
 					}
 				});
 			});
