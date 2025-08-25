@@ -41,14 +41,11 @@
 									<div class="mb-3">
 										<label class="form-label">Description</label>
 										<textarea name="characters[{{ $index }}][description]" class="form-control asset-description" rows="5">{{ $character->description }}</textarea>
-										{{-- START MODIFICATION: Add rewrite button --}}
 										<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-bs-toggle="modal" data-bs-target="#rewriteAssetDescriptionModal">
 											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 											Rewrite
 										</button>
-										{{-- END MODIFICATION --}}
 									</div>
-									{{-- START MODIFICATION: Add Image Prompt textarea and AI buttons --}}
 									<div class="mb-3">
 										<label class="form-label">Image Prompt</label>
 										<textarea name="characters[{{ $index }}][image_prompt]" class="form-control image-prompt-textarea" rows="3" data-initial-value="{{ e($character->image_prompt ?? '') }}">{{ $character->image_prompt ?? '' }}</textarea>
@@ -60,12 +57,13 @@
 											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-palette-fill me-1" viewBox="0 0 16 16"><path d="M12.433 10.07C14.133 10.585 16 11.15 16 8a8 8 0 1 0-15.93 1.156c.224-.434.458-.85.713-1.243a4.999 4.999 0 0 1 4.213-2.333c.348-.07.705-.12 1.07-.12.41 0 .816.064 1.2.19.495.16 1.02.443 1.547.854.541.427 1.116.954 1.6 1.587zM2 8a6 6 0 1 1 11.25 3.262C11.333 10.51 9.482 9.622 8 9.622c-1.927 0-3.936.992-5.25 2.054A6.001 6.001 0 0 1 2 8z"/><path d="M8 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4-3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM4.5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>
 											Draw with AI
 										</button>
+										{{-- START MODIFICATION --}}
+										<button type="button" class="btn btn-sm btn-outline-secondary mt-2 copy-prompt-to-desc-btn">Copy to Description</button>
+										{{-- END MODIFICATION --}}
 									</div>
-									{{-- END MODIFICATION --}}
 								</div>
 								<div class="col-md-4">
 									<label class="form-label">Image</label>
-									{{-- START MODIFICATION: Add spinner overlay and data attributes for modal --}}
 									<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 										<img src="{{ $character->image_path ?: 'https://picsum.photos/200' }}"
 										     class="asset-image-preview"
@@ -84,7 +82,6 @@
 											<div class="mt-2 text-light">Generating...</div>
 										</div>
 									</div>
-									{{-- END MODIFICATION --}}
 									<input type="hidden" name="characters[{{ $index }}][image_path]" class="image-path-input" value="{{ $character->image_path }}">
 									<button type="button" class="btn btn-sm btn-primary select-image-btn">Upload/Select Image</button>
 								</div>
@@ -104,13 +101,11 @@
 		</form>
 	</div>
 	
-	{{-- START MODIFICATION: Include all necessary modals --}}
 	@include('story.partials.cropper-modal')
 	@include('story.partials.history-modal')
 	@include('story.partials.modals.generate-prompt-modal', ['models' => $models])
 	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $imageModels])
 	@include('story.partials.modals.image-detail-modal')
-	{{-- START MODIFICATION: Add rewrite asset description modal --}}
 	<div class="modal fade" id="rewriteAssetDescriptionModal" tabindex="-1" aria-labelledby="rewriteAssetDescriptionModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
@@ -159,8 +154,6 @@
 			</div>
 		</div>
 	</div>
-	{{-- END MODIFICATION --}}
-	{{-- END MODIFICATION --}}
 	
 	{{-- Template for new characters --}}
 	<template id="character-template">
@@ -180,14 +173,11 @@
 						<div class="mb-3">
 							<label class="form-label">Description</label>
 							<textarea name="characters[__INDEX__][description]" class="form-control asset-description" rows="5"></textarea>
-							{{-- START MODIFICATION: Add rewrite button to template --}}
 							<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-bs-toggle="modal" data-bs-target="#rewriteAssetDescriptionModal">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 								Rewrite
 							</button>
-							{{-- END MODIFICATION --}}
 						</div>
-						{{-- START MODIFICATION: Add Image Prompt textarea and AI buttons to template --}}
 						<div class="mb-3">
 							<label class="form-label">Image Prompt</label>
 							<textarea name="characters[__INDEX__][image_prompt]" class="form-control image-prompt-textarea" rows="3" data-initial-value=""></textarea>
@@ -199,12 +189,13 @@
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-palette-fill me-1" viewBox="0 0 16 16"><path d="M12.433 10.07C14.133 10.585 16 11.15 16 8a8 8 0 1 0-15.93 1.156c.224-.434.458-.85.713-1.243a4.999 4.999 0 0 1 4.213-2.333c.348-.07.705-.12 1.07-.12.41 0 .816.064 1.2.19.495.16 1.02.443 1.547.854.541.427 1.116.954 1.6 1.587zM2 8a6 6 0 1 1 11.25 3.262C11.333 10.51 9.482 9.622 8 9.622c-1.927 0-3.936.992-5.25 2.054A6.001 6.001 0 0 1 2 8z"/><path d="M8 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4-3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM4.5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>
 								Draw with AI
 							</button>
+							{{-- START MODIFICATION --}}
+							<button type="button" class="btn btn-sm btn-outline-secondary mt-2 copy-prompt-to-desc-btn">Copy to Description</button>
+							{{-- END MODIFICATION --}}
 						</div>
-						{{-- END MODIFICATION --}}
 					</div>
 					<div class="col-md-4">
 						<label class="form-label">Image</label>
-						{{-- START MODIFICATION: Add spinner overlay to template --}}
 						<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
 							<img src="https://picsum.photos/200" class="asset-image-preview" style="max-width: 100%; max-height: 200px; object-fit: contain;">
 							<div class="spinner-overlay d-none position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(var(--bs-body-color-rgb), 0.5);">
@@ -212,7 +203,6 @@
 								<div class="mt-2 text-light">Generating...</div>
 							</div>
 						</div>
-						{{-- END MODIFICATION --}}
 						<input type="hidden" name="characters[__INDEX__][image_path]" class="image-path-input" value="">
 						<button type="button" class="btn btn-sm btn-primary select-image-btn">Upload/Select Image</button>
 					</div>
@@ -245,10 +235,38 @@
 @section('scripts')
 	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
-	{{-- START MODIFICATION: Pass prompt templates to JS --}}
 	<script>
 		window.promptTemplates = @json($promptTemplates ?? []);
 	</script>
-	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/story-asset-manager.js') }}"></script>
+	{{-- START MODIFICATION: Add script for the "Copy to Description" button --}}
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			// Use event delegation on the main container to handle clicks for both
+			// existing characters and new characters added dynamically.
+			const charactersContainer = document.getElementById('characters-container');
+			if (charactersContainer) {
+				charactersContainer.addEventListener('click', function(event) {
+					// Check if the clicked element is our copy button
+					if (event.target.classList.contains('copy-prompt-to-desc-btn')) {
+						// Find the parent character card for the clicked button
+						const card = event.target.closest('.character-card');
+						if (card) {
+							const promptTextarea = card.querySelector('.image-prompt-textarea');
+							const descriptionTextarea = card.querySelector('.asset-description');
+							
+							if (promptTextarea && descriptionTextarea) {
+								// Copy the value from the prompt to the description
+								descriptionTextarea.value = promptTextarea.value;
+								// Optional: Dispatch an 'input' event in case other scripts
+								// need to detect the change in the description textarea.
+								descriptionTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+							}
+						}
+					}
+				});
+			}
+		});
+	</script>
+	{{-- END MODIFICATION --}}
 @endsection
