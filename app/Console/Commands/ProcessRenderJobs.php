@@ -359,50 +359,57 @@
 		 */
 		private function uploadToS3(string $localFile, string $s3File): ?string
 		{
-			// MODIFICATION START: Added more detailed error logging.
 			try {
-				// Ensure the local file exists and is readable before attempting to upload.
+				// MODIFICATION START: Add diagnostic logging before the attempt.
+				$s3Config = config('filesystems.disks.s3');
+				$this->info("--- S3 Upload Diagnostics ---");
+				$this->info("Attempting to upload to bucket: " . ($s3Config['bucket'] ?? 'NOT SET'));
+				$this->info("Using region: " . ($s3Config['region'] ?? 'NOT SET'));
+				// Do NOT log the secret key. Just check if it's loaded.
+				$this->info("AWS Key Loaded: " . (!empty($s3Config['key']) ? 'Yes' : 'No'));
+				$this->info("AWS Secret Loaded: " . (!empty($s3Config['secret']) ? 'Yes' : 'No'));
+				$this->info("-----------------------------");
+
+				if (empty($s3Config['bucket']) || empty($s3Config['key']) || empty($s3Config['secret'])) {
+					$this->error("S3 configuration is missing from the application config. Please run 'php artisan config:clear'.");
+					return null;
+				}
+				// MODIFICATION END
+
 				if (!file_exists($localFile) || !is_readable($localFile)) {
 					$this->error("Local file does not exist or is not readable at: {$localFile}");
 					return null;
 				}
 
-				// Use a file stream, which is more memory-efficient for larger files.
 				$fileStream = fopen($localFile, 'r');
 				if (!$fileStream) {
 					$this->error("Failed to open file stream for: {$localFile}");
 					return null;
 				}
 
-				// Use 'public' visibility to make the file accessible via URL.
-				// The third argument sets the visibility.
+				// The 'public' visibility requires the s3:PutObjectAcl permission.
 				$path = Storage::disk('s3')->put($s3File, $fileStream, 'public');
 
-				// Close the stream after use.
 				if (is_resource($fileStream)) {
 					fclose($fileStream);
 				}
 
 				if ($path) {
 					$this->info("Successfully uploaded {$localFile} to S3 path: {$s3File}");
-					$cdnUrl = env('AWS_CLOUDFRONT_URL');
+					$cdnUrl = env('AWS_CLOUDFROUNT_URL');
 					if ($cdnUrl) {
-						// Ensure there are no double slashes in the final URL.
 						return rtrim($cdnUrl, '/') . '/' . ltrim($s3File, '/');
 					}
-					// Fallback to the standard S3 URL if CloudFront is not configured.
 					return Storage::disk('s3')->url($s3File);
 				}
 
-				$this->error("Storage::put returned false for S3 upload of {$s3File}.");
+				$this->error("Storage::put returned a falsy value, indicating upload failure.");
 				return null;
 			} catch (Throwable $e) {
-				// This is the most important change. It logs the full exception.
 				$this->error("CRITICAL S3 UPLOAD ERROR: {$e->getMessage()}");
-				report($e); // This sends the full stack trace to your default log (storage/logs/laravel.log)
+				report($e);
 				return null;
 			}
-			// MODIFICATION END
 		}
 
 		/**
