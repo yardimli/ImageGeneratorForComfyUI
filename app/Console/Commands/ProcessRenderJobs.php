@@ -116,12 +116,16 @@
 		 */
 		private function processPrompt(Prompt $prompt, int $idx): void
 		{
-			// MODIFICATION START: Replaced hardcoded model lists with a single mapping.
+			// MODIFICATION START: Handle both short and full model names from the database.
 			$modelMapping = $this->getModelMapping();
 
-			// Filter for prompts this worker can handle.
-			if ($prompt->generation_type !== "prompt" || !array_key_exists($prompt->model, $modelMapping)) {
-				return; // Skip this prompt.
+			// The model from DB could be a short name ('schnell') or a full API name ('flux-1/schnell').
+			// Resolve it to the full API name.
+			$modelName = $modelMapping[$prompt->model] ?? $prompt->model;
+
+			// We only support models that resolve to a value present in our mapping.
+			if ($prompt->generation_type !== "prompt" || !in_array($modelName, $modelMapping, true)) {
+				return; // Skip this prompt as it's not supported by this worker.
 			}
 			// MODIFICATION END
 
@@ -146,11 +150,9 @@
 				// Mark as processing (status 1).
 				$this->updateRenderStatus($prompt, 1);
 
-				// MODIFICATION START: Simplified image generation logic to use only Fal.ai.
 				// --- Image Generation Logic ---
-				$modelName = $modelMapping[$prompt->model];
+				// $modelName is already resolved above.
 				$imageUrl = $this->generateWithFal($modelName, $prompt);
-				// MODIFICATION END
 
 				// --- Download, Save, and Upload ---
 				if ($imageUrl) {
@@ -287,33 +289,8 @@
 			}
 		}
 
-		/**
-		 * Find the closest standard aspect ratio string for the Minimax API.
-		 */
-		private function getAspectRatio(int $width, int $height): string
-		{
-			$standardRatios = [
-				"1:1" => 1.0, "16:9" => 16 / 9, "4:3" => 4 / 3, "3:2" => 3 / 2,
-				"2:3" => 2 / 3, "3:4" => 3 / 4, "9:16" => 9 / 16, "21:9" => 21 / 9
-			];
-
-			if ($height === 0) {
-				return "1:1";
-			}
-
-			$actualRatio = $width / $height;
-			$closestRatioName = "1:1";
-			$smallestDiff = PHP_INT_MAX;
-
-			foreach ($standardRatios as $name => $ratio) {
-				$diff = abs($ratio - $actualRatio);
-				if ($diff < $smallestDiff) {
-					$smallestDiff = $diff;
-					$closestRatioName = $name;
-				}
-			}
-			return $closestRatioName;
-		}
+		// MODIFICATION START: Removed unused getAspectRatio method.
+		// MODIFICATION END
 
 		/**
 		 * Download an image from a URL to a local path.

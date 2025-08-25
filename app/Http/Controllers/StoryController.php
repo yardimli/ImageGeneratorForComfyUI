@@ -19,7 +19,7 @@
 
 	class StoryController extends Controller
 	{
-		// MODIFICATION START: Added a helper to load and format image models from JSON.
+		// MODIFICATION START: Updated to load all models from JSON, using short names where available.
 		/**
 		 * Loads and formats the available image generation models for use in views.
 		 *
@@ -35,7 +35,7 @@
 				return [];
 			}
 
-			// Mapping from DB short name to full model name in JSON
+			// This map defines which models get a "short name". Others will use their full name.
 			$supportedModelsMap = [
 				'schnell' => 'flux-1/schnell',
 				'dev' => 'flux-1/dev',
@@ -52,17 +52,26 @@
 			$foundModels = [];
 
 			foreach ($allModels as $modelData) {
-				$shortName = array_search($modelData['name'], $supportedModelsMap);
-				if ($shortName !== false) {
-					$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $shortName));
-					if (isset($modelData['price'])) {
-						$displayName .= " (\${$modelData['price']})";
-					}
-					$viewModels[] = [
-						'id' => $shortName,
-						'name' => $displayName,
-					];
-					$foundModels[$shortName] = true;
+				$fullName = $modelData['name'];
+				$shortName = array_search($fullName, $supportedModelsMap);
+
+				// The ID for the form value. Use short name if it exists, otherwise full name.
+				$id = ($shortName !== false) ? $shortName : $fullName;
+
+				// The name for display in the dropdown.
+				$displayNameBase = ($shortName !== false) ? $shortName : $fullName;
+				$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $displayNameBase));
+				if (isset($modelData['price'])) {
+					$displayName .= " (\${$modelData['price']})";
+				}
+
+				$viewModels[] = [
+					'id' => $id,
+					'name' => $displayName,
+				];
+
+				if ($shortName === 'minimax') {
+					$foundModels['minimax'] = true;
 				}
 			}
 
