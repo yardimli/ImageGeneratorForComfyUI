@@ -352,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				.replace('{instruction}', instruction)
 				.replace('{text}', text);
 			
-			return system_prompt;
+			return systemPrompt;
 		}
 		
 		/**
