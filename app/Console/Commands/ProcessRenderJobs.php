@@ -388,7 +388,7 @@
 				}
 
 				// The 'public' visibility requires the s3:PutObjectAcl permission.
-				$path = Storage::disk('s3')->put($s3File, $fileStream, 'public');
+				$path = Storage::disk('s3')->put($s3File, $fileStream);
 
 				if (is_resource($fileStream)) {
 					fclose($fileStream);
