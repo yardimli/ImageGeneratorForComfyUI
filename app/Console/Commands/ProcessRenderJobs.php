@@ -290,7 +290,7 @@
 
 					if ($statusResponse->failed()) {
 						$this->warn("Fal.run status check failed for {$requestId}, retrying...");
-						$htis->warn($statusResponse->body());
+						$this->warn($statusResponse->body());
 						continue;
 					}
 
