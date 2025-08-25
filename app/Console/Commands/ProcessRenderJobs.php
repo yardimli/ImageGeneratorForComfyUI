@@ -11,7 +11,7 @@
 
 	/**
 	 * This command processes pending image generation prompts by calling external APIs.
-	 * It is designed to be run on a schedule (e.g., every minute) by the Laravel Cron Scheduler.
+	 * It is a PHP-based replacement for the original python/render-jobs.py script.
 	 */
 	class ProcessRenderJobs extends Command
 	{
@@ -30,6 +30,12 @@
 		protected $description = 'Fetches pending prompts from the database and generates images using remote APIs.';
 
 		/**
+		 * Counter to track how long a prompt has been in a processing state to prevent infinite loops.
+		 * @var array<int, int>
+		 */
+		private array $promptStatusCounter = [];
+
+		/**
 		 * Execute the console command.
 		 *
 		 * @return int
@@ -38,43 +44,20 @@
 		{
 			$this->info('Starting render job processor...');
 
-			// MODIFICATION START: The command is now designed to run and exit, not loop forever.
-			try {
-				// First, find and fail any jobs that have been stuck in a processing state for too long.
-				$this->handleStuckJobs();
+			// This infinite loop mimics the behavior of the original Python script.
+			// It should be managed by a process controller like Supervisor.
+			while (true) {
+				try {
+					$this->generateImages();
+				} catch (Throwable $e) {
+					$this->error('A critical error occurred in the main loop: ' . $e->getMessage());
+					report($e); // Log the full exception to the application log.
+				}
 
-				// Next, process a new batch of pending jobs.
-				$this->generateImages();
-			} catch (Throwable $e) {
-				$this->error('A critical error occurred: ' . $e->getMessage());
-				report($e); // Log the full exception to the application log.
-				return Command::FAILURE;
+				// Wait for 5 seconds before the next cycle, same as the Python script.
+				sleep(5);
 			}
-
-			$this->info('Render job processor finished.');
-			return Command::SUCCESS;
-			// MODIFICATION END
 		}
-
-		/**
-		 * Finds prompts that are stuck in a processing status and marks them as failed.
-		 * This is a stateless way to prevent jobs from being stuck indefinitely.
-		 */
-		private function handleStuckJobs(): void
-		{
-			// MODIFICATION START: New method to handle stuck jobs.
-			$stuckTime = now()->subMinutes(15); // A job is "stuck" if it's been processing for over 15 minutes.
-
-			$stuckCount = Prompt::whereIn('render_status', [1, 3]) // 1: processing, 3: retrying
-			->where('updated_at', '<', $stuckTime)
-				->update(['render_status' => 4]); // 4: failed
-
-			if ($stuckCount > 0) {
-				$this->warn("Marked {$stuckCount} stuck prompts as failed.");
-			}
-			// MODIFICATION END
-		}
-
 
 		/**
 		 * Fetches and processes pending prompts.
@@ -83,27 +66,29 @@
 		{
 			$this->info('Fetching pending prompts...');
 
-			// MODIFICATION START: The query now only fetches new, pending jobs (status 0).
-			// Stuck jobs (status 1, 3) are handled by the handleStuckJobs() method.
+			// MODIFICATION START: Efficiently fetch prompts directly from the database.
+			// This replaces the API call and the inefficient N+1 query pattern from the original controller.
+			$statuses = [0, 1, 3]; // 0: pending, 1: processing, 3: retrying
 			$promptsPerUser = 3;
 
-			$prompts = Prompt::where('render_status', 0) // Only fetch status 0 (pending).
-			->orderBy('id', 'desc')
+			$prompts = Prompt::whereIn('render_status', $statuses)
+				->orderBy('id', 'desc')
 				->get()
-				->groupBy('user_id')
-				->flatMap(function ($userPrompts) use ($promptsPerUser) {
-					return $userPrompts->take($promptsPerUser);
+				->groupBy(['render_status', 'user_id']) // Group by status, then by user
+				->flatMap(function ($userGroups) use ($promptsPerUser) {
+					return $userGroups->flatMap(function ($userPrompts) use ($promptsPerUser) {
+						return $userPrompts->take($promptsPerUser);
+					});
 				});
 			// MODIFICATION END
 
 			if ($prompts->isEmpty()) {
-				$this->info('No pending prompts found.');
+				$this->info('No pending prompts found. Waiting...');
 				return;
 			}
 
-			$this->info("Found {$prompts->count()} prompts to process.");
 			foreach ($prompts as $idx => $prompt) {
-				$this->processPrompt($prompt, $idx + 1);
+				$this->processPrompt($prompt, $idx);
 			}
 		}
 
@@ -128,16 +113,25 @@
 				return; // Skip this prompt.
 			}
 
-			$this->info("Processing prompt #{$idx} (ID: {$prompt->id}) - model: {$prompt->model} - user: {$prompt->user_id}");
+			$this->info("Processing prompt #{$idx} (ID: {$prompt->id}) - model: {$prompt->model} - status: {$prompt->render_status} - user: {$prompt->user_id}");
 
 			try {
 				$outputFilename = "{$prompt->generation_type}_" . Str::slug($prompt->model, '-') . "_{$prompt->id}_{$prompt->user_id}.png";
 				$s3FilePath = "images/{$outputFilename}";
 				$localTempPath = sys_get_temp_dir() . '/' . $outputFilename;
 
-				// MODIFICATION: Removed the stateful stuck job counter logic.
+				// Handle jobs that might be stuck in a processing state.
+				if (in_array($prompt->render_status, [1, 3])) {
+					$this->promptStatusCounter[$prompt->id] = ($this->promptStatusCounter[$prompt->id] ?? 0) + 1;
+					if ($this->promptStatusCounter[$prompt->id] > 20) {
+						$this->warn("Prompt {$prompt->id} has been stuck for too long. Marking as failed.");
+						$this->updateRenderStatus($prompt, 4); // 4: failed
+						unset($this->promptStatusCounter[$prompt->id]);
+					}
+					return;
+				}
 
-				// Mark as processing (status 1). This also updates the `updated_at` timestamp.
+				// Mark as processing (status 1).
 				$this->updateRenderStatus($prompt, 1);
 
 				$imageUrl = null;
@@ -181,7 +175,8 @@
 					$this->updateRenderStatus($prompt, 4);
 				}
 
-				// MODIFICATION: Removed sleep(6) as the cron schedule provides the delay.
+				// Small delay between jobs to avoid rate limiting.
+				sleep(6);
 			} catch (Throwable $e) {
 				$this->error("CRITICAL ERROR processing prompt {$prompt->id}: {$e->getMessage()}");
 				report($e);
@@ -189,8 +184,6 @@
 			}
 		}
 
-		// ... The rest of the helper methods (generateWithFal, generateWithMinimax, etc.) remain unchanged ...
-		// NOTE: I'm omitting the unchanged helper methods for brevity. They should be kept as they were in the previous answer.
 		/**
 		 * Generate an image using the Fal.ai asynchronous API.
 		 * NOTE: Requires a FAL_KEY in your .env file.
@@ -212,12 +205,14 @@
 			}
 
 			try {
+				// 1. Send the initial request to start the job.
+				// Fal.ai uses a queue system, so we poll for the result.
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
 					'Content-Type' => 'application/json'
 				])->post("https://fal.run/{$modelName}", $arguments);
 
-				$response->throw();
+				$response->throw(); // Throw exception on 4xx/5xx errors.
 				$responseData = $response->json();
 				$requestId = $responseData['request_id'] ?? null;
 
@@ -229,13 +224,15 @@
 				$statusUrl = "https://fal.run/requests/{$requestId}/status";
 				$resultUrl = "https://fal.run/requests/{$requestId}";
 
+				// 2. Poll the status URL until the job is complete or times out.
 				$startTime = time();
 				while (time() - $startTime < $falTimeout) {
-					sleep(3);
+					sleep(3); // Poll every 3 seconds.
 					$statusResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($statusUrl);
 					$statusData = $statusResponse->json();
 
 					if (($statusData['status'] ?? 'UNKNOWN') === 'COMPLETED') {
+						// 3. Fetch the final result.
 						$resultResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($resultUrl);
 						$resultData = $resultResponse->json();
 						return $resultData['images'][0]['url'] ?? null;
@@ -256,6 +253,9 @@
 			}
 		}
 
+		/**
+		 * Generate an image using the Minimax API.
+		 */
 		private function generateWithMinimax(Prompt $prompt): ?string
 		{
 			$this->info("Sending to Minimax...");
@@ -273,7 +273,7 @@
 					->timeout(120)
 					->post(env('MINIMAX_KEY_URL'), $payload);
 
-				$response->throw();
+				$response->throw(); // Throw an exception for 4xx/5xx responses.
 
 				return $response->json('data.image_urls.0');
 			} catch (Throwable $e) {
@@ -283,6 +283,9 @@
 			}
 		}
 
+		/**
+		 * Find the closest standard aspect ratio string for the Minimax API.
+		 */
 		private function getAspectRatio(int $width, int $height): string
 		{
 			$standardRatios = [
@@ -308,6 +311,9 @@
 			return $closestRatioName;
 		}
 
+		/**
+		 * Download an image from a URL to a local path.
+		 */
 		private function downloadImage(string $url, string $outputPath): bool
 		{
 			try {
@@ -326,9 +332,13 @@
 			}
 		}
 
+		/**
+		 * Upload a file to S3 using Laravel's built-in Storage facade.
+		 */
 		private function uploadToS3(string $localFile, string $s3File): ?string
 		{
 			try {
+				// Use 'public' visibility to make the file accessible via URL.
 				$path = Storage::disk('s3')->put($s3File, fopen($localFile, 'r'), 'public');
 				if ($path) {
 					$cdnUrl = env('AWS_CLOUDFRONT_URL');
@@ -345,14 +355,20 @@
 			}
 		}
 
+		/**
+		 * Update the prompt record with the final image filename/URL and set status to completed.
+		 */
 		private function updateFilename(Prompt $prompt, string $filePath): void
 		{
 			$prompt->filename = $filePath;
-			$prompt->render_status = 2;
+			$prompt->render_status = 2; // 2: completed
 			$prompt->save();
 			$this->info("Updated prompt {$prompt->id} with path {$filePath}");
 		}
 
+		/**
+		 * Update the render status of a prompt.
+		 */
 		private function updateRenderStatus(Prompt $prompt, int $status): void
 		{
 			$prompt->render_status = $status;
