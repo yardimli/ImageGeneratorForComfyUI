@@ -216,7 +216,7 @@
 
 			try {
 				// Step 1: Submit the job to the queue endpoint.
-				$submitUrl = "https://queue.fal.run/{$modelName}";
+				$submitUrl = "https://queue.fal.run/fal-ai/{$modelName}";
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
 					'Content-Type' => 'application/json',
@@ -238,8 +238,8 @@
 				$this->info("Job submitted successfully. Request ID: {$requestId}. Polling for result...");
 
 				// Step 2: Poll the status URL until the job is complete or times out.
-				$statusUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}/status";
-				$resultUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}";
+				$statusUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}/status";
+				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
 				$startTime = time();
 
 				while (time() - $startTime < $falTimeout) {
