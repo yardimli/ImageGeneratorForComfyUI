@@ -396,7 +396,7 @@
 
 				if ($path) {
 					$this->info("Successfully uploaded {$localFile} to S3 path: {$s3File}");
-					$cdnUrl = env('AWS_CLOUDFROUNT_URL');
+					$cdnUrl = env('AWS_CLOUDFRONT_URL');
 					if ($cdnUrl) {
 						return rtrim($cdnUrl, '/') . '/' . ltrim($s3File, '/');
 					}
