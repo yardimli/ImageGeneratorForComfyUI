@@ -289,6 +289,15 @@
 					$statusResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($statusUrl);
 
 					if ($statusResponse->failed()) {
+						// MODIFICATION START: Handle 405 errors specifically.
+						// A 405 error likely means the request ID has expired and is no longer valid.
+						// We should stop polling to avoid an infinite loop of failures on an expired job.
+						if ($statusResponse->status() === 405) {
+							$this->error("Polling stopped for request {$requestId}. Received a 405 Method Not Allowed error. The job has likely expired.");
+							return null;
+						}
+						// MODIFICATION END
+
 						$this->warn("Fal.run status check failed for {$requestId}, retrying...");
 						$this->warn($statusResponse->body());
 						continue;
