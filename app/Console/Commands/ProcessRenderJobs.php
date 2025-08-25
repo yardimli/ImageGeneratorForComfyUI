@@ -36,6 +36,12 @@
 		private array $promptStatusCounter = [];
 
 		/**
+		 * A list of all available model names from the JSON file.
+		 * @var array<string>|null
+		 */
+		private ?array $availableModels = null;
+
+		/**
 		 * Execute the console command.
 		 *
 		 * @return int
@@ -90,6 +96,42 @@
 		}
 
 		/**
+		 * Loads the list of available model names from the models.json file.
+		 * Caches the result in a property to avoid repeated file reads.
+		 */
+		private function loadAvailableModels(): void
+		{
+			if ($this->availableModels !== null) {
+				return;
+			}
+
+			try {
+				$jsonPath = resource_path('text-to-image-models/models.json');
+				if (!file_exists($jsonPath)) {
+					$this->error("Model definition file not found at: {$jsonPath}");
+					$this->availableModels = []; // Set to empty to prevent re-trying
+					return;
+				}
+
+				$jsonString = file_get_contents($jsonPath);
+				$allModels = json_decode($jsonString, true);
+
+				if (json_last_error() !== JSON_ERROR_NONE) {
+					$this->error('Failed to parse models.json: ' . json_last_error_msg());
+					$this->availableModels = [];
+					return;
+				}
+
+				// Extract just the 'name' field from each model entry.
+				$this->availableModels = array_column($allModels, 'name');
+			} catch (Throwable $e) {
+				$this->error('A critical error occurred while loading models.json: ' . $e->getMessage());
+				report($e);
+				$this->availableModels = [];
+			}
+		}
+
+		/**
 		 * Returns a mapping of short model names (from DB) to full Fal.ai API model names.
 		 *
 		 * @return array<string, string>
@@ -116,20 +158,22 @@
 		 */
 		private function processPrompt(Prompt $prompt, int $idx): void
 		{
-			// MODIFICATION START: Handle both short and full model names from the database.
+			// MODIFICATION START: Load models from JSON and validate against it.
+			$this->loadAvailableModels(); // Ensure the model list is loaded.
+
 			$modelMapping = $this->getModelMapping();
 
 			// The model from DB could be a short name ('schnell') or a full API name ('flux-1/schnell').
-			// Resolve it to the full API name.
+			// Resolve it to the full API name for validation and API calls.
 			$modelName = $modelMapping[$prompt->model] ?? $prompt->model;
 
-			// We only support models that resolve to a value present in our mapping.
-			if ($prompt->generation_type !== "prompt" || !in_array($modelName, $modelMapping, true)) {
-				return; // Skip this prompt as it's not supported by this worker.
+			// Filter for prompts this worker can handle: must be 'prompt' type and the model must exist in models.json.
+			if ($prompt->generation_type !== "prompt" || !in_array($modelName, $this->availableModels, true)) {
+				return; // Skip this prompt.
 			}
 			// MODIFICATION END
 
-			$this->info("Processing prompt #{$idx} (ID: {$prompt->id}) - model: {$prompt->model} - status: {$prompt->render_status} - user: {$prompt->user_id}");
+			$this->info("Processing prompt #{$idx} (ID: {$prompt->id}) - model: {$prompt->model} ({$modelName}) - status: {$prompt->render_status} - user: {$prompt->user_id}");
 
 			try {
 				$outputFilename = "{$prompt->generation_type}_" . Str::slug($prompt->model, '-') . "_{$prompt->id}_{$prompt->user_id}.png";
@@ -151,7 +195,7 @@
 				$this->updateRenderStatus($prompt, 1);
 
 				// --- Image Generation Logic ---
-				// $modelName is already resolved above.
+				// $modelName is already resolved and validated above.
 				$imageUrl = $this->generateWithFal($modelName, $prompt);
 
 				// --- Download, Save, and Upload ---
@@ -208,15 +252,13 @@
 			}
 
 			$arguments = ['prompt' => $prompt->generated_prompt];
-			// MODIFICATION START: Updated model name for qwen-image specific arguments.
 			if ($modelName === 'qwen-image') {
 				$arguments['image_size'] = ['width' => $prompt->width, 'height' => $prompt->height];
 			}
-			// MODIFICATION END
 
 			try {
 				// Step 1: Submit the job to the queue endpoint.
-				$submitUrl = "https://queue.fal.run/fal-ai/{$modelName}";
+				$submitUrl = "https://queue.fal.run/{$modelName}";
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
 					'Content-Type' => 'application/json',
@@ -238,8 +280,8 @@
 				$this->info("Job submitted successfully. Request ID: {$requestId}. Polling for result...");
 
 				// Step 2: Poll the status URL until the job is complete or times out.
-				$statusUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}/status";
-				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
+				$statusUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}/status";
+				$resultUrl = "https://queue.fal.run/{$modelName}/requests/{$requestId}";
 				$startTime = time();
 
 				while (time() - $startTime < $falTimeout) {
@@ -288,9 +330,6 @@
 				return null;
 			}
 		}
-
-		// MODIFICATION START: Removed unused getAspectRatio method.
-		// MODIFICATION END
 
 		/**
 		 * Download an image from a URL to a local path.
