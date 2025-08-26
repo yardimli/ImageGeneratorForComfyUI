@@ -283,20 +283,21 @@
 				$statusUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}/status";
 				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
 				$startTime = time();
+				$error_405_counter = 0;
 
 				while (time() - $startTime < $falTimeout) {
 					sleep(3); // Poll every 3 seconds.
 					$statusResponse = Http::withHeaders(['Authorization' => 'Key ' . $falKey])->get($statusUrl);
 
 					if ($statusResponse->failed()) {
-						// MODIFICATION START: Handle 405 errors specifically.
-						// A 405 error likely means the request ID has expired and is no longer valid.
-						// We should stop polling to avoid an infinite loop of failures on an expired job.
 						if ($statusResponse->status() === 405) {
-							$this->error("Polling stopped for request {$requestId}. Received a 405 Method Not Allowed error. The job has likely expired.");
-							return null;
+							$error_405_counter++;
+							if ($error_405_counter >= 5) {
+								$this->error("Polling stopped for request {$requestId}. Received multiple 405 Method Not Allowed errors. The job has likely expired.");
+								$this->error("Final 405 response: " . $statusResponse->body());
+								return null;
+							}
 						}
-						// MODIFICATION END
 
 						$this->warn("Fal.run status check failed for {$requestId}, retrying...");
 						$this->warn($statusResponse->body());
