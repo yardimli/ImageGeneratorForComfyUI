@@ -323,10 +323,15 @@
 						}
 
 						$resultData = $resultResponse->json();
+						//check for images as array and get the first image url, if that fails check if there's a single image url
 						$imageUrl = $resultData['images'][0]['url'] ?? null;
+						if (!$imageUrl) {
+							$imageUrl = $resultData['image']['url'] ?? null;
+						}
 
 						if (!$imageUrl) {
 							$this->error("Fal.run result for {$requestId} did not contain an image URL.");
+							$this->error($resultResponse->body());
 						}
 						return $imageUrl;
 					}
