@@ -74,7 +74,7 @@
 						// Clear the migrated data from the parent record.
 						$parent->kontext_path = null;
 						$parent->upscaled_path = null;
-						$parent->upscale_status = null;
+						$parent->upscale_status = 0;
 						$parent->upscale_prediction_id = null;
 						$parent->upscale_status_url = null;
 						$parent->save();
