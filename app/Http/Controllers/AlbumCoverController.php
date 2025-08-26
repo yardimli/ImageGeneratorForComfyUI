@@ -262,7 +262,7 @@
 		{
 			$request->validate([
 				'cover_id' => 'required|exists:goodalbumcovers,id',
-				'model_type' => 'required|in:dev,pro,max',
+				'model_type' => 'required|in:dev,pro,qwen',
 			]);
 
 			$cover = GoodAlbumCover::where('id', $request->input('cover_id'))
