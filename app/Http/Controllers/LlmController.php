@@ -235,7 +235,7 @@
 		 * @return array An array of generated prompt strings.
 		 * @throws \Exception
 		 */
-		public function generateChatPrompts(string $promptTemplate, int $count, string $precision, string $originalPrompt = '', string $modelId = 'openai/gpt-4o-mini'): array
+		public function generateChatPrompts(string $promptTemplate, int $count, string $precision, string $originalPrompt = '', string $modelId = 'openai/gpt-4.1'): array
 		{
 			set_time_limit(300); // 5-minute timeout for long generations
 			// Set temperature based on precision
@@ -276,7 +276,7 @@
 		 * @return string The generated text from the vision model.
 		 * @throws \Exception
 		 */
-		public function generatePromptFromImage(string $prompt, string $base64Image, string $mimeType = 'image/jpeg', string $modelId = 'openai/gpt-4o'): string
+		public function generatePromptFromImage(string $prompt, string $base64Image, string $mimeType = 'image/jpeg', string $modelId = 'openai/gpt-4.1'): string
 		{
 			set_time_limit(300); // 5-minute timeout for long generations
 			if (!$this->apiKey) {
