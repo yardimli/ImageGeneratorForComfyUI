@@ -280,6 +280,11 @@
 				$this->info("Job submitted successfully. Request ID: {$requestId}. Polling for result...");
 
 				// Step 2: Poll the status URL until the job is complete or times out.
+				// explode $modelName by "/" and use the first part only for the status URL
+				if (str_contains($modelName, '/')) {
+					$modelName = explode('/', $modelName)[0];
+				}
+
 				$statusUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}/status";
 				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
 				$startTime = time();
