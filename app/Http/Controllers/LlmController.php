@@ -543,7 +543,7 @@
 					->post($this->apiBaseUrl . '/chat/completions', $requestBody);
 
 				if ($response->failed()) {
-					$this->logLlmInteraction($userPrompt, $response->body(), true);
+					$this->logLlmInteraction($systemPrompt, $response->body(), true);
 					$response->throw();
 				}
 
@@ -555,13 +555,13 @@
 
 				if (isset($jsonResponse['choices'][0]['message']['content'])) {
 					$llmContent = $jsonResponse['choices'][0]['message']['content'];
-					$this->logLlmInteraction($userPrompt, $llmContent);
+					$this->logLlmInteraction($systemPrompt, $llmContent);
 					return $llmContent;
 				}
 
 				throw new \Exception('Invalid response structure from LLM.');
 			} catch (Throwable $e) {
-				$this->logLlmInteraction($userPrompt, $e->getMessage(), true);
+				$this->logLlmInteraction($systemPrompt, $e->getMessage(), true);
 				throw new \Exception('LLM API request failed: ' . $e->getMessage(), $e->getCode(), $e);
 			}
 		}
