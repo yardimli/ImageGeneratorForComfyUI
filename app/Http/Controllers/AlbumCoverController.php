@@ -269,7 +269,6 @@
 				'model_type' => 'required|in:dev,pro,qwen',
 			]);
 
-			// START MODIFICATION: Logic to clone cover instead of updating
 			$parentCover = GoodAlbumCover::where('id', $request->input('cover_id'))
 				->where('user_id', auth()->id())
 				->firstOrFail();
@@ -286,10 +285,16 @@
 				'kontext_path', 'upscaled_path', 'upscale_status', 'upscale_prediction_id', 'upscale_status_url'
 			]);
 			$childCover->parent_id = $parentCover->id;
-			$childCover->liked = false; // Generated images are not "liked" originals
-			$childCover->notes = null; // Start with fresh notes
-			$childCover->save(); // Save to get an ID for the new record
+			$childCover->liked = false;
+			$childCover->notes = null;
+
+			// START MODIFICATION: Prevent future unique constraint violations
+			// Set album_path to null and image_source to 'generated' for the new child record.
+			$childCover->album_path = null;
+			$childCover->image_source = 'generated';
 			// END MODIFICATION
+
+			$childCover->save(); // Save to get an ID for the new record
 
 			$modelEndpoints = [
 				'dev' => 'fal-ai/flux-kontext/dev',
@@ -305,24 +310,21 @@
 			}
 
 			try {
-				// START MODIFICATION: Use parent cover's image as the source
 				$imageUrl = $parentCover->image_source === 's3'
 					? $cloudfrontUrl . '/' . $parentCover->album_path
 					: asset(Storage::url($parentCover->album_path));
-				// END MODIFICATION
 
 				$response = Http::withHeaders([
 					'Authorization' => "Key {$apiKey}",
 					'Content-Type' => 'application/json',
 				])->post($endpoint, [
-					'prompt' => "Remove the texts, " . $parentCover->mix_prompt, // Use parent's prompt
+					'prompt' => "Remove the texts, " . $parentCover->mix_prompt,
 					'image_url' => $imageUrl,
 					'safety_tolerance' => 5,
 				]);
 
 				if ($response->failed()) {
 					Log::error('Fal.run API error on submit: ' . $response->body());
-					// Clean up the placeholder record if submission fails
 					$childCover->delete();
 					return response()->json(['success' => false, 'message' => 'Failed to submit job to the API.'], 502);
 				}
@@ -332,17 +334,13 @@
 
 				if (!$requestId) {
 					Log::error('Fal.run API did not return a request_id: ' . $response->body());
-					// Clean up the placeholder record if submission fails
 					$childCover->delete();
 					return response()->json(['success' => false, 'message' => 'API did not return a request ID.'], 502);
 				}
 
-				// START MODIFICATION: Return the new child cover's ID to the frontend
 				return response()->json(['success' => true, 'request_id' => $requestId, 'new_cover_id' => $childCover->id]);
-				// END MODIFICATION
 			} catch (Exception $e) {
 				Log::error('Exception during Fal.run API call: ' . $e->getMessage());
-				// Clean up the placeholder record on exception
 				$childCover->delete();
 				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
 			}
