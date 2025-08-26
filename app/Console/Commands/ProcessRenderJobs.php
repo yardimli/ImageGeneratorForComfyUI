@@ -252,9 +252,7 @@
 			}
 
 			$arguments = ['prompt' => $prompt->generated_prompt];
-			if ($modelName === 'qwen-image') {
-				$arguments['image_size'] = ['width' => $prompt->width, 'height' => $prompt->height];
-			}
+			$arguments['image_size'] = ['width' => $prompt->width ?? 1024, 'height' => $prompt->height ?? 1024];
 
 			try {
 				// Step 1: Submit the job to the queue endpoint.
