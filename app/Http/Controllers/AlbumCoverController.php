@@ -269,32 +269,49 @@
 				'model_type' => 'required|in:dev,pro,qwen',
 			]);
 
-			$parentCover = GoodAlbumCover::where('id', $request->input('cover_id'))
-				->where('user_id', auth()->id())
+			// START MODIFICATION: Refactor to handle both original and generated sources
+			$sourceCover = GoodAlbumCover::with('parent')
+				->where('id', $request->input('cover_id'))
 				->firstOrFail();
 
-			$cloudfrontUrl = rtrim(env('COVERS_AWS_CLOUDFRONT_URL'), '/');
+			// Authorize: User must own the original parent cover.
+			$ownerId = $sourceCover->parent ? $sourceCover->parent->user_id : $sourceCover->user_id;
+			if ($ownerId !== auth()->id()) {
+				abort(403, 'Unauthorized action.');
+			}
 
-			if (empty($parentCover->mix_prompt)) {
+			if (empty($sourceCover->mix_prompt)) {
 				return response()->json(['success' => false, 'message' => 'This cover does not have a mix prompt.'], 422);
 			}
 
-			// Replicate the parent to create a new child record for the generation
-			$childCover = $parentCover->replicate([
-				// Attributes to exclude from replication
-				'kontext_path', 'upscaled_path', 'upscale_status', 'upscale_prediction_id', 'upscale_status_url'
-			]);
-			$childCover->parent_id = $parentCover->id;
-			$childCover->liked = false;
-			$childCover->notes = null;
+			// Determine the ultimate parent for the new record.
+			// If the source is already a child, its parent is the original cover.
+			// If the source is an original, it is its own parent.
+			$parentForNewChild = $sourceCover->parent ?? $sourceCover;
 
-			// START MODIFICATION: Prevent future unique constraint violations
-			// Set album_path to null and image_source to 'generated' for the new child record.
+			// Create the new child record.
+			$childCover = new GoodAlbumCover();
+			$childCover->parent_id = $parentForNewChild->id;
+			$childCover->user_id = $parentForNewChild->user_id; // Always associate with the original user
+			$childCover->mix_prompt = $sourceCover->mix_prompt; // Use the prompt from the immediate source
 			$childCover->album_path = null;
 			$childCover->image_source = 'generated';
-			// END MODIFICATION
+			$childCover->liked = false;
+			$childCover->save(); // Save to get an ID
 
-			$childCover->save(); // Save to get an ID for the new record
+			$cloudfrontUrl = rtrim(env('COVERS_AWS_CLOUDFRONT_URL'), '/');
+
+			// Determine the image URL to send to the API.
+			// If the source is a generated image, use its kontext_path.
+			// Otherwise, use the original album_path.
+			if ($sourceCover->kontext_path) {
+				$imageUrl = asset(Storage::url($sourceCover->kontext_path));
+			} else {
+				$imageUrl = $sourceCover->image_source === 's3'
+					? $cloudfrontUrl . '/' . $sourceCover->album_path
+					: asset(Storage::url($sourceCover->album_path));
+			}
+			// END MODIFICATION
 
 			$modelEndpoints = [
 				'dev' => 'fal-ai/flux-kontext/dev',
@@ -310,15 +327,11 @@
 			}
 
 			try {
-				$imageUrl = $parentCover->image_source === 's3'
-					? $cloudfrontUrl . '/' . $parentCover->album_path
-					: asset(Storage::url($parentCover->album_path));
-
 				$response = Http::withHeaders([
 					'Authorization' => "Key {$apiKey}",
 					'Content-Type' => 'application/json',
 				])->post($endpoint, [
-					'prompt' => "Remove the texts, " . $parentCover->mix_prompt,
+					'prompt' => "Remove the texts, " . $sourceCover->mix_prompt, // Use the prompt from the immediate source
 					'image_url' => $imageUrl,
 					'safety_tolerance' => 5,
 				]);

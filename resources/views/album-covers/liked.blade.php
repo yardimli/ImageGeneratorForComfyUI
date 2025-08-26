@@ -3,6 +3,7 @@
 @section('content')
 	<div class="container py-4">
 		<div class="card">
+			{{-- Card Header is unchanged --}}
 			<div class="card-header">
 				<div class="d-flex justify-content-between align-items-center">
 					<h3 class="mb-0">Liked Covers</h3>
@@ -19,10 +20,8 @@
 							</select>
 						</form>
 						
-						<!-- START MODIFICATION: Add a button to toggle viewing only generated cards -->
 						<button type="button" id="toggleGeneratedBtn" class="btn btn-outline-info btn-sm me-2">Show Generated Only
 						</button>
-						<!-- END MODIFICATION -->
 						
 						<!-- Original Buttons -->
 						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal"
@@ -47,7 +46,6 @@
 								</label>
 							</div>
 						</div>
-						{{-- START MODIFICATION: Adjust row structure for nesting --}}
 						<div class="row g-4">
 							@foreach($likedImages as $image)
 								{{-- This column wraps the original cover and all its children --}}
@@ -117,6 +115,29 @@
 																	<img src="{{ Storage::url($child->kontext_path) }}" class="card-img-top"
 																	     alt="Kontext Result">
 																</a>
+																{{-- START MODIFICATION: Add prompt and generation controls to child cards --}}
+																<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $child->id }}">
+																	"{{ $child->mix_prompt ?? 'No Prompt'}}"</p>
+																<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
+																        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $child->id }}"
+																        data-prompt="{{ $child->mix_prompt }}">
+																	Edit
+																</button>
+																<br>
+																<div class="btn-group btn-group-sm kontext-controls" role="group"
+																     data-cover-id="{{ $child->id }}" data-parent-id="{{ $image->id }}">
+																	<button type="button" class="btn btn-primary kontext-btn" data-model="dev"
+																	        @if(!$child->mix_prompt) disabled title="No mix prompt available" @endif>dev
+																	</button>
+																	<button type="button" class="btn btn-secondary kontext-btn" data-model="pro"
+																	        @if(!$child->mix_prompt) disabled title="No mix prompt available" @endif>pro
+																	</button>
+																	<button type="button" class="btn btn-success kontext-btn" data-model="qwen"
+																	        @if(!$child->mix_prompt) disabled title="No mix prompt available" @endif>qwen
+																	</button>
+																</div>
+																<div class="kontext-status mt-2 small" id="kontext-status-{{ $child->id }}"></div>
+																{{-- END MODIFICATION --}}
 															</div>
 															<div class="card-footer text-center p-1">
 																<div class="mt-1 text-start">
@@ -172,7 +193,6 @@
 								</div>
 							@endforeach
 						</div>
-						{{-- END MODIFICATION --}}
 					</form>
 					<div class="mt-4">
 						{{ $likedImages->links('pagination::bootstrap-5') }}
@@ -494,6 +514,10 @@
 				const coverId = controls.dataset.coverId;
 				const statusDiv = document.getElementById(`kontext-status-${coverId}`);
 				
+				// START MODIFICATION: Determine the correct parent container for placing new cards
+				const parentId = controls.dataset.parentId || coverId;
+				// END MODIFICATION
+				
 				controls.querySelectorAll('.kontext-btn').forEach(btn => btn.disabled = true);
 				statusDiv.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...`;
 				
@@ -506,7 +530,7 @@
 							'Content-Type': 'application/json',
 						},
 						body: JSON.stringify({
-							cover_id: coverId,
+							cover_id: coverId, // This is the ID of the image we are generating FROM
 							model_type: model,
 						})
 					});
@@ -516,8 +540,9 @@
 					}
 					statusDiv.textContent = 'Job queued. Waiting for result...';
 					
-					// START MODIFICATION: Create a placeholder card for the new image
-					const generatedContainer = document.getElementById(`generated-container-${coverId}`);
+					// START MODIFICATION: Use the determined parentId to find the container
+					const generatedContainer = document.getElementById(`generated-container-${parentId}`);
+					// END MODIFICATION
 					const placeholder = document.createElement('div');
 					placeholder.className = 'col-md-4 mb-4 generated-card-wrapper';
 					placeholder.id = `cover-wrapper-${data.new_cover_id}`;
@@ -534,9 +559,8 @@
                         </div>
                     `;
 					generatedContainer.appendChild(placeholder);
-					// END MODIFICATION
 					
-					pollStatus(data.request_id, model, data.new_cover_id, coverId); // Pass new cover ID
+					pollStatus(data.request_id, model, data.new_cover_id, parentId); // Pass parentId
 				} catch (error) {
 					console.error('Error starting Kontext generation:', error);
 					statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
@@ -546,9 +570,9 @@
 				}
 			}
 			
-			function pollStatus(requestId, model, newCoverId, parentCoverId) {
-				const parentControls = document.querySelector(`.kontext-controls[data-cover-id="${parentCoverId}"]`);
-				const parentStatusDiv = document.getElementById(`kontext-status-${parentCoverId}`);
+			function pollStatus(requestId, model, newCoverId, parentId) { // Use generic parentId
+				const sourceControls = document.querySelector(`.kontext-controls[data-cover-id="${newCoverId}"]`) || document.querySelector(`.kontext-controls[data-parent-id="${parentId}"]`);
+				const statusDiv = document.getElementById(`kontext-status-${newCoverId}`) || document.getElementById(`kontext-status-${parentId}`);
 				const placeholderWrapper = document.getElementById(`cover-wrapper-${newCoverId}`);
 				
 				if (pollingIntervals[newCoverId]) {
@@ -578,16 +602,25 @@
 						if (data.status === 'completed') {
 							clearInterval(pollingIntervals[newCoverId]);
 							delete pollingIntervals[newCoverId];
-							parentStatusDiv.innerHTML = `<span class="text-success">Generation complete!</span>`;
-							setTimeout(() => parentStatusDiv.innerHTML = '', 3000);
+							statusDiv.innerHTML = `<span class="text-success">Generation complete!</span>`;
+							setTimeout(() => statusDiv.innerHTML = '', 3000);
 							
-							// START MODIFICATION: Replace placeholder with the final card content
+							// START MODIFICATION: The placeholder now includes the new controls
 							placeholderWrapper.innerHTML = `
                                 <div class="card h-100">
                                     <div class="card-body p-0">
                                         <a href="${data.image_url}" target="_blank" title="View full size">
                                             <img src="${data.image_url}" class="card-img-top" alt="Kontext Result">
                                         </a>
+                                        <p class="card-text small text-muted fst-italic mt-3" id="prompt-text-${newCoverId}">"${data.cover.mix_prompt || 'No Prompt'}"</p>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="${newCoverId}" data-prompt="${data.cover.mix_prompt}">Edit</button>
+                                        <br>
+                                        <div class="btn-group btn-group-sm kontext-controls" role="group" data-cover-id="${newCoverId}" data-parent-id="${parentId}">
+                                            <button type="button" class="btn btn-primary kontext-btn" data-model="dev" ${!data.cover.mix_prompt ? 'disabled' : ''}>dev</button>
+                                            <button type="button" class="btn btn-secondary kontext-btn" data-model="pro" ${!data.cover.mix_prompt ? 'disabled' : ''}>pro</button>
+                                            <button type="button" class="btn btn-success kontext-btn" data-model="qwen" ${!data.cover.mix_prompt ? 'disabled' : ''}>qwen</button>
+                                        </div>
+                                        <div class="kontext-status mt-2 small" id="kontext-status-${newCoverId}"></div>
                                     </div>
                                     <div class="card-footer text-center p-1">
                                         <div class="mt-1 text-start">
@@ -606,12 +639,14 @@
                             `;
 							// END MODIFICATION
 							
-							parentControls.querySelectorAll('.kontext-btn').forEach(btn => {
-								if (btn.title !== "No mix prompt available") btn.disabled = false;
-							});
+							if (sourceControls) {
+								sourceControls.querySelectorAll('.kontext-btn').forEach(btn => {
+									if (btn.title !== "No mix prompt available") btn.disabled = false;
+								});
+							}
 							
 						} else if (data.status === 'processing') {
-							parentStatusDiv.textContent = 'Processing...';
+							statusDiv.textContent = 'Processing...';
 						} else if (data.status === 'error') {
 							throw new Error(data.message || 'An error occurred during processing.');
 						}
@@ -619,11 +654,13 @@
 						clearInterval(pollingIntervals[newCoverId]);
 						delete pollingIntervals[newCoverId];
 						console.error('Error polling status:', error);
-						parentStatusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
-						placeholderWrapper.remove(); // Remove the failed placeholder
-						parentControls.querySelectorAll('.kontext-btn').forEach(btn => {
-							if (btn.title !== "No mix prompt available") btn.disabled = false;
-						});
+						statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+						placeholderWrapper.remove();
+						if (sourceControls) {
+							sourceControls.querySelectorAll('.kontext-btn').forEach(btn => {
+								if (btn.title !== "No mix prompt available") btn.disabled = false;
+							});
+						}
 					}
 				}, 3000);
 			}
