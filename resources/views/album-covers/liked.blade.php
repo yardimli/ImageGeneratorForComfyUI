@@ -47,113 +47,132 @@
 								</label>
 							</div>
 						</div>
-						<div class="row">
+						{{-- START MODIFICATION: Adjust row structure for nesting --}}
+						<div class="row g-4">
 							@foreach($likedImages as $image)
-								<div class="col-md-3 mb-4" data-has-generated="{{ $image->kontext_path ? 'true' : 'false' }}">
-									<div class="card h-100 image-card original-cover-card">
-										<div class="card-body p-0">
-											<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
-												<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
-												       value="{{ $image->id }}" style="transform: scale(1.5);">
-											</div>
-											@php
-												$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
-											@endphp
-											<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
-											                                               alt="Liked Album Cover"></a>
-											<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $image->id }}">
-												"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
-											<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
-											        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}"
-											        data-prompt="{{ $image->mix_prompt }}">
-												Edit
-											</button>
-											<br>
-											<div class="btn-group btn-group-sm kontext-controls" role="group"
-											     data-cover-id="{{ $image->id }}">
-												<button type="button" class="btn btn-primary kontext-btn" data-model="dev"
-												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>dev
-												</button>
-												<button type="button" class="btn btn-secondary kontext-btn" data-model="pro"
-												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>pro
-												</button>
-												<button type="button" class="btn btn-success kontext-btn" data-model="qwen"
-												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>qwen
-												</button>
+								{{-- This column wraps the original cover and all its children --}}
+								<div class="col-12 original-cover-wrapper" data-has-generated="{{ $image->children->isNotEmpty() ? 'true' : 'false' }}">
+									<div class="row">
+										{{-- Original Cover Card --}}
+										<div class="col-md-3">
+											<div class="card h-100 image-card original-cover-card">
+												<div class="card-body p-0">
+													<div class="position-absolute top-0 start-0 m-2" style="z-index: 10;">
+														<input type="checkbox" class="form-check-input image-checkbox" name="cover_ids[]"
+														       value="{{ $image->id }}" style="transform: scale(1.5);">
+													</div>
+													@php
+														$imageUrl = $image->image_source === 's3' ? ($cloudfrontUrl . '/' . $image->album_path) : Storage::url($image->album_path);
+													@endphp
+													<a target="_blank" href="{{ $imageUrl }}"><img src="{{ $imageUrl }}" class="card-img-top"
+													                                               alt="Liked Album Cover"></a>
+													<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $image->id }}">
+														"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
+													<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
+													        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}"
+													        data-prompt="{{ $image->mix_prompt }}">
+														Edit
+													</button>
+													<br>
+													<div class="btn-group btn-group-sm kontext-controls" role="group"
+													     data-cover-id="{{ $image->id }}">
+														<button type="button" class="btn btn-primary kontext-btn" data-model="dev"
+														        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>dev
+														</button>
+														<button type="button" class="btn btn-secondary kontext-btn" data-model="pro"
+														        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>pro
+														</button>
+														<button type="button" class="btn btn-success kontext-btn" data-model="qwen"
+														        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>qwen
+														</button>
+													</div>
+												</div>
+												<div class="card-footer text-center p-0">
+													<div class="kontext-status mt-2 small" id="kontext-status-{{ $image->id }}"></div>
+													
+													<div class="mt-2 text-start">
+														<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
+														          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
+														<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
+														        data-cover-id="{{ $image->id }}">Save Notes
+														</button>
+														<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
+														        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
+														        data-cover-id="{{ $image->id }}">
+															Unlike
+														</button>
+													</div>
+												</div>
 											</div>
 										</div>
-										<div class="card-footer text-center p-0">
-											<div class="kontext-status mt-2 small" id="kontext-status-{{ $image->id }}"></div>
-											<div class="kontext-result mt-2" id="kontext-result-{{ $image->id }}">
-												@if($image->kontext_path)
-													<a href="{{ Storage::url($image->kontext_path) }}" target="_blank" title="View full size">
-														<img src="{{ Storage::url($image->kontext_path) }}" class="img-fluid rounded mt-2"
-														     alt="Kontext Result">
-													</a>
-												@endif
-											</div>
-											
-											<div class="mt-2 text-start">
-												<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
-												          data-cover-id="{{ $image->id }}" rows="2">{{ $image->notes }}</textarea>
-												<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
-												        data-cover-id="{{ $image->id }}">Save Notes
-												</button>
-												{{-- START MODIFICATION: Add unlike button --}}
-												<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
-												        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
-												        data-cover-id="{{ $image->id }}">
-													Unlike
-												</button>
-												{{-- END MODIFICATION --}}
-											
-											</div>
-											
-											
-											<!-- Upscale Section -->
-											<div class="mt-1 border-top pt-1">
-												<div id="upscale-controls-{{ $image->id }}">
-													@if($image->kontext_path)
-														{{-- This logic only runs if a Kontext image exists --}}
-														@if(is_null($image->upscale_status) || $image->upscale_status == 0)
-															<button type="button" class="btn btn-success btn-sm upscale-btn"
-															        data-cover-id="{{ $image->id }}">Upscale
-															</button>
-														@elseif($image->upscale_status == 1)
-															<div class="text-warning">Upscaling in progress...</div>
-															<script>
-																document.addEventListener('DOMContentLoaded', function () {
-																	if (typeof pollUpscaleStatus === 'function') {
-																		pollUpscaleStatus('{{ $image->id }}', '{{ $image->upscale_prediction_id }}');
-																	}
-																});
-															</script>
-														@elseif($image->upscale_status == 2)
-															<a href="{{ Storage::url($image->upscaled_path) }}" class="btn btn-info btn-sm"
-															   target="_blank">View Upscaled</a>
-															<button type="button" class="btn btn-warning btn-sm upscale-btn ms-1"
-															        data-cover-id="{{ $image->id }}">Redo Upscale
-															</button>
-														@elseif($image->upscale_status == 3)
-															<div class="text-danger">Upscale failed.</div>
-															<button type="button" class="btn btn-success btn-sm upscale-btn"
-															        data-cover-id="{{ $image->id }}">Retry Upscale
-															</button>
-														@endif
-													@else
-														{{-- If no Kontext image, show a disabled button --}}
-														<button type="button" class="btn btn-success btn-sm" disabled
-														        title="Generate a Kontext image first to enable upscaling">Upscale Image
-														</button>
-													@endif
-												</div>
-												<div class="upscale-status mt-2 small" id="upscale-status-{{ $image->id }}"></div>
+										
+										{{-- Generated (Child) Cover Cards --}}
+										<div class="col-md-9">
+											<div class="row generated-container" id="generated-container-{{ $image->id }}">
+												@foreach($image->children as $child)
+													<div class="col-md-4 mb-4 generated-card-wrapper" id="cover-wrapper-{{$child->id}}">
+														<div class="card h-100">
+															<div class="card-body p-0">
+																<a href="{{ Storage::url($child->kontext_path) }}" target="_blank" title="View full size">
+																	<img src="{{ Storage::url($child->kontext_path) }}" class="card-img-top"
+																	     alt="Kontext Result">
+																</a>
+															</div>
+															<div class="card-footer text-center p-1">
+																<div class="mt-1 text-start">
+																	<textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..."
+																	          data-cover-id="{{ $child->id }}" rows="2">{{ $child->notes }}</textarea>
+																	<button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn"
+																	        data-cover-id="{{ $child->id }}">Save Notes
+																	</button>
+																	<button type="button" class="btn btn-outline-danger btn-sm delete-generated-btn ms-1"
+																	        data-cover-id="{{ $child->id }}">
+																		Delete
+																	</button>
+																</div>
+																
+																<!-- Upscale Section -->
+																<div class="mt-1 border-top pt-1">
+																	<div id="upscale-controls-{{ $child->id }}">
+																		@if(is_null($child->upscale_status) || $child->upscale_status == 0)
+																			<button type="button" class="btn btn-success btn-sm upscale-btn"
+																			        data-cover-id="{{ $child->id }}">Upscale
+																			</button>
+																		@elseif($child->upscale_status == 1)
+																			<div class="text-warning">Upscaling in progress...</div>
+																			<script>
+																				document.addEventListener('DOMContentLoaded', function () {
+																					if (typeof pollUpscaleStatus === 'function') {
+																						pollUpscaleStatus('{{ $child->id }}', '{{ $child->upscale_prediction_id }}');
+																					}
+																				});
+																			</script>
+																		@elseif($child->upscale_status == 2)
+																			<a href="{{ Storage::url($child->upscaled_path) }}" class="btn btn-info btn-sm"
+																			   target="_blank">View Upscaled</a>
+																			<button type="button" class="btn btn-warning btn-sm upscale-btn ms-1"
+																			        data-cover-id="{{ $child->id }}">Redo Upscale
+																			</button>
+																		@elseif($child->upscale_status == 3)
+																			<div class="text-danger">Upscale failed.</div>
+																			<button type="button" class="btn btn-success btn-sm upscale-btn"
+																			        data-cover-id="{{ $child->id }}">Retry Upscale
+																			</button>
+																		@endif
+																	</div>
+																	<div class="upscale-status mt-2 small" id="upscale-status-{{ $child->id }}"></div>
+																</div>
+															</div>
+														</div>
+													</div>
+												@endforeach
 											</div>
 										</div>
 									</div>
 								</div>
 							@endforeach
 						</div>
+						{{-- END MODIFICATION --}}
 					</form>
 					<div class="mt-4">
 						{{ $likedImages->links('pagination::bootstrap-5') }}
@@ -341,33 +360,25 @@
 		
 		
 		document.addEventListener('DOMContentLoaded', function () {
-			// --- START MODIFICATION: Script to toggle card body visibility ---
+			// --- START MODIFICATION: Script to toggle generated covers visibility (with corrected logic) ---
 			const toggleBtn = document.getElementById('toggleGeneratedBtn');
 			if (toggleBtn) {
-				let showGeneratedOnly = false; // Initial state: everything is expanded.
+				let showGeneratedOnly = false;
 				
 				toggleBtn.addEventListener('click', function () {
-					showGeneratedOnly = !showGeneratedOnly; // Toggle state.
+					showGeneratedOnly = !showGeneratedOnly;
 					
-					// Find all columns containing a card.
-					const allCardColumns = document.querySelectorAll('[data-has-generated]');
+					const allOriginalWrappers = document.querySelectorAll('.original-cover-wrapper');
 					
-					allCardColumns.forEach(column => {
-						// Find the card body within this column's card.
-						const cardBody = column.querySelector('.card-body');
-						if (!cardBody) {
-							return; // Skip if the structure is not as expected.
-						}
-						
+					allOriginalWrappers.forEach(wrapper => {
+						const hasGenerated = wrapper.dataset.hasGenerated === 'true';
 						if (showGeneratedOnly) {
-							cardBody.style.display = 'none';
+							wrapper.style.display = hasGenerated ? '' : 'none';
 						} else {
-							// When toggled back to "Show All", ensure all card bodies are visible again.
-							cardBody.style.display = '';
+							wrapper.style.display = '';
 						}
 					});
 					
-					// Update button text and style to reflect the current state.
 					if (showGeneratedOnly) {
 						this.textContent = 'Show All Covers';
 						this.classList.remove('btn-outline-info');
@@ -482,11 +493,9 @@
 				const controls = button.closest('.kontext-controls');
 				const coverId = controls.dataset.coverId;
 				const statusDiv = document.getElementById(`kontext-status-${coverId}`);
-				const resultDiv = document.getElementById(`kontext-result-${coverId}`);
 				
 				controls.querySelectorAll('.kontext-btn').forEach(btn => btn.disabled = true);
 				statusDiv.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...`;
-				resultDiv.innerHTML = '';
 				
 				try {
 					const response = await fetch('{{ route("album-covers.kontext.generate") }}', {
@@ -506,7 +515,28 @@
 						throw new Error(data.message || 'Failed to start generation.');
 					}
 					statusDiv.textContent = 'Job queued. Waiting for result...';
-					pollStatus(data.request_id, model, coverId);
+					
+					// START MODIFICATION: Create a placeholder card for the new image
+					const generatedContainer = document.getElementById(`generated-container-${coverId}`);
+					const placeholder = document.createElement('div');
+					placeholder.className = 'col-md-4 mb-4 generated-card-wrapper';
+					placeholder.id = `cover-wrapper-${data.new_cover_id}`;
+					placeholder.innerHTML = `
+                        <div class="card h-100">
+                            <div class="card-body d-flex justify-content-center align-items-center">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center p-1">
+                                <small class="text-muted">Generating...</small>
+                            </div>
+                        </div>
+                    `;
+					generatedContainer.appendChild(placeholder);
+					// END MODIFICATION
+					
+					pollStatus(data.request_id, model, data.new_cover_id, coverId); // Pass new cover ID
 				} catch (error) {
 					console.error('Error starting Kontext generation:', error);
 					statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
@@ -516,16 +546,16 @@
 				}
 			}
 			
-			function pollStatus(requestId, model, coverId) {
-				const controls = document.querySelector(`.kontext-controls[data-cover-id="${coverId}"]`);
-				const statusDiv = document.getElementById(`kontext-status-${coverId}`);
-				const resultDiv = document.getElementById(`kontext-result-${coverId}`);
+			function pollStatus(requestId, model, newCoverId, parentCoverId) {
+				const parentControls = document.querySelector(`.kontext-controls[data-cover-id="${parentCoverId}"]`);
+				const parentStatusDiv = document.getElementById(`kontext-status-${parentCoverId}`);
+				const placeholderWrapper = document.getElementById(`cover-wrapper-${newCoverId}`);
 				
-				if (pollingIntervals[coverId]) {
-					clearInterval(pollingIntervals[coverId]);
+				if (pollingIntervals[newCoverId]) {
+					clearInterval(pollingIntervals[newCoverId]);
 				}
 				
-				pollingIntervals[coverId] = setInterval(async () => {
+				pollingIntervals[newCoverId] = setInterval(async () => {
 					try {
 						const response = await fetch('{{ route("album-covers.kontext.status") }}', {
 							method: 'POST',
@@ -537,7 +567,7 @@
 							body: JSON.stringify({
 								request_id: requestId,
 								model_type: model,
-								cover_id: coverId
+								cover_id: newCoverId
 							})
 						});
 						const data = await response.json();
@@ -546,34 +576,52 @@
 						}
 						
 						if (data.status === 'completed') {
-							clearInterval(pollingIntervals[coverId]);
-							delete pollingIntervals[coverId];
-							statusDiv.innerHTML = `<span class="text-success">Completed!</span>`;
-							resultDiv.innerHTML = `
-                        <a href="${data.image_url}" target="_blank" title="View full size">
-                            <img src="${data.image_url}" class="img-fluid rounded mt-2" alt="Kontext Result">
-                        </a>`;
-							controls.querySelectorAll('.kontext-btn').forEach(btn => {
+							clearInterval(pollingIntervals[newCoverId]);
+							delete pollingIntervals[newCoverId];
+							parentStatusDiv.innerHTML = `<span class="text-success">Generation complete!</span>`;
+							setTimeout(() => parentStatusDiv.innerHTML = '', 3000);
+							
+							// START MODIFICATION: Replace placeholder with the final card content
+							placeholderWrapper.innerHTML = `
+                                <div class="card h-100">
+                                    <div class="card-body p-0">
+                                        <a href="${data.image_url}" target="_blank" title="View full size">
+                                            <img src="${data.image_url}" class="card-img-top" alt="Kontext Result">
+                                        </a>
+                                    </div>
+                                    <div class="card-footer text-center p-1">
+                                        <div class="mt-1 text-start">
+                                            <textarea class="form-control form-control-sm notes-textarea" placeholder="Add notes..." data-cover-id="${newCoverId}" rows="2"></textarea>
+                                            <button type="button" class="btn btn-outline-primary btn-sm mt-1 update-notes-btn" data-cover-id="${newCoverId}">Save Notes</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm delete-generated-btn ms-1" data-cover-id="${newCoverId}">Delete</button>
+                                        </div>
+                                        <div class="mt-1 border-top pt-1">
+                                            <div id="upscale-controls-${newCoverId}">
+                                                <button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="${newCoverId}">Upscale</button>
+                                            </div>
+                                            <div class="upscale-status mt-2 small" id="upscale-status-${newCoverId}"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+							// END MODIFICATION
+							
+							parentControls.querySelectorAll('.kontext-btn').forEach(btn => {
 								if (btn.title !== "No mix prompt available") btn.disabled = false;
 							});
 							
-							// Enable the upscale button now that a Kontext image exists
-							const upscaleControlsDiv = document.getElementById(`upscale-controls-${coverId}`);
-							if (upscaleControlsDiv) {
-								upscaleControlsDiv.innerHTML = `<button type="button" class="btn btn-success btn-sm upscale-btn" data-cover-id="${coverId}">Upscale Image</button>`;
-							}
-							
 						} else if (data.status === 'processing') {
-							statusDiv.textContent = 'Processing...';
+							parentStatusDiv.textContent = 'Processing...';
 						} else if (data.status === 'error') {
 							throw new Error(data.message || 'An error occurred during processing.');
 						}
 					} catch (error) {
-						clearInterval(pollingIntervals[coverId]);
-						delete pollingIntervals[coverId];
+						clearInterval(pollingIntervals[newCoverId]);
+						delete pollingIntervals[newCoverId];
 						console.error('Error polling status:', error);
-						statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
-						controls.querySelectorAll('.kontext-btn').forEach(btn => {
+						parentStatusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+						placeholderWrapper.remove(); // Remove the failed placeholder
+						parentControls.querySelectorAll('.kontext-btn').forEach(btn => {
 							if (btn.title !== "No mix prompt available") btn.disabled = false;
 						});
 					}
@@ -805,7 +853,7 @@
 						
 						if (response.ok && data.success) {
 							// Find the card's parent column and remove it from the DOM for an instant UI update
-							const cardColumn = document.querySelector(`.unlike-btn[data-cover-id="${coverToUnlikeId}"]`).closest('.col-md-3');
+							const cardColumn = document.querySelector(`.unlike-btn[data-cover-id="${coverToUnlikeId}"]`).closest('.original-cover-wrapper');
 							if (cardColumn) {
 								cardColumn.remove();
 							}
@@ -824,6 +872,47 @@
 					}
 				});
 			}
+			// --- END MODIFICATION ---
+			
+			// --- START MODIFICATION: New script to delete generated images ---
+			document.body.addEventListener('click', async function (event) {
+				if (event.target.classList.contains('delete-generated-btn')) {
+					if (!confirm('Are you sure you want to delete this generated image? This action cannot be undone.')) {
+						return;
+					}
+					
+					const button = event.target;
+					const coverId = button.dataset.coverId;
+					const originalBtnText = button.innerHTML;
+					button.disabled = true;
+					button.innerHTML = `<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+					
+					let urlTemplate = '{{ route("album-covers.generated.destroy", ["cover" => ":id"]) }}';
+					let url = urlTemplate.replace(':id', coverId);
+					
+					try {
+						const response = await fetch(url, {
+							method: 'DELETE',
+							headers: {
+								'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+								'Accept': 'application/json',
+							}
+						});
+						const data = await response.json();
+						
+						if (response.ok && data.success) {
+							document.getElementById(`cover-wrapper-${coverId}`).remove();
+						} else {
+							throw new Error(data.message || 'Failed to delete image.');
+						}
+					} catch (error) {
+						console.error('Delete error:', error);
+						alert('Error: ' + error.message);
+						button.disabled = false;
+						button.innerHTML = originalBtnText;
+					}
+				}
+			});
 			// --- END MODIFICATION ---
 		});
 	</script>

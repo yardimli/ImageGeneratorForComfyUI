@@ -148,6 +148,9 @@
 			Route::post('/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('update-liked');
 			Route::post('/upload', [AlbumCoverController::class, 'upload'])->name('upload');
 			Route::post('/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('generate-prompts');
+			// START MODIFICATION: Add delete route for generated covers
+			Route::delete('/generated/{cover}', [AlbumCoverController::class, 'destroyGeneratedCover'])->name('generated.destroy');
+			// END MODIFICATION
 
 			Route::prefix('kontext')->name('kontext.')->group(function () {
 				Route::post('/generate', [AlbumCoverController::class, 'generateKontext'])->name('generate');

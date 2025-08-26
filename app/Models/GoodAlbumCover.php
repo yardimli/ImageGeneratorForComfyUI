@@ -23,10 +23,28 @@ class GoodAlbumCover extends Model
 		'upscale_status',
 		'upscale_prediction_id',
 		'upscale_status_url',
+		'parent_id', // START MODIFICATION: Add parent_id
 	];
 
 	protected $casts = [
 		'liked' => 'boolean',
 		'mixed' => 'boolean',
 	];
+
+	/**
+	 * Get the parent cover for a generated image.
+	 */
+	public function parent()
+	{
+		return $this->belongsTo(GoodAlbumCover::class, 'parent_id');
+	}
+
+	/**
+	 * Get the generated child images for a cover.
+	 */
+	public function children()
+	{
+		return $this->hasMany(GoodAlbumCover::class, 'parent_id')->orderBy('created_at', 'asc');
+	}
+	// END MODIFICATION
 }

@@ -122,10 +122,14 @@
 				$sort = 'updated_at'; // Fallback to default if invalid
 			}
 
+			// START MODIFICATION: Fetch only top-level parents and eager load their children
 			$likedImages = GoodAlbumCover::where('user_id', auth()->id())
 				->where('liked', true)
+				->whereNull('parent_id') // Only fetch parent items
+				->with('children') // Eager load the generated children
 				->orderBy($sort, 'desc') // Use the dynamic sort column
-				->paginate(48);
+				->paginate(24); // Reduced per page to account for children
+			// END MODIFICATION
 
 			$likedImages->appends($request->except('page')); // Append all query params to pagination links
 
@@ -265,32 +269,27 @@
 				'model_type' => 'required|in:dev,pro,qwen',
 			]);
 
-			$cover = GoodAlbumCover::where('id', $request->input('cover_id'))
+			// START MODIFICATION: Logic to clone cover instead of updating
+			$parentCover = GoodAlbumCover::where('id', $request->input('cover_id'))
 				->where('user_id', auth()->id())
 				->firstOrFail();
 
 			$cloudfrontUrl = rtrim(env('COVERS_AWS_CLOUDFRONT_URL'), '/');
 
-			if (empty($cover->mix_prompt)) {
+			if (empty($parentCover->mix_prompt)) {
 				return response()->json(['success' => false, 'message' => 'This cover does not have a mix prompt.'], 422);
 			}
 
-			// When regenerating a Kontext image, clear any previous versions and associated upscales,
-			// as they will become outdated.
-			if ($cover->kontext_path || $cover->upscaled_path) {
-				if ($cover->kontext_path) {
-					Storage::disk('public')->delete($cover->kontext_path);
-					$cover->kontext_path = null;
-				}
-				if ($cover->upscaled_path) {
-					Storage::disk('public')->delete($cover->upscaled_path);
-					$cover->upscaled_path = null;
-					$cover->upscale_status = null;
-					$cover->upscale_prediction_id = null;
-					$cover->upscale_status_url = null;
-				}
-				$cover->save();
-			}
+			// Replicate the parent to create a new child record for the generation
+			$childCover = $parentCover->replicate([
+				// Attributes to exclude from replication
+				'kontext_path', 'upscaled_path', 'upscale_status', 'upscale_prediction_id', 'upscale_status_url'
+			]);
+			$childCover->parent_id = $parentCover->id;
+			$childCover->liked = false; // Generated images are not "liked" originals
+			$childCover->notes = null; // Start with fresh notes
+			$childCover->save(); // Save to get an ID for the new record
+			// END MODIFICATION
 
 			$modelEndpoints = [
 				'dev' => 'fal-ai/flux-kontext/dev',
@@ -306,22 +305,25 @@
 			}
 
 			try {
-				// Dynamically determine image URL based on source
-				$imageUrl = $cover->image_source === 's3'
-					? $cloudfrontUrl . '/' . $cover->album_path
-					: asset(Storage::url($cover->album_path));
+				// START MODIFICATION: Use parent cover's image as the source
+				$imageUrl = $parentCover->image_source === 's3'
+					? $cloudfrontUrl . '/' . $parentCover->album_path
+					: asset(Storage::url($parentCover->album_path));
+				// END MODIFICATION
 
 				$response = Http::withHeaders([
 					'Authorization' => "Key {$apiKey}",
 					'Content-Type' => 'application/json',
 				])->post($endpoint, [
-					'prompt' => "Remove the texts, " . $cover->mix_prompt,
+					'prompt' => "Remove the texts, " . $parentCover->mix_prompt, // Use parent's prompt
 					'image_url' => $imageUrl,
 					'safety_tolerance' => 5,
 				]);
 
 				if ($response->failed()) {
 					Log::error('Fal.run API error on submit: ' . $response->body());
+					// Clean up the placeholder record if submission fails
+					$childCover->delete();
 					return response()->json(['success' => false, 'message' => 'Failed to submit job to the API.'], 502);
 				}
 
@@ -330,12 +332,18 @@
 
 				if (!$requestId) {
 					Log::error('Fal.run API did not return a request_id: ' . $response->body());
+					// Clean up the placeholder record if submission fails
+					$childCover->delete();
 					return response()->json(['success' => false, 'message' => 'API did not return a request ID.'], 502);
 				}
 
-				return response()->json(['success' => true, 'request_id' => $requestId]);
+				// START MODIFICATION: Return the new child cover's ID to the frontend
+				return response()->json(['success' => true, 'request_id' => $requestId, 'new_cover_id' => $childCover->id]);
+				// END MODIFICATION
 			} catch (Exception $e) {
 				Log::error('Exception during Fal.run API call: ' . $e->getMessage());
+				// Clean up the placeholder record on exception
+				$childCover->delete();
 				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
 			}
 		}
@@ -352,14 +360,13 @@
 			$modelType = $request->input('model_type');
 			$coverId = $request->input('cover_id');
 
-			// Security check: ensure the cover belongs to the user
-			$cover = GoodAlbumCover::where('id', $coverId)
-				->where('user_id', auth()->id())
-				->first();
+			// START MODIFICATION: Security check now ensures the user owns the parent of the generated cover
+			$cover = GoodAlbumCover::with('parent')->find($coverId);
 
-			if (!$cover) {
+			if (!$cover || !$cover->parent || $cover->parent->user_id !== auth()->id()) {
 				return response()->json(['status' => 'error', 'message' => 'Cover not found or access denied.'], 404);
 			}
+			// END MODIFICATION
 
 			$modelBasePaths = [
 				'dev' => 'fal-ai/flux-kontext',
@@ -390,7 +397,8 @@
 					if ($cover && $cover->kontext_path) {
 						return response()->json([
 							'status' => 'completed',
-							'image_url' => Storage::url($cover->kontext_path)
+							'image_url' => Storage::url($cover->kontext_path),
+							'cover' => $cover // START MODIFICATION: Return cover data for the frontend
 						]);
 					}
 
@@ -427,16 +435,27 @@
 
 					return response()->json([
 						'status' => 'completed',
-						'image_url' => Storage::url($cover->kontext_path)
+						'image_url' => Storage::url($cover->kontext_path),
+						'cover' => $cover // START MODIFICATION: Return cover data for the frontend
 					]);
 				} elseif (in_array($jobStatus, ['IN_PROGRESS', 'IN_QUEUE'])) {
 					return response()->json(['status' => 'processing']);
 				} else {
 					Log::warning("Fal.run job {$requestId} has unhandled status '{$jobStatus}': " . $statusResponse->body());
+					// START MODIFICATION: Delete placeholder on failure
+					if ($cover && is_null($cover->kontext_path)) {
+						$cover->delete();
+					}
+					// END MODIFICATION
 					return response()->json(['status' => 'error', 'message' => "Job failed or has an unknown status: {$jobStatus}"]);
 				}
 			} catch (Exception $e) {
 				Log::error("Exception checking Fal.run status for {$requestId}: " . $e->getMessage());
+				// START MODIFICATION: Delete placeholder on failure
+				if ($cover && is_null($cover->kontext_path)) {
+					$cover->delete();
+				}
+				// END MODIFICATION
 				return response()->json(['status' => 'error', 'message' => 'An unexpected server error occurred.']);
 			}
 		}
@@ -464,9 +483,12 @@
 
 		public function updateNotes(Request $request, GoodAlbumCover $cover)
 		{
-			if ($cover->user_id !== auth()->id()) {
+			// START MODIFICATION: Authorize based on parent if it's a generated image
+			$ownerId = $cover->parent ? $cover->parent->user_id : $cover->user_id;
+			if ($ownerId !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
+			// END MODIFICATION
 
 			$request->validate([
 				'notes' => 'nullable|string|max:5000',
@@ -507,11 +529,54 @@
 			}
 		}
 
-		public function upscaleCover(Request $request, GoodAlbumCover $cover)
+		// START MODIFICATION: Add a method to delete generated covers
+		/**
+		 * Delete a generated (child) album cover.
+		 *
+		 * @param Request $request
+		 * @param GoodAlbumCover $cover
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function destroyGeneratedCover(Request $request, GoodAlbumCover $cover)
 		{
-			if ($cover->user_id !== auth()->id()) {
+			// Ensure it's a generated cover that has a parent
+			if (is_null($cover->parent_id)) {
+				return response()->json(['success' => false, 'message' => 'Cannot delete an original cover.'], 422);
+			}
+
+			// Check ownership by verifying the parent's user_id
+			if (!$cover->parent || $cover->parent->user_id !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
+
+			try {
+				// Delete associated files from storage
+				if ($cover->kontext_path) {
+					Storage::disk('public')->delete($cover->kontext_path);
+				}
+				if ($cover->upscaled_path) {
+					Storage::disk('public')->delete($cover->upscaled_path);
+				}
+
+				// Delete the database record
+				$cover->delete();
+
+				return response()->json(['success' => true, 'message' => 'Generated image deleted successfully.']);
+			} catch (Exception $e) {
+				Log::error("Failed to delete generated cover ID {$cover->id}: " . $e->getMessage());
+				return response()->json(['success' => false, 'message' => 'An unexpected error occurred.'], 500);
+			}
+		}
+		// END MODIFICATION
+
+		public function upscaleCover(Request $request, GoodAlbumCover $cover)
+		{
+			// START MODIFICATION: Authorize based on parent if it's a generated image
+			$ownerId = $cover->parent ? $cover->parent->user_id : $cover->user_id;
+			if ($ownerId !== auth()->id()) {
+				abort(403, 'Unauthorized action.');
+			}
+			// END MODIFICATION
 
 			// VALIDATION: Ensure there is a Kontext image to upscale.
 			if (!$cover->kontext_path) {
@@ -582,9 +647,12 @@
 
 		public function checkUpscaleStatus(Request $request, GoodAlbumCover $cover, $prediction_id)
 		{
-			if ($cover->user_id !== auth()->id()) {
+			// START MODIFICATION: Authorize based on parent if it's a generated image
+			$ownerId = $cover->parent ? $cover->parent->user_id : $cover->user_id;
+			if ($ownerId !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
+			// END MODIFICATION
 
 			if (!$cover->upscale_status_url) {
 				return response()->json(['status' => 'error', 'message' => 'No status URL found for this job.']);
