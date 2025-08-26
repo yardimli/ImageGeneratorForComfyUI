@@ -81,7 +81,7 @@
 				<ul class="navbar-nav me-auto">
 					<li class="nav-item">
 						<a class="nav-link"
-						   href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at']) }}">Gallery</a>
+						   href="{{ route('gallery.index', ['date' => '', 'sort' => 'updated_at']) }}">Gallery</a>
 					</li>
 					<li class="nav-item dropdown">
 						<a class="nav-link dropdown-toggle" href="#" id="promptDropdown" role="button"
