@@ -77,8 +77,8 @@
 												<button type="button" class="btn btn-secondary kontext-btn" data-model="pro"
 												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>pro
 												</button>
-												<button type="button" class="btn btn-success kontext-btn" data-model="max"
-												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>max
+												<button type="button" class="btn btn-success kontext-btn" data-model="qwen"
+												        @if(!$image->mix_prompt) disabled title="No mix prompt available" @endif>qwen
 												</button>
 											</div>
 										</div>

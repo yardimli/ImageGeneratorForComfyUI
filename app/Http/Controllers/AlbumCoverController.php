@@ -295,7 +295,7 @@
 			$modelEndpoints = [
 				'dev' => 'fal-ai/flux-kontext/dev',
 				'pro' => 'fal-ai/flux-pro/kontext',
-				'max' => 'fal-ai/flux-pro/kontext/max',
+				'qwen' => 'fal-ai/qwen-image-edit',
 			];
 			$endpoint = 'https://queue.fal.run/' . $modelEndpoints[$request->input('model_type')];
 
@@ -344,7 +344,7 @@
 		{
 			$request->validate([
 				'request_id' => 'required|string',
-				'model_type' => 'required|in:dev,pro,max',
+				'model_type' => 'required|in:dev,pro,qwen',
 				'cover_id' => 'required|exists:goodalbumcovers,id',
 			]);
 
@@ -364,7 +364,7 @@
 			$modelBasePaths = [
 				'dev' => 'fal-ai/flux-kontext',
 				'pro' => 'fal-ai/flux-pro',
-				'max' => 'fal-ai/flux-pro', // max uses the same base path as pro
+				'qwen' => 'fal-ai/qwen-image-edit', // qwen uses the same base path as pro
 			];
 			$basePath = $modelBasePaths[$modelType];
 			$statusUrl = "https://queue.fal.run/{$basePath}/requests/{$requestId}/status";
