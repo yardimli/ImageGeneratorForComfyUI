@@ -258,45 +258,59 @@
 			$arguments = ['prompt' => $prompt->generated_prompt];
 			$arguments['image_size'] = ['width' => $prompt->width ?? 1024, 'height' => $prompt->height ?? 1024];
 
-			// START MODIFICATION: Handle input images for image editing models
+			// START MODIFICATION: Handle input images based on environment variable.
 			if (!empty($prompt->input_images)) {
-				$this->info("Processing " . count($prompt->input_images) . " input images for prompt {$prompt->id}...");
-				$imageBase64Urls = [];
-				foreach ($prompt->input_images as $imagePath) {
-					try {
-						$imageData = null;
-						if (Str::startsWith($imagePath, ['http://', 'https://'])) {
-							$response = Http::timeout(30)->get($imagePath);
-							if ($response->successful()) {
-								$imageData = $response->body();
-							}
-						} elseif (Str::startsWith($imagePath, '/storage/')) {
-							$localPath = Str::after($imagePath, '/storage/');
-							if (Storage::disk('public')->exists($localPath)) {
-								$imageData = Storage::disk('public')->get($localPath);
-							}
-						} elseif (file_exists($imagePath)) { // Check absolute path
-							$imageData = file_get_contents($imagePath);
-						}
+				$inputImageFormat = env('FAL_INPUT_IMAGE_FORMAT', 'base64');
+				$this->info("Processing " . count($prompt->input_images) . " input images for prompt {$prompt->id} using format: {$inputImageFormat}...");
+				$imageReferences = [];
 
-						if ($imageData) {
-							$finfo = new \finfo(FILEINFO_MIME_TYPE);
-							$mime = $finfo->buffer($imageData);
-							$base64 = base64_encode($imageData);
-							$imageBase64Urls[] = "data:{$mime};base64,{$base64}";
+				foreach ($prompt->input_images as $imagePath) {
+					if ($inputImageFormat === 'url') {
+						// For 'url' format, ensure the path is a publicly accessible URL.
+						if (Str::startsWith($imagePath, ['http://', 'https://'])) {
+							$imageReferences[] = $imagePath;
+						} elseif (Str::startsWith($imagePath, '/storage/')) {
+							// Convert local public storage path to a full URL.
+							$imageReferences[] = url($imagePath);
 						} else {
-							$this->warn("Could not read input image for prompt {$prompt->id}: {$imagePath}");
+							$this->warn("Cannot use local file path '{$imagePath}' with 'url' format for prompt {$prompt->id}. Image will be skipped. Use a public URL or change FAL_INPUT_IMAGE_FORMAT to 'base64'.");
 						}
-					} catch (Throwable $e) {
-						$this->warn("Error processing input image for prompt {$prompt->id} at path {$imagePath}: " . $e->getMessage());
-						report($e);
+					} else {
+						// Default to 'base64' format.
+						try {
+							$imageData = null;
+							if (Str::startsWith($imagePath, ['http://', 'https://'])) {
+								$response = Http::timeout(30)->get($imagePath);
+								if ($response->successful()) {
+									$imageData = $response->body();
+								}
+							} elseif (Str::startsWith($imagePath, '/storage/')) {
+								$localPath = Str::after($imagePath, '/storage/');
+								if (Storage::disk('public')->exists($localPath)) {
+									$imageData = Storage::disk('public')->get($localPath);
+								}
+							} elseif (file_exists($imagePath)) { // Check absolute path
+								$imageData = file_get_contents($imagePath);
+							}
+
+							if ($imageData) {
+								$finfo = new \finfo(FILEINFO_MIME_TYPE);
+								$mime = $finfo->buffer($imageData);
+								$base64 = base64_encode($imageData);
+								$imageReferences[] = "data:{$mime};base64,{$base64}";
+							} else {
+								$this->warn("Could not read input image for prompt {$prompt->id}: {$imagePath}");
+							}
+						} catch (Throwable $e) {
+							$this->warn("Error processing input image for prompt {$prompt->id} at path {$imagePath}: " . $e->getMessage());
+							report($e);
+						}
 					}
 				}
-				if (!empty($imageBase64Urls)) {
-					$arguments['image_urls'] = $imageBase64Urls;
-					// Image editing models might not use width/height, but we'll leave it in the payload.
-					// The API should ignore unused parameters.
-					$this->info("Added " . count($imageBase64Urls) . " base64 images to the request.");
+
+				if (!empty($imageReferences)) {
+					$arguments['image_urls'] = $imageReferences;
+					$this->info("Added " . count($imageReferences) . " image references to the request.");
 				}
 			}
 			// END MODIFICATION
