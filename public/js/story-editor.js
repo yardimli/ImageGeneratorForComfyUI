@@ -1028,6 +1028,161 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
+	// START MODIFICATION: Add logic for "Draw with AI v2" Modal
+	const drawWithAiV2ModalEl = document.getElementById('drawWithAiV2Modal');
+	if (drawWithAiV2ModalEl) {
+		const drawWithAiV2Modal = new bootstrap.Modal(drawWithAiV2ModalEl);
+		const generateImageV2Btn = document.getElementById('generate-image-v2-btn');
+		const drawV2AssetIdInput = document.getElementById('draw-v2-asset-id');
+		const drawV2ImagePromptText = document.getElementById('draw-v2-image-prompt-text');
+		const drawV2AspectRatioSelect = document.getElementById('draw-v2-aspect-ratio');
+		const drawV2WidthInput = document.getElementById('draw-v2-width');
+		const drawV2HeightInput = document.getElementById('draw-v2-height');
+		const inputImagesContainer = document.getElementById('draw-v2-input-images-container');
+		const thumbnailTemplate = document.getElementById('input-image-thumbnail-template');
+		
+		function setDrawV2Dimensions(width, height) {
+			drawV2WidthInput.value = width;
+			drawV2HeightInput.value = height;
+		}
+		
+		if (drawV2AspectRatioSelect) {
+			drawV2AspectRatioSelect.addEventListener('change', function () {
+				const [ratio, baseSize] = this.value.split('-');
+				const sizes = {
+					'1024': { '1:1': [1024, 1024], '3:2': [1216, 832], '4:3': [1152, 896], '16:9': [1344, 768], '21:9': [1536, 640], '2:3': [832, 1216], '3:4': [896, 1152], '9:16': [768, 1344], '9:21': [640, 1536] },
+					'1408': { '1:1': [1408, 1408], '3:2': [1728, 1152], '4:3': [1664, 1216], '16:9': [1920, 1088], '21:9': [2176, 960], '2:3': [1152, 1728], '3:4': [1216, 1664], '9:16': [1088, 1920], '9:21': [960, 2176] }
+				};
+				const [width, height] = sizes[baseSize][ratio];
+				setDrawV2Dimensions(width, height);
+			});
+		}
+		
+		pagesContainer.addEventListener('click', (e) => {
+			const drawButton = e.target.closest('.draw-with-ai-v2-btn');
+			if (drawButton) {
+				const pageCard = drawButton.closest('.page-card');
+				const storyPageId = drawButton.dataset.storyPageId;
+				const imagePromptTextarea = pageCard.querySelector('.image-prompt-textarea');
+				
+				const initialPrompt = imagePromptTextarea.dataset.initialValue || '';
+				const decodedInitialPrompt = initialPrompt ? decodeHtmlEntities(initialPrompt) : '';
+				if (imagePromptTextarea.value !== decodedInitialPrompt) {
+					alert('Your image prompt has unsaved changes. Please save the story before generating an image.');
+					e.preventDefault(); e.stopPropagation(); return;
+				}
+				
+				if (!storyPageId) {
+					alert('This page has not been saved yet. Please save the story first.');
+					e.preventDefault(); e.stopPropagation(); return;
+				}
+				
+				drawV2AssetIdInput.value = storyPageId;
+				drawV2ImagePromptText.textContent = imagePromptTextarea.value || '(No prompt has been set for this page yet)';
+				
+				// Populate input images
+				inputImagesContainer.innerHTML = '';
+				const charCheckboxes = pageCard.querySelectorAll('.character-checkbox:checked');
+				const placeCheckboxes = pageCard.querySelectorAll('.place-checkbox:checked');
+				
+				const imagePaths = [
+					...Array.from(charCheckboxes).map(cb => cb.dataset.imagePath),
+					...Array.from(placeCheckboxes).map(cb => cb.dataset.imagePath)
+				].filter(Boolean); // Filter out empty/null paths
+				
+				if (imagePaths.length === 0) {
+					inputImagesContainer.innerHTML = '<p class="text-muted small">No character or place images are selected for this page.</p>';
+				} else {
+					imagePaths.forEach(path => {
+						const clone = thumbnailTemplate.content.cloneNode(true);
+						const img = clone.querySelector('img');
+						// The asset() helper in PHP creates a full URL, which is what we need.
+						// We assume the path is relative to public if not a full URL already.
+						img.src = path.startsWith('http') ? path : `${window.location.origin}${path}`;
+						clone.querySelector('.image-path-input').value = path;
+						inputImagesContainer.appendChild(clone);
+					});
+				}
+			}
+		});
+		
+		inputImagesContainer.addEventListener('click', (e) => {
+			if (e.target.closest('.btn-close')) {
+				e.target.closest('.input-image-thumbnail').remove();
+			}
+		});
+		
+		generateImageV2Btn.addEventListener('click', async () => {
+			const storyPageId = drawV2AssetIdInput.value;
+			if (!storyPageId) return;
+			
+			const inputImagePaths = Array.from(inputImagesContainer.querySelectorAll('.image-path-input')).map(input => input.value);
+			
+			generateImageV2Btn.disabled = true;
+			generateImageV2Btn.querySelector('.spinner-border').classList.remove('d-none');
+			
+			const body = {
+				width: drawV2WidthInput.value,
+				height: drawV2HeightInput.value,
+				upload_to_s3: document.getElementById('draw-v2-upload-to-s3').checked,
+				aspect_ratio: drawV2AspectRatioSelect.value,
+				input_images: inputImagePaths,
+			};
+			
+			try {
+				const response = await fetch(`/stories/pages/${storyPageId}/generate-image-v2`, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
+					body: JSON.stringify(body),
+				});
+				const data = await response.json();
+				if (response.ok && data.success) {
+					alert(data.message);
+					drawWithAiV2Modal.hide();
+					// Reuse the same polling logic as the v1 draw button
+					const pageCard = document.querySelector(`.draw-with-ai-btn[data-story-page-id="${storyPageId}"]`).closest('.page-card');
+					const imageContainer = pageCard.querySelector('.image-upload-container');
+					const spinner = imageContainer.querySelector('.spinner-overlay');
+					spinner.classList.remove('d-none');
+					
+					let pollAttempts = 0;
+					const pollInterval = setInterval(async () => {
+						if (++pollAttempts > 180) {
+							clearInterval(pollInterval);
+							spinner.classList.add('d-none');
+							return;
+						}
+						const statusResponse = await fetch(`/stories/pages/${storyPageId}/image-status`);
+						const statusData = await statusResponse.json();
+						if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
+							clearInterval(pollInterval);
+							spinner.classList.add('d-none');
+							const imagePreview = imageContainer.querySelector('.page-image-preview');
+							const imagePathInput = pageCard.querySelector('.image-path-input');
+							imagePreview.src = statusData.filename;
+							imagePathInput.value = statusData.filename;
+							imagePreview.style.cursor = 'pointer';
+							imagePreview.dataset.bsToggle = 'modal';
+							imagePreview.dataset.bsTarget = '#imageDetailModal';
+							imagePreview.dataset.imageUrl = statusData.filename;
+							imagePreview.dataset.promptId = statusData.prompt_id;
+							imagePreview.dataset.upscaleStatus = statusData.upscale_status;
+							imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+						}
+					}, 5000);
+				} else {
+					alert('An error occurred: ' + (data.message || 'Unknown error'));
+				}
+			} catch (error) {
+				alert('A network error occurred.');
+			} finally {
+				generateImageV2Btn.disabled = false;
+				generateImageV2Btn.querySelector('.spinner-border').classList.add('d-none');
+			}
+		});
+	}
+	// END MODIFICATION
+	
 	// Logic for Image Detail Modal with Upscaling
 	const imageDetailModalEl = document.getElementById('imageDetailModal');
 	if (imageDetailModalEl) {

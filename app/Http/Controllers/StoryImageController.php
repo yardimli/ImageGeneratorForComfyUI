@@ -91,6 +91,69 @@
 			}
 		}
 
+		// START MODIFICATION: Add new method for V2 image generation with input images.
+		/**
+		 * Creates a prompt to queue an image using an image editing model (v2).
+		 *
+		 * @param  Request  $request
+		 * @param  StoryPage  $storyPage
+		 * @return \Illuminate\Http\JsonResponse
+		 */
+		public function generateV2(Request $request, StoryPage $storyPage)
+		{
+			$validated = $request->validate([
+				'width' => 'required|integer|min:1',
+				'height' => 'required|integer|min:1',
+				'upload_to_s3' => 'required|boolean',
+				'aspect_ratio' => 'required|string',
+				'input_images' => 'present|array',
+				'input_images.*' => 'string',
+			]);
+
+			try {
+				$promptText = $storyPage->image_prompt;
+				if (empty($promptText)) {
+					return response()->json(['success' => false, 'message' => 'Image prompt for this page is empty.'], 422);
+				}
+
+				$model = 'gemini-25-flash-image/edit'; // Hardcoded model for this feature
+
+				$promptSetting = PromptSetting::create([
+					'user_id' => auth()->id(),
+					'generation_type' => 'prompt',
+					'original_prompt' => $promptText,
+					'width' => $validated['width'],
+					'height' => $validated['height'],
+					'model' => $model,
+					'guidance' => 7.5,
+					'upload_to_s3' => $validated['upload_to_s3'],
+					'aspect_ratio' => $validated['aspect_ratio'],
+					'story_page_id' => $storyPage->id,
+					'input_images' => $validated['input_images'],
+				]);
+
+				Prompt::create([
+					'user_id' => auth()->id(),
+					'prompt_setting_id' => $promptSetting->id,
+					'generation_type' => 'prompt',
+					'original_prompt' => $promptText,
+					'generated_prompt' => $promptText,
+					'model' => $model,
+					'width' => $validated['width'],
+					'height' => $validated['height'],
+					'upload_to_s3' => $validated['upload_to_s3'],
+					'story_page_id' => $storyPage->id,
+					'input_images' => $validated['input_images'],
+				]);
+
+				return response()->json(['success' => true, 'message' => 'Image generation (v2) has been queued successfully.']);
+			} catch (Throwable $e) {
+				Log::error('Failed to queue story image generation v2: ' . $e->getMessage(), ['exception' => $e]);
+				return response()->json(['success' => false, 'message' => 'An error occurred while queueing the image.'], 500);
+			}
+		}
+		// END MODIFICATION
+
 		/**
 		 * Checks the status of the latest image generation for a story page.
 		 *

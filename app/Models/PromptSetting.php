@@ -23,22 +23,12 @@
 			'story_page_id',
 			'story_character_id',
 			'story_place_id',
-			'prompt_dictionary_entry_id', // START MODIFICATION
+			'prompt_dictionary_entry_id',
 			'upload_to_s3',
-			// MODIFICATION START: Removed create_* boolean fields.
-			// 'create_schnell',
-			// 'create_dev',
-			// 'create_minimax',
-			// 'create_imagen',
-			// 'create_aura_flow',
-			// 'create_ideogram_v2a',
-			// 'create_luma_photon',
-			// 'create_recraft_20b',
-			// 'create_fal_qwen_image',
-			// MODIFICATION END
 			'generation_type',
 			'input_images_1',
 			'input_images_2',
+			'input_images', // START MODIFICATION
 			'left_padding',
 			'right_padding',
 			'top_padding',
@@ -57,17 +47,7 @@
 			'generate_original_prompt' => 'boolean',
 			'append_to_prompt' => 'boolean',
 			'upload_to_s3' => 'boolean',
-			// MODIFICATION START: Removed create_* boolean fields from casts.
-			// 'create_schnell' => 'boolean',
-			// 'create_dev' => 'boolean',
-			// 'create_minimax' => 'boolean',
-			// 'create_imagen' => 'boolean',
-			// 'create_aura_flow' => 'boolean',
-			// 'create_ideogram_v2a' => 'boolean',
-			// 'create_luma_photon' => 'boolean',
-			// 'create_recraft_20b' => 'boolean',
-			// 'create_fal_qwen_image' => 'boolean',
-			// MODIFICATION END
+			'input_images' => 'array', // END MODIFICATION
 		];
 
 

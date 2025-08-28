@@ -24,13 +24,14 @@
 			'story_page_id',
 			'story_character_id',
 			'story_place_id',
-			'prompt_dictionary_entry_id', // START MODIFICATION
+			'prompt_dictionary_entry_id',
 			'upload_to_s3',
 			'generation_type',
 			'input_image_1',
 			'input_image_1_strength',
 			'input_image_2',
 			'input_image_2_strength',
+			'input_images', // START MODIFICATION
 			'left_padding',
 			'right_padding',
 			'top_padding',
@@ -48,6 +49,7 @@
 
 		protected $casts = [
 			'upload_to_s3' => 'boolean',
+			'input_images' => 'array', // END MODIFICATION
 		];
 
 		public function setting()

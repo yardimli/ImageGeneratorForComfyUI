@@ -173,6 +173,10 @@
 	@include('story.partials.modals.dictionary-modal', ['models' => $models])
 	{{-- END MODIFICATION --}}
 	
+	{{-- START MODIFICATION: Include the new Draw with AI v2 modal --}}
+	@include('story.partials.modals.draw-with-ai-v2-modal')
+	{{-- END MODIFICATION --}}
+	
 	{{-- Template for new pages --}}
 	<template id="page-template">
 		@include('story.partials.page-card', ['page' => null, 'index' => '__INDEX__', 'story' => $story])

@@ -167,8 +167,12 @@
 			// Resolve it to the full API name for validation and API calls.
 			$modelName = $modelMapping[$prompt->model] ?? $prompt->model;
 
-			// Filter for prompts this worker can handle: must be 'prompt' type and the model must exist in models.json.
-			if ($prompt->generation_type !== "prompt" || !in_array($modelName, $this->availableModels, true)) {
+			// Filter for prompts this worker can handle.
+			$isKnownModel = in_array($modelName, $this->availableModels, true);
+			// Allow specific models like the image editor to pass through even if not in models.json
+			$isAllowedOverride = in_array($modelName, ['gemini-25-flash-image/edit'], true);
+
+			if ($prompt->generation_type !== "prompt" || !($isKnownModel || $isAllowedOverride)) {
 				return; // Skip this prompt.
 			}
 			// MODIFICATION END
@@ -253,6 +257,49 @@
 
 			$arguments = ['prompt' => $prompt->generated_prompt];
 			$arguments['image_size'] = ['width' => $prompt->width ?? 1024, 'height' => $prompt->height ?? 1024];
+
+			// START MODIFICATION: Handle input images for image editing models
+			if (!empty($prompt->input_images)) {
+				$this->info("Processing " . count($prompt->input_images) . " input images for prompt {$prompt->id}...");
+				$imageBase64Urls = [];
+				foreach ($prompt->input_images as $imagePath) {
+					try {
+						$imageData = null;
+						if (Str::startsWith($imagePath, ['http://', 'https://'])) {
+							$response = Http::timeout(30)->get($imagePath);
+							if ($response->successful()) {
+								$imageData = $response->body();
+							}
+						} elseif (Str::startsWith($imagePath, '/storage/')) {
+							$localPath = Str::after($imagePath, '/storage/');
+							if (Storage::disk('public')->exists($localPath)) {
+								$imageData = Storage::disk('public')->get($localPath);
+							}
+						} elseif (file_exists($imagePath)) { // Check absolute path
+							$imageData = file_get_contents($imagePath);
+						}
+
+						if ($imageData) {
+							$finfo = new \finfo(FILEINFO_MIME_TYPE);
+							$mime = $finfo->buffer($imageData);
+							$base64 = base64_encode($imageData);
+							$imageBase64Urls[] = "data:{$mime};base64,{$base64}";
+						} else {
+							$this->warn("Could not read input image for prompt {$prompt->id}: {$imagePath}");
+						}
+					} catch (Throwable $e) {
+						$this->warn("Error processing input image for prompt {$prompt->id} at path {$imagePath}: " . $e->getMessage());
+						report($e);
+					}
+				}
+				if (!empty($imageBase64Urls)) {
+					$arguments['image_urls'] = $imageBase64Urls;
+					// Image editing models might not use width/height, but we'll leave it in the payload.
+					// The API should ignore unused parameters.
+					$this->info("Added " . count($imageBase64Urls) . " base64 images to the request.");
+				}
+			}
+			// END MODIFICATION
 
 			try {
 				// Step 1: Submit the job to the queue endpoint.

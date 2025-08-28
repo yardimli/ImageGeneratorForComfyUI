@@ -207,6 +207,7 @@
 
 			Route::prefix('pages/{storyPage}')->name('pages.')->group(function () {
 				Route::post('/generate-image', [StoryImageController::class, 'generate'])->name('generate-image');
+				Route::post('/generate-image-v2', [StoryImageController::class, 'generateV2'])->name('generate-image-v2'); // START MODIFICATION
 				Route::get('/image-status', [StoryImageController::class, 'checkStatus'])->name('image-status');
 				Route::post('/generate-dictionary', [StoryController::class, 'generateDictionaryForPage'])->name('generate-dictionary');
 			});

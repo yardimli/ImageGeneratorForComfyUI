@@ -46,6 +46,15 @@
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-palette-fill me-1" viewBox="0 0 16 16"><path d="M12.433 10.07C14.133 10.585 16 11.15 16 8a8 8 0 1 0-15.93 1.156c.224-.434.458-.85.713-1.243a4.999 4.999 0 0 1 4.213-2.333c.348-.07.705-.12 1.07-.12.41 0 .816.064 1.2.19.495.16 1.02.443 1.547.854.541.427 1.116.954 1.6 1.587zM2 8a6 6 0 1 1 11.25 3.262C11.333 10.51 9.482 9.622 8 9.622c-1.927 0-3.936.992-5.25 2.054A6.001 6.001 0 0 1 2 8z"/><path d="M8 5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zm4-3a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3zM4.5 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0zM15 3.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z"/></svg>
 						Draw with AI
 					</button>
+					{{-- START MODIFICATION: Add new "Draw with AI v2" button --}}
+					<button type="button" class="btn btn-sm btn-outline-primary mt-2 draw-with-ai-v2-btn" data-bs-toggle="modal" data-bs-target="#drawWithAiV2Modal" data-story-page-id="{{ $page->id ?? '' }}">
+						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-images me-1" viewBox="0 0 16 16">
+							<path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+							<path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
+						</svg>
+						Draw with AI v2
+					</button>
+					{{-- END MODIFICATION --}}
 				</div>
 				
 				<div class="row">
@@ -53,11 +62,16 @@
 						<label class="form-label">Characters on this page</label>
 						<div class="form-check-group border p-2 rounded">
 							@forelse($story->characters as $character)
-								<div class="form-check">
-									<input class="form-check-input character-checkbox" type="checkbox" name="pages[{{ $index }}][characters][]" value="{{ $character->id }}" id="char_{{ $index }}_{{ $character->id }}"
-									       {{ ($page && $page->characters->contains($character->id)) ? 'checked' : '' }} data-description="{{ e($character->name . ": " . $character->description) }}">
+								{{-- START MODIFICATION: Add thumbnail and data-image-path to character checkbox --}}
+								<div class="form-check d-flex align-items-center mb-1">
+									<input class="form-check-input character-checkbox me-2" type="checkbox" name="pages[{{ $index }}][characters][]" value="{{ $character->id }}" id="char_{{ $index }}_{{ $character->id }}"
+									       {{ ($page && $page->characters->contains($character->id)) ? 'checked' : '' }}
+									       data-description="{{ e($character->name . ": " . $character->description) }}"
+									       data-image-path="{{ $character->image_path ?? '' }}">
+									<img src="{{ $character->image_path ? asset($character->image_path) : 'https://via.placeholder.com/32' }}" alt="{{ $character->name }}" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
 									<label class="form-check-label" for="char_{{ $index }}_{{ $character->id }}">{{ $character->name }}</label>
 								</div>
+								{{-- END MODIFICATION --}}
 							@empty
 								<p class="text-muted small">No characters created yet. <a href="{{ route('stories.characters', $story) }}">Add characters</a>.</p>
 							@endforelse
@@ -67,11 +81,16 @@
 						<label class="form-label">Places on this page</label>
 						<div class="form-check-group border p-2 rounded">
 							@forelse($story->places as $place)
-								<div class="form-check">
+								{{-- START MODIFICATION: Add thumbnail and data-image-path to place checkbox --}}
+								<div class="form-check d-flex align-items-center mb-1">
 									<input class="form-check-input place-checkbox" type="checkbox" name="pages[{{ $index }}][places][]" value="{{ $place->id }}" id="place_{{ $index }}_{{ $place->id }}"
-									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }} data-description="{{ e($place->name . ": " .$place->description) }}">
+									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }}
+									       data-description="{{ e($place->name . ": " .$place->description) }}"
+									       data-image-path="{{ $place->image_path ?? '' }}">
+									<img src="{{ $place->image_path ? asset($place->image_path) : 'https://via.placeholder.com/32' }}" alt="{{ $place->name }}" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
 									<label class="form-check-label" for="place_{{ $index }}_{{ $place->id }}">{{ $place->name }}</label>
 								</div>
+								{{-- END MODIFICATION --}}
 							@empty
 								<p class="text-muted small">No places created yet. <a href="{{ route('stories.places', $story) }}">Add places</a>.</p>
 							@endforelse
