@@ -139,7 +139,7 @@
 				}
 
 				if (empty($priceMap)) {
-					return '0.00';
+					return '0.035';
 				}
 
 				$sql = 'CASE model ';
@@ -148,7 +148,7 @@
 					$sanitizedModelName = str_replace("'", "''", $modelName);
 					$sql .= "WHEN '{$sanitizedModelName}' THEN {$price} ";
 				}
-				$sql .= 'ELSE 0.00 END'; // Default cost for any other model not in the list
+				$sql .= 'ELSE 0.035 END'; // Default cost for any other model not in the list
 
 				return $sql;
 			} catch (Exception $e) {
