@@ -121,17 +121,31 @@
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
 					'generation_type' => 'prompt',
+					'template_path' => '',
+					'prompt_template' => '',
 					'original_prompt' => $promptText,
+					'precision' => 'Normal',
+					'count' => 1,
+					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => $model,
+					'model' => $validated['model'], // MODIFICATION: Use the validated model from the request.
+					'lora_name' => '',
+					'strength_model' => 0,
 					'guidance' => 7.5,
 					'upload_to_s3' => $validated['upload_to_s3'],
 					'aspect_ratio' => $validated['aspect_ratio'],
+					'prepend_text' => '',
+					'append_text' => '',
+					'generate_original_prompt' => false,
+					'append_to_prompt' => false,
+					'input_images_1' => '',
+					'input_images_2' => '',
 					'story_page_id' => $storyPage->id,
 					'input_images' => $validated['input_images'],
 				]);
 
+				// Create a Prompt entry
 				Prompt::create([
 					'user_id' => auth()->id(),
 					'prompt_setting_id' => $promptSetting->id,
