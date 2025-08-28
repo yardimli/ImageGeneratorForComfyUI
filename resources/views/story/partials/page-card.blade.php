@@ -68,7 +68,7 @@
 									       {{ ($page && $page->characters->contains($character->id)) ? 'checked' : '' }}
 									       data-description="{{ e($character->name . ": " . $character->description) }}"
 									       data-image-path="{{ $character->image_path ?? '' }}">
-									<img src="{{ $character->image_path ? asset($character->image_path) : 'https://via.placeholder.com/32' }}" alt="{{ $character->name }}" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
+									<img src="{{ $character->image_path ? asset($character->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $character->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
 									<label class="form-check-label" for="char_{{ $index }}_{{ $character->id }}">{{ $character->name }}</label>
 								</div>
 								{{-- END MODIFICATION --}}
@@ -87,7 +87,7 @@
 									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }}
 									       data-description="{{ e($place->name . ": " .$place->description) }}"
 									       data-image-path="{{ $place->image_path ?? '' }}">
-									<img src="{{ $place->image_path ? asset($place->image_path) : 'https://via.placeholder.com/32' }}" alt="{{ $place->name }}" class="rounded me-2" style="width: 32px; height: 32px; object-fit: cover;">
+									<img src="{{ $place->image_path ? asset($place->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $place->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
 									<label class="form-check-label" for="place_{{ $index }}_{{ $place->id }}">{{ $place->name }}</label>
 								</div>
 								{{-- END MODIFICATION --}}
