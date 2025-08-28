@@ -129,7 +129,7 @@
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => $validated['model'], // MODIFICATION: Use the validated model from the request.
+					'model' => $model, // MODIFICATION: Use the validated model from the request.
 					'lora_name' => '',
 					'strength_model' => 0,
 					'guidance' => 7.5,
