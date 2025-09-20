@@ -84,12 +84,26 @@
 		 * NEW: Show Step 3 of the AI story creation wizard (Describe Entities).
 		 *
 		 * @param Story $story
+		 * @param LlmController $llmController
 		 * @return \Illuminate\View\View
 		 */
-		public function createWithAiStep3(Story $story)
+		public function createWithAiStep3(Story $story, LlmController $llmController) // MODIFICATION: Inject LlmController
 		{
 			$story->load('characters', 'places');
-			return view('story.create-ai-step3', compact('story'));
+
+			// START MODIFICATION: Fetch LLM models for the view.
+			try {
+				$modelsResponse = $llmController->getModels();
+				$models = $llmController->processModelsForView($modelsResponse);
+			} catch (\Exception $e) {
+				Log::error('Failed to fetch LLM models for AI Story Creator Step 3: ' . $e->getMessage());
+				// Don't fail the page load, just show an error and an empty list.
+				$models = [];
+				session()->flash('error', 'Could not fetch AI models at this time. Please try again later.');
+			}
+			// END MODIFICATION
+
+			return view('story.create-ai-step3', compact('story', 'models')); // MODIFICATION: Pass models to the view
 		}
 
 
@@ -285,7 +299,7 @@
 				return redirect()->route('stories.create-ai.step3', $story)->with('success', 'Characters and places saved! Now let\'s describe them.');
 			} catch (\Exception $e) {
 				Log::error('AI Story Entity Saving Failed: ' . $e->getMessage());
-				return back()->withInput()->with('error', 'An error occurred while saving the entities. Error: ' . $e->getMessage());
+				return back()->withInput()->with('error', 'An error occurred while saving the entities. Please try again.');
 			}
 		}
 
@@ -304,6 +318,7 @@
 				'type' => 'required|string|in:character,place',
 				'name' => 'required|string',
 				'prompt' => 'required|string',
+				'model' => 'required|string', // START MODIFICATION: Add model validation
 			]);
 
 			try {
@@ -322,7 +337,7 @@
 
 				$descriptionData = $llmController->callLlmSync(
 					$prompt,
-					$story->model, // Use the same model as the core story
+					$validated['model'], // MODIFICATION: Use model from request instead of $story->model
 					$callReason,
 					0.7,
 					'json_object'

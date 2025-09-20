@@ -28,6 +28,26 @@
 						</div>
 					</div>
 				</div>
+				{{-- START MODIFICATION: Add model selection dropdown. --}}
+				<div class="row">
+					<div class="col-md-6">
+						<div class="mb-3">
+							<label for="description_model" class="form-label">AI Model for Descriptions</label>
+							<select class="form-select" id="description_model" name="description_model">
+								@if(empty($models))
+									<option value="" disabled>Could not load models.</option>
+								@else
+									@foreach($models as $model)
+										{{-- Use the story's model as the default selection --}}
+										<option value="{{ $model['id'] }}" {{ $story->model == $model['id'] ? 'selected' : '' }}>{{ $model['name'] }}</option>
+									@endforeach
+								@endif
+							</select>
+							<small class="form-text text-muted">Select the model to use for generating all descriptions below.</small>
+						</div>
+					</div>
+				</div>
+				{{-- END MODIFICATION --}}
 			</div>
 		</div>
 		
@@ -120,6 +140,22 @@
 			const finishContainer = document.getElementById('finish-container');
 			let currentItemIndex = 0;
 			
+			// START MODIFICATION: Add logic to save/load model selection from localStorage.
+			const descriptionModelSelect = document.getElementById('description_model');
+			const descriptionModelKey = 'storyCreateAi_descriptionModel';
+			
+			if (descriptionModelSelect) {
+				const savedModel = localStorage.getItem(descriptionModelKey);
+				if (savedModel) {
+					descriptionModelSelect.value = savedModel;
+				}
+				
+				descriptionModelSelect.addEventListener('change', (e) => {
+					localStorage.setItem(descriptionModelKey, e.target.value);
+				});
+			}
+			// END MODIFICATION
+			
 			function processNextItem() {
 				if (currentItemIndex >= itemsToProcess.length) {
 					// MODIFIED: Also check if there were any items to begin with before showing the finish button.
@@ -152,6 +188,11 @@
 					formData.append('type', type);
 					formData.append('name', name);
 					formData.append('_token', csrfToken);
+					
+					// START MODIFICATION: Get the selected model and add it to the form data.
+					const model = document.getElementById('description_model').value;
+					formData.append('model', model);
+					// END MODIFICATION
 					
 					if (type === 'character') {
 						const promptText = document.getElementById('prompt_character_description').value;
