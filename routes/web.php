@@ -176,7 +176,14 @@
 			Route::put('/{story}', [StoryController::class, 'update'])->name('update');
 			Route::delete('/{story}', [StoryController::class, 'destroy'])->name('destroy');
 
+			// START MODIFICATION: Add route for cloning a story.
+			Route::post('/{story}/clone', [StoryController::class, 'clone'])->name('clone');
+			// END MODIFICATION
+
 			Route::get('read/{story}', [StoryController::class, 'show'])->name('show');
+			// START MODIFICATION: Add route for the text view.
+			Route::get('/{story}/text-view', [StoryController::class, 'textView'])->name('text-view');
+			// END MODIFICATION
 
 			// MODIFIED: AI Story Creation Wizard Routes
 			Route::get('/create/ai', [CreateStoryController::class, 'createWithAiStep1'])->name('create-ai.step1');

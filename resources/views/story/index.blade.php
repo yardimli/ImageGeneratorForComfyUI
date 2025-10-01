@@ -52,12 +52,18 @@
 									</small>
 								</div>
 								@auth
-									<div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 320px;">
+									<div class="d-flex gap-2 flex-wrap justify-content-end" style="min-width: 400px;">
 										<a href="{{ route('stories.pdf.setup', $story) }}" class="btn btn-sm btn-outline-primary">PDF</a>
 										<a href="{{ route('stories.show', $story) }}" class="btn btn-sm btn-outline-primary">Read</a>
+										{{-- START MODIFICATION: Add "View as Text" button --}}
+										<a href="{{ route('stories.text-view', $story) }}" class="btn btn-sm btn-outline-secondary" target="_blank">Text</a>
+										{{-- END MODIFICATION --}}
 										<a href="{{ route('stories.edit', $story) }}" class="btn btn-sm btn-outline-primary">Edit</a>
 										<a href="{{ route('stories.quiz', $story) }}" class="btn btn-sm btn-outline-secondary">Quiz</a>
-										<div class="w-100"></div>
+										<form action="{{ route('stories.clone', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to clone this story?');">
+											@csrf
+											<button type="submit" class="btn btn-sm btn-outline-info">Clone</button>
+										</form>
 										<form action="{{ route('stories.destroy', $story) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this story and all its content?');">
 											@csrf
 											@method('DELETE')

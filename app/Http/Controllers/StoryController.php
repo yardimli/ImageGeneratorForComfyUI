@@ -207,6 +207,65 @@
 		}
 
 		/**
+		 * START MODIFICATION: Add a new method to display the story as simple text.
+		 *
+		 * @param Story $story
+		 * @return \Illuminate\View\View
+		 */
+		public function textView(Story $story)
+		{
+			// Eager load all necessary relationships to avoid N+1 query issues.
+			$story->load(['pages', 'characters', 'places']);
+
+			// Start building the text string.
+			$textOutput = "Title: " . $story->title . "\n";
+			$textOutput .= "========================================\n\n";
+
+			$textOutput .= "Description:\n" . $story->short_description . "\n\n";
+
+			// Add AI generation details if they exist.
+			if ($story->initial_prompt) {
+				$textOutput .= "AI Generation Details:\n";
+				$textOutput .= "----------------------\n";
+				$textOutput .= "Model Used: " . $story->model . "\n";
+				$textOutput .= "Initial Prompt:\n" . $story->initial_prompt . "\n\n";
+			}
+
+			$textOutput .= "Story Pages:\n";
+			$textOutput .= "========================================\n\n";
+			foreach ($story->pages as $page) {
+				$textOutput .= "--- Page " . $page->page_number . " ---\n";
+				$textOutput .= $page->story_text . "\n\n";
+			}
+
+			$textOutput .= "Characters:\n";
+			$textOutput .= "========================================\n\n";
+			if ($story->characters->isEmpty()) {
+				$textOutput .= "No characters defined.\n\n";
+			} else {
+				foreach ($story->characters as $character) {
+					$textOutput .= "Name: " . $character->name . "\n";
+					$textOutput .= "Description: " . $character->description . "\n\n";
+				}
+			}
+
+			$textOutput .= "Places:\n";
+			$textOutput .= "========================================\n\n";
+			if ($story->places->isEmpty()) {
+				$textOutput .= "No places defined.\n\n";
+			} else {
+				foreach ($story->places as $place) {
+					$textOutput .= "Name: " . $place->name . "\n";
+					$textOutput .= "Description: " . $place->description . "\n\n";
+				}
+			}
+
+			// Pass the compiled text to a new view.
+			return view('story.text-view', compact('story', 'textOutput'));
+		}
+		// END MODIFICATION
+
+		/**
 		 * Show the form for editing the specified story.
 		 */
 		public function edit(Story $story, LlmController $llmController)
@@ -337,6 +396,92 @@
 			$story->delete();
 			return redirect()->route('stories.index')->with('success', 'Story deleted successfully.');
 		}
+
+		/**
+		 * START MODIFICATION: Add a new method to clone a story.
+		 * Clones a story and all of its related content.
+		 *
+		 * @param Story $story
+		 * @return \Illuminate\Http\RedirectResponse
+		 */
+		public function clone(Story $story)
+		{
+			try {
+				DB::transaction(function () use ($story) {
+					// 1. Clone the Story model itself.
+					$newStory = $story->replicate();
+					$newStory->title = $story->title . ' (Copy)';
+					$newStory->created_at = now();
+					$newStory->updated_at = now();
+					$newStory->save();
+
+					// 2. Create maps to track old IDs to new IDs for relational integrity.
+					$oldToNewCharacterIdMap = [];
+					$oldToNewPlaceIdMap = [];
+
+					// 3. Clone characters and populate the character ID map.
+					foreach ($story->characters as $character) {
+						$newCharacter = $character->replicate();
+						$newCharacter->story_id = $newStory->id;
+						$newCharacter->save();
+						$oldToNewCharacterIdMap[$character->id] = $newCharacter->id;
+					}
+
+					// 4. Clone places and populate the place ID map.
+					foreach ($story->places as $place) {
+						$newPlace = $place->replicate();
+						$newPlace->story_id = $newStory->id;
+						$newPlace->save();
+						$oldToNewPlaceIdMap[$place->id] = $newPlace->id;
+					}
+
+					// 5. Clone pages and their direct and pivot relationships.
+					foreach ($story->pages as $page) {
+						$newPage = $page->replicate();
+						$newPage->story_id = $newStory->id;
+						$newPage->save();
+
+						// 5a. Clone dictionary entries belonging to the page.
+						foreach ($page->dictionary as $entry) {
+							$newEntry = $entry->replicate();
+							$newEntry->story_page_id = $newPage->id;
+							$newEntry->save();
+						}
+
+						// 5b. Sync character relationships for the new page using the ID map.
+						$characterIdsToSync = $page->characters->pluck('id')->map(function ($oldId) use ($oldToNewCharacterIdMap) {
+							return $oldToNewCharacterIdMap[$oldId] ?? null;
+						})->filter();
+
+						if ($characterIdsToSync->isNotEmpty()) {
+							$newPage->characters()->sync($characterIdsToSync);
+						}
+
+						// 5c. Sync place relationships for the new page using the ID map.
+						$placeIdsToSync = $page->places->pluck('id')->map(function ($oldId) use ($oldToNewPlaceIdMap) {
+							return $oldToNewPlaceIdMap[$oldId] ?? null;
+						})->filter();
+
+						if ($placeIdsToSync->isNotEmpty()) {
+							$newPage->places()->sync($placeIdsToSync);
+						}
+					}
+
+					// 6. Clone quiz entries.
+					foreach ($story->quiz as $quizItem) {
+						$newQuizItem = $quizItem->replicate();
+						$newQuizItem->story_id = $newStory->id;
+						$newQuizItem->save();
+					}
+				});
+			} catch (Exception $e) {
+				Log::error('Failed to clone story: ' . $e->getMessage());
+				return redirect()->route('stories.index')->with('error', 'An error occurred while cloning the story.');
+			}
+
+			return redirect()->route('stories.index')->with('success', 'Story cloned successfully.');
+		}
+		// END MODIFICATION
 
 		/**
 		 * Inserts an empty page above the specified page.
