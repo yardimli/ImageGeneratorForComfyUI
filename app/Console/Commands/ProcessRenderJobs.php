@@ -356,7 +356,7 @@
 
 				$statusUrl = "https://queue.fal.run/fal-ai/{$pollingModelPath}/requests/{$requestId}/status";
 				// The result URL must use the full, original model path.
-				$resultUrl = "https://queue.fal.run/fal-ai/{$apiModelPath}/requests/{$requestId}";
+				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
 				// END MODIFICATION
 				$startTime = time();
 				$error_405_counter = 0;
