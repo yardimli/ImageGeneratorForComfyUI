@@ -65,9 +65,9 @@
 <div id="app">
 	<nav class="navbar navbar-expand-md bg-body-tertiary shadow-sm">
 		<div class="container">
-				<button class="btn btn-outline-secondary me-2" id="theme-switcher-btn" style="width: 40px;">
-					<span id="theme-icon"></span>
-				</button>
+			<button class="btn btn-outline-secondary me-2" id="theme-switcher-btn" style="width: 40px;">
+				<span id="theme-icon"></span>
+			</button>
 			<a class="navbar-brand" href="{{ route('home') }}">
 				{{ config('app.name', 'Laravel') }}
 			</a>
@@ -98,6 +98,11 @@
 							<li>
 								<a class="dropdown-item" href="{{ route('image-mix.index') }}">Image Mix</a>
 							</li>
+							{{-- START MODIFICATION --}}
+							<li>
+								<a class="dropdown-item" href="{{ route('image-edit.index') }}">Edit</a>
+							</li>
+							{{-- END MODIFICATION --}}
 							<li>
 								<hr class="dropdown-divider">
 							</li>

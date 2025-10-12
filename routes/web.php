@@ -1,9 +1,11 @@
 <?php
 
 	use App\Http\Controllers\AlbumCoverController;
+	use App\Http\Controllers\CreateStoryController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
+	use App\Http\Controllers\ImageEditController; // MODIFICATION: Import new controller
 	use App\Http\Controllers\ImageMixController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
@@ -13,10 +15,9 @@
 	use App\Http\Controllers\PromptDictionaryController;
 	use App\Http\Controllers\PromptDictionaryImageController;
 	use App\Http\Controllers\QuizController;
-	use App\Http\Controllers\StoryPdfController;
-	use App\Http\Controllers\CreateStoryController;
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
+	use App\Http\Controllers\StoryPdfController;
 	use App\Http\Controllers\UpscaleAndNotesController;
 	use Illuminate\Support\Facades\Route;
 
@@ -105,6 +106,14 @@
 			Route::post('/upload', [ImageMixController::class, 'uploadImage'])->name('upload');
 			Route::get('/uploads', [ImageMixController::class, 'getUploadedImages'])->name('uploads');
 		});
+
+		// START MODIFICATION: Add routes for the new Image Edit feature
+		Route::prefix('image-edit')->name('image-edit.')->group(function () {
+			Route::get('/', [ImageEditController::class, 'index'])->name('index');
+			Route::post('/generate', [ImageEditController::class, 'generate'])->name('generate');
+			Route::get('/status/{prompt}', [ImageEditController::class, 'checkStatus'])->name('status');
+		});
+		// END MODIFICATION
 
 		// --- Kontext ---
 		Route::prefix('kontext-basic')->name('kontext-basic.')->group(function () {
