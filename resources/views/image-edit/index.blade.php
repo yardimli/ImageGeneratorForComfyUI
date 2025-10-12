@@ -25,7 +25,7 @@
 				<div class="mb-3">
 					<label for="model" class="form-label">AI Model</label>
 					<select class="form-select" id="model">
-						<option value="gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
+						<option value="fal-ai/gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
 						<option value="fal-ai/dreamomni2/edit">DreamOmni2 Edit ($0.05)</option>
 						<option value="fal-ai/qwen-image-edit-plus">Qwen Image Edit Plus ($0.03)</option>
 						<option value="fal-ai/bytedance/seedream/v4/edit">SeeDream v4 Edit ($0.03)</option>

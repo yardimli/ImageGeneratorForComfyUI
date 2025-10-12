@@ -171,7 +171,7 @@
 			$isKnownModel = in_array($modelName, $this->availableModels, true);
 			// START MODIFICATION: Allow specific models like the image editor to pass through even if not in models.json
 			$allowedOverrideModels = [
-				'gemini-25-flash-image/edit',
+				'fal-ai/gemini-25-flash-image/edit',
 				'fal-ai/dreamomni2/edit',
 				'fal-ai/qwen-image-edit-plus',
 				'fal-ai/bytedance/seedream/v4/edit',
