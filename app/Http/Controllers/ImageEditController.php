@@ -31,8 +31,10 @@
 		 */
 		public function generate(Request $request)
 		{
+			// START MODIFICATION: Add model to validation rules.
 			$validated = $request->validate([
 				'prompt' => 'required|string',
+				'model' => 'required|string',
 				'width' => 'required|integer|min:1',
 				'height' => 'required|integer|min:1',
 				'upload_to_s3' => 'required|boolean',
@@ -40,9 +42,10 @@
 				'input_images' => 'present|array|min:1',
 				'input_images.*' => 'string',
 			]);
+			// END MODIFICATION
 
 			try {
-				$model = 'gemini-25-flash-image/edit'; // Hardcoded model for this feature
+				$model = $validated['model']; // MODIFICATION: Use model from request instead of hardcoded value.
 
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),

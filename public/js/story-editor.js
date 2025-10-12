@@ -1121,13 +1121,16 @@ document.addEventListener('DOMContentLoaded', function () {
 			generateImageV2Btn.disabled = true;
 			generateImageV2Btn.querySelector('.spinner-border').classList.remove('d-none');
 			
+			// START MODIFICATION: Add model to request body.
 			const body = {
+				model: document.getElementById('draw-v2-model').value,
 				width: drawV2WidthInput.value,
 				height: drawV2HeightInput.value,
 				upload_to_s3: document.getElementById('draw-v2-upload-to-s3').checked,
 				aspect_ratio: drawV2AspectRatioSelect.value,
 				input_images: inputImagePaths,
 			};
+			// END MODIFICATION
 			
 			try {
 				const response = await fetch(`/stories/pages/${storyPageId}/generate-image-v2`, {

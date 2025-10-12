@@ -169,8 +169,15 @@
 
 			// Filter for prompts this worker can handle.
 			$isKnownModel = in_array($modelName, $this->availableModels, true);
-			// Allow specific models like the image editor to pass through even if not in models.json
-			$isAllowedOverride = in_array($modelName, ['gemini-25-flash-image/edit'], true);
+			// START MODIFICATION: Allow specific models like the image editor to pass through even if not in models.json
+			$allowedOverrideModels = [
+				'gemini-25-flash-image/edit',
+				'fal-ai/dreamomni2/edit',
+				'fal-ai/qwen-image-edit-plus',
+				'fal-ai/bytedance/seedream/v4/edit',
+			];
+			$isAllowedOverride = in_array($modelName, $allowedOverrideModels, true);
+			// END MODIFICATION
 
 			if ($prompt->generation_type !== "prompt" || !($isKnownModel || $isAllowedOverride)) {
 				return; // Skip this prompt.
@@ -316,8 +323,14 @@
 			// END MODIFICATION
 
 			try {
+				// START MODIFICATION: Handle different model name formats for Fal.ai URLs and fix result URL bug.
+				// Models can be 'flux-1/schnell' or 'fal-ai/dreamomni2/edit'.
+				// The API endpoint needs the path part after 'fal-ai/'.
+				$apiModelPath = str_starts_with($modelName, 'fal-ai/') ? substr($modelName, 7) : $modelName;
+
 				// Step 1: Submit the job to the queue endpoint.
-				$submitUrl = "https://queue.fal.run/fal-ai/{$modelName}";
+				$submitUrl = "https://queue.fal.run/fal-ai/{$apiModelPath}";
+				// END MODIFICATION
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
 					'Content-Type' => 'application/json',
@@ -338,14 +351,18 @@
 
 				$this->info("Job submitted successfully. Request ID: {$requestId}. Polling for result...");
 
+				// START MODIFICATION: Correctly determine polling and result URLs.
 				// Step 2: Poll the status URL until the job is complete or times out.
-				// explode $modelName by "/" and use the first part only for the status URL
-				if (str_contains($modelName, '/')) {
-					$modelName = explode('/', $modelName)[0];
+				// Some models require polling a base path (e.g., 'flux-1' for 'flux-1/schnell').
+				$pollingModelPath = $apiModelPath;
+				if (str_contains($pollingModelPath, '/')) {
+					$pollingModelPath = explode('/', $pollingModelPath)[0];
 				}
 
-				$statusUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}/status";
-				$resultUrl = "https://queue.fal.run/fal-ai/{$modelName}/requests/{$requestId}";
+				$statusUrl = "https://queue.fal.run/fal-ai/{$pollingModelPath}/requests/{$requestId}/status";
+				// The result URL must use the full, original model path.
+				$resultUrl = "https://queue.fal.run/fal-ai/{$apiModelPath}/requests/{$requestId}";
+				// END MODIFICATION
 				$startTime = time();
 				$error_405_counter = 0;
 

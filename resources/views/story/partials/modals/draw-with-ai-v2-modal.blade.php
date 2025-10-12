@@ -1,4 +1,3 @@
-{{-- START NEW FILE --}}
 <div class="modal fade" id="drawWithAiV2Modal" tabindex="-1" aria-labelledby="drawWithAiV2ModalLabel" aria-hidden="true">
 	<div class="modal-dialog modal-lg">
 		<div class="modal-content">
@@ -9,13 +8,26 @@
 			<div class="modal-body">
 				<form id="draw-with-ai-v2-form">
 					<input type="hidden" id="draw-v2-asset-id" value="">
+					{{-- START MODIFICATION: Updated alert text to be more generic. --}}
 					<div class="alert alert-info small">
-						This feature uses the <strong>gemini-25-flash-image/edit</strong> model to generate a new image based on your prompt and the input images provided below.
+						This feature uses an image editing model to generate a new image based on your prompt and the input images provided below.
 					</div>
+					{{-- END MODIFICATION --}}
 					<div class="mb-3">
 						<label class="form-label fw-bold">Image Prompt:</label>
 						<p class="form-control-plaintext p-2 bg-body-secondary rounded" id="draw-v2-image-prompt-text"></p>
 					</div>
+					{{-- START MODIFICATION: Add model selection dropdown. --}}
+					<div class="mb-3">
+						<label for="draw-v2-model" class="form-label">AI Model</label>
+						<select class="form-select" id="draw-v2-model">
+							<option value="fal-ai/gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
+							<option value="fal-ai/dreamomni2/edit">DreamOmni2 Edit ($0.05)</option>
+							<option value="fal-ai/qwen-image-edit-plus">Qwen Image Edit Plus ($0.03)</option>
+							<option value="fal-ai/bytedance/seedream/v4/edit">SeeDream v4 Edit ($0.03)</option>
+						</select>
+					</div>
+					{{-- END MODIFICATION --}}
 					<div class="mb-3">
 						<label class="form-label fw-bold">Input Images (click to remove):</label>
 						<div id="draw-v2-input-images-container" class="d-flex flex-wrap gap-2 border p-2 rounded" style="min-height: 110px;">
@@ -84,4 +96,3 @@
 		<button type="button" class="btn-close btn-sm position-absolute top-0 end-0 bg-light rounded-circle" aria-label="Remove" style="transform: translate(25%, -25%);"></button>
 	</div>
 </template>
-{{-- END NEW FILE --}}

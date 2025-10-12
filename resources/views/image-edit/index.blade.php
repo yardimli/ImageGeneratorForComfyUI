@@ -17,9 +17,21 @@
 				<h1>Image Edit</h1>
 			</div>
 			<div class="card-body">
+				{{-- START MODIFICATION --}}
 				<div class="alert alert-info small">
-					This feature uses the <strong>gemini-25-flash-image/edit</strong> model to generate a new image based on your prompt and the input images provided below.
+					This feature uses an image editing model to generate a new image based on your prompt and the input images provided below.
 				</div>
+				
+				<div class="mb-3">
+					<label for="model" class="form-label">AI Model</label>
+					<select class="form-select" id="model">
+						<option value="fal-ai/gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
+						<option value="fal-ai/dreamomni2/edit">DreamOmni2 Edit ($0.05)</option>
+						<option value="fal-ai/qwen-image-edit-plus">Qwen Image Edit Plus ($0.03)</option>
+						<option value="fal-ai/bytedance/seedream/v4/edit">SeeDream v4 Edit ($0.03)</option>
+					</select>
+				</div>
+				{{-- END MODIFICATION --}}
 				
 				<div class="mb-3">
 					<label class="form-label fw-bold">Input Images (click to remove):</label>

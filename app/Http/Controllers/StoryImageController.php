@@ -101,7 +101,9 @@
 		 */
 		public function generateV2(Request $request, StoryPage $storyPage)
 		{
+			// START MODIFICATION: Add model to validation rules.
 			$validated = $request->validate([
+				'model' => 'required|string',
 				'width' => 'required|integer|min:1',
 				'height' => 'required|integer|min:1',
 				'upload_to_s3' => 'required|boolean',
@@ -109,6 +111,7 @@
 				'input_images' => 'present|array',
 				'input_images.*' => 'string',
 			]);
+			// END MODIFICATION
 
 			try {
 				$promptText = $storyPage->image_prompt;
@@ -116,7 +119,7 @@
 					return response()->json(['success' => false, 'message' => 'Image prompt for this page is empty.'], 422);
 				}
 
-				$model = 'gemini-25-flash-image/edit'; // Hardcoded model for this feature
+				$model = $validated['model']; // MODIFICATION: Use model from request instead of hardcoded value.
 
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
@@ -129,7 +132,7 @@
 					'render_each_prompt_times' => 1,
 					'width' => $validated['width'],
 					'height' => $validated['height'],
-					'model' => $model, // MODIFICATION: Use the validated model from the request.
+					'model' => $model,
 					'lora_name' => '',
 					'strength_model' => 0,
 					'guidance' => 7.5,

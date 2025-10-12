@@ -270,14 +270,17 @@ document.addEventListener('DOMContentLoaded', function () {
 		spinnerContainer.classList.remove('d-none');
 		resultImage.src = '';
 		
+		// START MODIFICATION: Add model to request body.
 		const body = {
 			prompt: promptText,
+			model: document.getElementById('model').value, // Assuming an element with id="model" exists.
 			width: widthInput.value,
 			height: heightInput.value,
 			upload_to_s3: document.getElementById('upload-to-s3').checked,
 			aspect_ratio: aspectRatioSelect.value,
 			input_images: inputImagePaths,
 		};
+		// END MODIFICATION
 		
 		try {
 			const response = await fetch('/image-edit/generate', {
