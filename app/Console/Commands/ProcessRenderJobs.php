@@ -171,10 +171,10 @@
 			$isKnownModel = in_array($modelName, $this->availableModels, true);
 			// START MODIFICATION: Allow specific models like the image editor to pass through even if not in models.json
 			$allowedOverrideModels = [
-				'fal-ai/gemini-25-flash-image/edit',
-				'fal-ai/dreamomni2/edit',
-				'fal-ai/qwen-image-edit-plus',
-				'fal-ai/bytedance/seedream/v4/edit',
+				'gemini-25-flash-image/edit',
+				'dreamomni2/edit',
+				'qwen-image-edit-plus',
+				'bytedance/seedream/v4/edit',
 			];
 			$isAllowedOverride = in_array($modelName, $allowedOverrideModels, true);
 			// END MODIFICATION
@@ -325,8 +325,7 @@
 			try {
 
 				// Step 1: Submit the job to the queue endpoint.
-				$submitUrl = "https://queue.fal.run/{$modelName}";
-				// END MODIFICATION
+				$submitUrl = "https://queue.fal.run/fal-ai/{$modelName}";
 				$response = Http::withHeaders([
 					'Authorization' => 'Key ' . $falKey,
 					'Content-Type' => 'application/json',
@@ -350,7 +349,7 @@
 				// START MODIFICATION: Correctly determine polling and result URLs.
 				// Step 2: Poll the status URL until the job is complete or times out.
 				// Some models require polling a base path (e.g., 'flux-1' for 'flux-1/schnell').
-				$pollingModelPath = $apiModelPath;
+				$pollingModelPath = $modelName;
 				if (str_contains($pollingModelPath, '/')) {
 					$pollingModelPath = explode('/', $pollingModelPath)[0];
 				}
