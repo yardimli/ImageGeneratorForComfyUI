@@ -212,7 +212,7 @@
 
 				if (!$falKey) {
 					$this->error('FAL_KEY is not set in the .env file.');
-					return null;
+					return;
 				}
 
 				// --- Image Generation Logic ---
