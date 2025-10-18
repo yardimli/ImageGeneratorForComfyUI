@@ -205,9 +205,19 @@
 				// Mark as processing (status 1).
 				$this->updateRenderStatus($prompt, 1);
 
+				$falKey = env('FAL_KEY');
+				if ($prompt->story_page_id!==0 || ($prompt->story_character_id !== null) || ($prompt->story_place_id !== null) || ($prompt->prompt_dictionary_entry_id !== null) ) {
+					$falKey = env('FAL_KEY_FOR_STORY');
+				}
+
+				if (!$falKey) {
+					$this->error('FAL_KEY is not set in the .env file.');
+					return null;
+				}
+
 				// --- Image Generation Logic ---
 				// $modelName is already resolved and validated above.
-				$imageUrl = $this->generateWithFal($modelName, $prompt);
+				$imageUrl = $this->generateWithFal($falKey, $modelName, $prompt);
 
 				// --- Download, Save, and Upload ---
 				if ($imageUrl) {
@@ -251,16 +261,10 @@
 		 * Generate an image using the Fal.ai asynchronous queue API.
 		 * This method now submits the job, then polls for completion.
 		 */
-		private function generateWithFal(string $modelName, Prompt $prompt): ?string
+		private function generateWithFal(string $falKey, string $modelName, Prompt $prompt): ?string
 		{
 			$this->info("Submitting job to Fal queue: {$modelName}...");
 			$falTimeout = (int) env('FAL_TIMEOUT', 180);
-			$falKey = env('FAL_KEY');
-
-			if (!$falKey) {
-				$this->error('FAL_KEY is not set in the .env file.');
-				return null;
-			}
 
 			$arguments = ['prompt' => $prompt->generated_prompt];
 			$arguments['image_size'] = ['width' => $prompt->width ?? 1024, 'height' => $prompt->height ?? 1024];
