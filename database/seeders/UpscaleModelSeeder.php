@@ -7,7 +7,6 @@
 
 	class UpscaleModelSeeder extends Seeder
 	{
-		//run: php artisan db:seed --class=UpscaleModelSeeder
 		public function run(): void
 		{
 			// 1. High Resolution ControlNet Tile
@@ -15,11 +14,6 @@
 				['slug' => 'high-resolution-controlnet-tile'],
 				[
 					'name' => 'High Resolution ControlNet Tile',
-					'replicate_version_id' => '4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29', // Note: Prompt had specific hash in curl, using that or generic
-					// The prompt used: 8e6a54d7b2848c48dc741a109d3fb0ea2a7f554eb4becd39a25cc532536ea975 in curl example
-					// The controller used: 4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29 in original code
-					// We will use the one from the curl example provided in instructions for the DB,
-					// but fallback to the one in code if needed. Let's use the one from the curl request.
 					'replicate_version_id' => '8e6a54d7b2848c48dc741a109d3fb0ea2a7f554eb4becd39a25cc532536ea975',
 					'image_input_key' => 'image',
 					'input_schema' => json_encode([
@@ -39,6 +33,7 @@
 						['name' => 'lora_details_strength', 'label' => 'LoRA Details Strength', 'type' => 'number', 'step' => 0.05],
 						['name' => 'lora_sharpness_strength', 'label' => 'LoRA Sharpness Strength', 'type' => 'number', 'step' => 0.05],
 						['name' => 'resolution', 'label' => 'Resolution', 'type' => 'number'],
+						['name' => 'guess_mode', 'label' => 'Guess Mode', 'type' => 'boolean'],
 					]),
 					'default_settings' => json_encode([
 						'scheduler' => 'DDIM',
@@ -78,6 +73,30 @@
 					'default_settings' => json_encode([
 						'version' => 'v1.4',
 						'scale' => 2,
+					]),
+				]
+			);
+
+			// 3. Google Upscaler
+			DB::table('upscale_models')->updateOrInsert(
+				['slug' => 'google-upscaler'],
+				[
+					'name' => 'Google Upscaler',
+					// Using the specific version hash for google/upscaler to work with the existing controller logic
+					'replicate_version_id' => '4f77714d5b64d544d8a39615671971af3dd1d252674cd22abd14698631913c62',
+					'image_input_key' => 'image',
+					'input_schema' => json_encode([
+						[
+							'name' => 'upscale_factor',
+							'label' => 'Upscale Factor',
+							'type' => 'select',
+							'options' => ['x2', 'x4'],
+						],
+						['name' => 'compression_quality', 'label' => 'Compression Quality', 'type' => 'number'],
+					]),
+					'default_settings' => json_encode([
+						'upscale_factor' => 'x4',
+						'compression_quality' => 80,
 					]),
 				]
 			);
