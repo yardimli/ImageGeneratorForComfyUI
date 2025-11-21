@@ -597,34 +597,50 @@
 			if ($cover->upscaled_path) {
 				Storage::disk('public')->delete($cover->upscaled_path);
 			}
-			// Null out all upscale fields to reset the state. They will be repopulated on success.
-			// These changes are not persisted until the save() call below.
+			// Null out all upscale fields to reset the state.
 			$cover->upscaled_path = null;
 			$cover->upscale_status = null;
 			$cover->upscale_prediction_id = null;
 			$cover->upscale_status_url = null;
 
 			// Use the generated Kontext image as the source for upscaling.
-			// We need a full, public URL for the Replicate API.
 			$imageUrl = asset(Storage::url($cover->kontext_path));
+
+			// MODIFICATION START: Dynamic Upscale Settings
+			$userSetting = UserUpscaleSetting::where('user_id', auth()->id())
+				->where('is_active', true)
+				->with('model')
+				->first();
+
+			if ($userSetting) {
+				$model = $userSetting->model;
+				$input = $userSetting->settings;
+				$version = $model->replicate_version_id;
+				$input[$model->image_input_key] = $imageUrl;
+			} else {
+				// Fallback
+				$version = "4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29";
+				$input = [
+					"hdr" => 0.1,
+					"image" => $imageUrl,
+					"prompt" => "4k, enhance, high detail",
+					"creativity" => 0.3,
+					"guess_mode" => true,
+					"resolution" => 2560,
+					"resemblance" => 1,
+					"guidance_scale" => 5,
+					"negative_prompt" => ""
+				];
+			}
+			// MODIFICATION END
 
 			try {
 				$response = Http::withHeaders([
 					'Authorization' => 'Bearer ' . env('REPLICATE_API_TOKEN'),
 					'Content-Type' => 'application/json',
 				])->post('https://api.replicate.com/v1/predictions', [
-					"version" => "4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29",
-					"input" => [
-						"hdr" => 0.1,
-						"image" => $imageUrl,
-						"prompt" => "4k, enhance, high detail",
-						"creativity" => 0.3,
-						"guess_mode" => true,
-						"resolution" => 2560,
-						"resemblance" => 1,
-						"guidance_scale" => 5,
-						"negative_prompt" => ""
-					]
+					"version" => $version,
+					"input" => $input
 				]);
 
 				if ($response->failed()) {
@@ -658,12 +674,11 @@
 
 		public function checkUpscaleStatus(Request $request, GoodAlbumCover $cover, $prediction_id)
 		{
-			// START MODIFICATION: Authorize based on parent if it's a generated image
+			// ... existing authorization logic ...
 			$ownerId = $cover->parent ? $cover->parent->user_id : $cover->user_id;
 			if ($ownerId !== auth()->id()) {
 				abort(403, 'Unauthorized action.');
 			}
-			// END MODIFICATION
 
 			if (!$cover->upscale_status_url) {
 				return response()->json(['status' => 'error', 'message' => 'No status URL found for this job.']);
@@ -684,14 +699,17 @@
 				$jobStatus = $body['status'] ?? 'unknown';
 
 				if ($jobStatus === 'succeeded') {
-					if (empty($body['output'][0])) {
+					// MODIFICATION: Handle different output formats (string vs array)
+					$output = $body['output'] ?? null;
+					$upscaledImageUrl = is_array($output) ? ($output[0] ?? null) : $output;
+
+					if (empty($upscaledImageUrl)) {
 						Log::warning("Replicate job {$prediction_id} succeeded but no output URL found: " . $response->body());
 						$cover->upscale_status = 3; // Failed
 						$cover->save();
 						return response()->json(['status' => 'error', 'message' => 'Upscale succeeded but no output URL found.']);
 					}
 
-					$upscaledImageUrl = $body['output'][0];
 					$imageContents = @file_get_contents($upscaledImageUrl);
 
 					if ($imageContents === false) {
@@ -700,7 +718,7 @@
 					}
 
 					// The path for the final upscaled image.
-					$filename = 'upscaled_kontext_' . $cover->id . '_' . Str::random(10) . '.png';
+					$filename = 'upscaled_kontext_' . $cover->id . '_' . Str::random(10) . '.png'; // Using .png generic, or detect from url
 					$storagePath = 'public/album-covers/upscaled/' . $filename;
 					Storage::put($storagePath, $imageContents);
 
@@ -714,12 +732,13 @@
 						'image_url' => Storage::url($cover->upscaled_path)
 					]);
 				} elseif ($jobStatus === 'failed' || $jobStatus === 'canceled') {
+					// ... existing failure logic ...
 					Log::error("Replicate job {$prediction_id} failed: " . ($body['error'] ?? 'Unknown error'));
 					$cover->upscale_status = 3; // Failed
 					$cover->save();
 					return response()->json(['status' => 'error', 'message' => "Job failed: " . ($body['error'] ?? 'Unknown error')]);
 				} else {
-					// Still processing (in_progress, starting, etc.)
+					// Still processing
 					return response()->json(['status' => 'processing']);
 				}
 			} catch (Exception $e) {

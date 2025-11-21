@@ -19,6 +19,7 @@
 	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\StoryPdfController;
 	use App\Http\Controllers\UpscaleAndNotesController;
+	use App\Http\Controllers\UpscaleSettingController;
 	use Illuminate\Support\Facades\Route;
 
 	/*
@@ -255,4 +256,9 @@
 		Route::get('/assets/wallpapers/{filename}', [StoryPdfController::class, 'serveWallpaper'])->name('assets.wallpaper');
 		Route::get('/assets/logos/{filename}', [StoryPdfController::class, 'serveLogo'])->name('assets.logo');
 		Route::get('/assets/stickers/{filename}', [StoryPdfController::class, 'serveSticker'])->name('assets.sticker');
+
+		Route::prefix('admin/upscale-settings')->name('upscale-settings.')->group(function () {
+			Route::get('/', [UpscaleSettingController::class, 'index'])->name('index');
+			Route::post('/update', [UpscaleSettingController::class, 'update'])->name('update');
+		});
 	});

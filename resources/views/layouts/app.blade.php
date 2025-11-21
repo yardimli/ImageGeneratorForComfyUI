@@ -121,6 +121,7 @@
 						</a>
 						<ul class="dropdown-menu" aria-labelledby="adminDropdown">
 							<li><a class="dropdown-item" href="{{ route('llm-prompts.index') }}">LLM Prompts</a></li>
+							<li><a class="dropdown-item" href="{{ route('upscale-settings.index') }}">Upscale Settings</a></li>
 						</ul>
 					</li>
 				</ul>
