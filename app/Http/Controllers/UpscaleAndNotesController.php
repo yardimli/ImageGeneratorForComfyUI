@@ -47,6 +47,9 @@
 			}
 			// MODIFICATION END
 
+			Log::info("Upscaling with version: " . $version);
+			Log::info("Input parameters: " . json_encode($input));
+
 			$client = new Client();
 			$response = $client->post('https://api.replicate.com/v1/predictions', [
 				'headers' => [
