@@ -83,7 +83,7 @@
 				[
 					'name' => 'Google Upscaler',
 					// Using the specific version hash for google/upscaler to work with the existing controller logic
-					'replicate_version_id' => '4f77714d5b64d544d8a39615671971af3dd1d252674cd22abd14698631913c62',
+					'replicate_version_id' => 'google/upscaler',
 					'image_input_key' => 'image',
 					'input_schema' => json_encode([
 						[
