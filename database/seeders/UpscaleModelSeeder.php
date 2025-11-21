@@ -7,6 +7,7 @@
 
 	class UpscaleModelSeeder extends Seeder
 	{
+		//run: php artisan db:seed --class=UpscaleModelSeeder
 		public function run(): void
 		{
 			// 1. High Resolution ControlNet Tile
