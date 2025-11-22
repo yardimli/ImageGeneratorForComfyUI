@@ -9,7 +9,7 @@
 	{
 		public function run(): void
 		{
-			// 1. High Resolution ControlNet Tile
+// 1. High Resolution ControlNet Tile
 			DB::table('upscale_models')->updateOrInsert(
 				['slug' => 'high-resolution-controlnet-tile'],
 				[
@@ -53,7 +53,7 @@
 				]
 			);
 
-			// 2. GFPGAN
+// 2. GFPGAN
 			DB::table('upscale_models')->updateOrInsert(
 				['slug' => 'gfpgan'],
 				[
@@ -77,12 +77,12 @@
 				]
 			);
 
-			// 3. Google Upscaler
+// 3. Google Upscaler
 			DB::table('upscale_models')->updateOrInsert(
 				['slug' => 'google-upscaler'],
 				[
 					'name' => 'Google Upscaler',
-					// Using the specific version hash for google/upscaler to work with the existing controller logic
+// Using the specific version hash for google/upscaler to work with the existing controller logic
 					'replicate_version_id' => 'google/upscaler',
 					'image_input_key' => 'image',
 					'input_schema' => json_encode([
@@ -97,6 +97,54 @@
 					'default_settings' => json_encode([
 						'upscale_factor' => 'x4',
 						'compression_quality' => 80,
+					]),
+				]
+			);
+
+// 4. Topaz Image Upscale (ADDED)
+			DB::table('upscale_models')->updateOrInsert(
+				['slug' => 'topaz-image-upscale'],
+				[
+					'name' => 'Topaz Image Upscale',
+					'replicate_version_id' => 'topazlabs/image-upscale',
+					'image_input_key' => 'image',
+					'input_schema' => json_encode([
+						[
+							'name' => 'enhance_model',
+							'label' => 'Enhance Model',
+							'type' => 'select',
+							'options' => ['Standard V2', 'Low Resolution V2', 'CGI', 'High Fidelity V2', 'Text Refine'],
+						],
+						[
+							'name' => 'upscale_factor',
+							'label' => 'Upscale Factor',
+							'type' => 'select',
+							'options' => ['2x', '4x', '6x'],
+						],
+						[
+							'name' => 'output_format',
+							'label' => 'Output Format',
+							'type' => 'select',
+							'options' => ['jpg', 'png'],
+						],
+						['name' => 'face_enhancement', 'label' => 'Face Enhancement', 'type' => 'boolean'],
+						[
+							'name' => 'subject_detection',
+							'label' => 'Subject Detection',
+							'type' => 'select',
+							'options' => ['None', 'All', 'Foreground', 'Background'],
+						],
+						['name' => 'face_enhancement_strength', 'label' => 'Face Enhancement Strength', 'type' => 'number', 'step' => 0.1, 'min' => 0, 'max' => 1],
+						['name' => 'face_enhancement_creativity', 'label' => 'Face Enhancement Creativity', 'type' => 'number', 'step' => 0.1, 'min' => 0, 'max' => 1],
+					]),
+					'default_settings' => json_encode([
+						'enhance_model' => 'Low Resolution V2',
+						'upscale_factor' => '4x',
+						'output_format' => 'jpg',
+						'face_enhancement' => true,
+						'subject_detection' => 'Foreground',
+						'face_enhancement_strength' => 0.8,
+						'face_enhancement_creativity' => 0.5,
 					]),
 				]
 			);

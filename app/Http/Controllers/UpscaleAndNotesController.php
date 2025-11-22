@@ -17,7 +17,7 @@
 
 		public function upscaleImage(Request $request, Prompt $prompt)
 		{
-			// MODIFICATION START: Fetch user settings
+// MODIFICATION START: Fetch user settings
 			$userSetting = UserUpscaleSetting::where('user_id', auth()->id())
 				->where('is_active', true)
 				->with('model')
@@ -28,10 +28,10 @@
 				$input = $userSetting->settings;
 				$version = $model->replicate_version_id;
 
-				// Map the image URL to the specific key required by the model (image vs img)
+// Map the image URL to the specific key required by the model (image vs img)
 				$input[$model->image_input_key] = $request->filename;
 			} else {
-				// Fallback to default High Res ControlNet if no settings found
+// Fallback to default High Res ControlNet if no settings found
 				$version = "4af11083a13ebb9bf97a88d7906ef21cf79d1f2e5fa9d87b70739ce6b8113d29";
 				$input = [
 					"hdr" => 0.1,
@@ -45,22 +45,37 @@
 					"negative_prompt" => ""
 				];
 			}
-			// MODIFICATION END
+// MODIFICATION END
 
 			Log::info("Upscaling with version: " . $version);
 			Log::info("Input parameters: " . json_encode($input));
 
 			$client = new Client();
-			$response = $client->post('https://api.replicate.com/v1/predictions', [
+
+// MODIFICATION START: Handle Model-based URLs vs Version-based URLs
+// If the version string contains a slash (e.g. "topazlabs/image-upscale"), it's a model identifier.
+// Otherwise, it's a specific version hash.
+			if (str_contains($version, '/')) {
+				$apiUrl = "https://api.replicate.com/v1/models/{$version}/predictions";
+				$payload = [
+					"input" => $input
+				];
+			} else {
+				$apiUrl = 'https://api.replicate.com/v1/predictions';
+				$payload = [
+					"version" => $version,
+					"input" => $input
+				];
+			}
+
+			$response = $client->post($apiUrl, [
 				'headers' => [
 					'Authorization' => 'Bearer ' . env('REPLICATE_API_TOKEN'),
 					'Content-Type' => 'application/json',
 				],
-				'json' => [
-					"version" => $version,
-					"input" => $input
-				]
+				'json' => $payload
 			]);
+// MODIFICATION END
 
 			$body = $response->getBody();
 			$content = $body->getContents();
@@ -73,7 +88,7 @@
 				return response()->json(['message' => 'Error or no result from the upscale API.']);
 			}
 
-			// Assuming the response has a result URL or some indication of the upscale result
+// Assuming the response has a result URL or some indication of the upscale result
 			$prompt->upscale_result = $upscale_result;
 			$prompt->upscale_prediction_id = $json_result['id'] ?? null;
 			$prompt->upscale_status_url = $json_result['urls']['get'] ?? null;
@@ -85,7 +100,7 @@
 			return response()->json(['message' => 'Image upscaled successfully.', 'upscale_result' => $json_result, 'prediction_id' => $json_result['id'] ?? null, 'status_url' => $json_result['urls']['get'] ?? null]);
 		}
 
-		// ... rest of the file remains unchanged
+// ... rest of the file remains unchanged
 		public function checkUpscaleStatusOperation(Prompt $prompt, $prediction_id)
 		{
 			$response = Http::withHeaders([
@@ -104,7 +119,7 @@
 					return ['message' => 'Image upscale succeeded but no output URL found.'];
 				}
 
-				// Handle different output formats (GFPGAN returns string, ControlNet returns array)
+// Handle different output formats (GFPGAN returns string, ControlNet returns array)
 				$upscaledImageUrl = is_array($body['output']) ? $body['output'][0] : $body['output'];
 
 				if (!$upscaledImageUrl) {
@@ -117,11 +132,11 @@
 				$imageName = "{$prompt->id}_upscaled.jpg"; // You might want to detect extension based on output
 				$storagePath = "public/upscaled/{$imageName}";
 
-				// Download and save the file
+// Download and save the file
 				$contents = file_get_contents($upscaledImageUrl);
 				Storage::put($storagePath, $contents);
 
-				// Update database with final upscale result and name
+// Update database with final upscale result and name
 				$prompt->upscale_result = json_encode($body);
 				$prompt->upscale_url = $imageName; // Assuming you want to save the image name here as well
 				$prompt->upscale_status = 2;
@@ -132,7 +147,7 @@
 				return ['message' => 'Image upscale failed.', 'error' => $body['error']];
 			}
 
-			// If the status is neither succeeded nor failed, it's still in progress
+// If the status is neither succeeded nor failed, it's still in progress
 			return ['message' => 'Upscale in progress.', 'status' => $body['logs']];
 		}
 
