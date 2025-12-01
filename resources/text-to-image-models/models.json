@@ -6,13 +6,10 @@
     "price": 0.04
   },
   {
-    "name": "flux-pro/v1.1-ultra",
-    "description": "FLUX1.1 [pro] ultra is the newest version of FLUX1.1 [pro], maintaining professional-grade image quality while delivering up to 2K resolution with improved photo realism.",
-    "tags": [
-      "high-res",
-      "realism"
-    ],
-    "price": 0.06
+    "name": "z-image/turbo",
+    "description": "Z-Image Turbo is a high-performance text-to-image generation model that delivers fast and efficient image creation with impressive quality.",
+    "tags": [],
+    "price": 0.01
   },
   {
     "name": "recraft/v3/",
