@@ -185,7 +185,8 @@ def generate_images_from_api():
                 "ideogram-v2a": "fal-ai/ideogram/v2a",
                 "luma-photon": "fal-ai/luma-photon",
                 "recraft-20b": "fal-ai/recraft-20b",
-                "fal-ai/qwen-image": "fal-ai/qwen-image"
+                "fal-ai/qwen-image": "fal-ai/qwen-image",
+                "z-image-turbo" => "z-image/turbo"
             }
             remote_other_models = ["minimax", "minimax-expand"]
 

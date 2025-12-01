@@ -40,6 +40,7 @@
 				'luma-photon' => 'luma-photon',
 				'recraft-20b' => 'recraft-20b',
 				'fal-ai/qwen-image' => 'qwen-image',
+				'z-image-turbo' => 'z-image/turbo',
 			];
 
 			$viewModels = [];
