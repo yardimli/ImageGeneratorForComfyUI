@@ -173,6 +173,7 @@
 			// START MODIFICATION: Allow specific models like the image editor to pass through even if not in models.json
 			$allowedOverrideModels = [
 				'gemini-25-flash-image/edit',
+				'nano-banana-2/edit',
 				'qwen-image-2/edit',
 				'qwen-image-2/pro/edit',
 				'bytedance/seedream/v4.5/edit',

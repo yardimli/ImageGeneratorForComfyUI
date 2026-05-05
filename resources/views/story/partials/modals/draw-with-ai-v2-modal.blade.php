@@ -22,6 +22,7 @@
 						<label for="draw-v2-model" class="form-label">AI Model</label>
 						<select class="form-select" id="draw-v2-model">
 							<option value="gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
+							<option value="nano-banana-2/edit">Nano Banana 2 Image Edit ($0.16)</option>
 							<option value="qwen-image-2/edit">Qwen Image Edit 2 ($0.035)</option>
 							<option value="qwen-image-2/pro/edit">Qwen Image Edit 2 Pro ($0.075)</option>
 							<option value="bytedance/seedream/v4.5/edit">SeeDream v4.5 Edit ($0.04)</option>
