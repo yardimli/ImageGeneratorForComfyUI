@@ -181,12 +181,6 @@ def generate_images_from_api():
             # Define remote models handled by this script
             remote_fal_models = {
                 "imagen3": "fal-ai/imagen4/preview/ultra",
-                "aura-flow": "fal-ai/aura-flow",
-                "ideogram-v2a": "fal-ai/ideogram/v2a",
-                "luma-photon": "fal-ai/luma-photon",
-                "recraft-20b": "fal-ai/recraft-20b",
-                "fal-ai/qwen-image": "fal-ai/qwen-image",
-                "z-image-turbo" => "z-image/turbo"
             }
             remote_other_models = ["minimax", "minimax-expand"]
 

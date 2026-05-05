@@ -132,29 +132,6 @@
 		}
 
 		/**
-		 * Returns a mapping of short model names (from DB) to full Fal.ai API model names.
-		 *
-		 * @return array<string, string>
-		 */
-		private function getModelMapping(): array
-		{
-			// Mapping from DB short name to the full model identifier for the API
-			return [
-				'schnell' => 'flux-1/schnell',
-				'dev' => 'flux-1/dev',
-				'minimax' => 'minimax/image-01',
-				'minimax-expand' => 'minimax/image-01',
-				'imagen3' => 'imagen4/preview/ultra',
-				'aura-flow' => 'aura-flow',
-				'ideogram-v2a' => 'ideogram/v2a',
-				'luma-photon' => 'luma-photon',
-				'recraft-20b' => 'recraft-20b',
-				'fal-ai/qwen-image' => 'qwen-image',
-				'z-image-turbo' => 'z-image/turbo',
-			];
-		}
-
-		/**
 		 * Process a single prompt.
 		 */
 		private function processPrompt(Prompt $prompt, int $idx): void
@@ -162,11 +139,7 @@
 			// MODIFICATION START: Load models from JSON and validate against it.
 			$this->loadAvailableModels(); // Ensure the model list is loaded.
 
-			$modelMapping = $this->getModelMapping();
-
-			// The model from DB could be a short name ('schnell') or a full API name ('flux-1/schnell').
-			// Resolve it to the full API name for validation and API calls.
-			$modelName = $modelMapping[$prompt->model] ?? $prompt->model;
+			$modelName = $prompt->model;
 
 			// Filter for prompts this worker can handle.
 			$isKnownModel = in_array($modelName, $this->availableModels, true);

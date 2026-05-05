@@ -33,26 +33,10 @@
 				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
 				$allModels = json_decode($jsonString, true);
 				if (json_last_error() === JSON_ERROR_NONE) {
-					// This map defines which models get a "short name".
-					$supportedModelsMap = [
-						'schnell' => 'flux-1/schnell',
-						'dev' => 'flux-1/dev',
-						'minimax' => 'minimax/image-01',
-						'imagen3' => 'imagen4/preview/ultra',
-						'aura-flow' => 'aura-flow',
-						'ideogram-v2a' => 'ideogram/v2a',
-						'luma-photon' => 'luma-photon',
-						'recraft-20b' => 'recraft-20b',
-						'fal-ai/qwen-image' => 'qwen-image',
-						'z-image-turbo' => 'z-image/turbo',
-					];
 
 					// Get all full names from JSON
 					$fullNames = array_column($allModels, 'name');
-					// Get all short names from our map
-					$shortNames = array_keys($supportedModelsMap);
-					// Combine them, including special cases
-					$supportedModels = array_unique(array_merge($fullNames, $shortNames, ['minimax-expand']));
+					$supportedModels = $fullNames;
 					sort($supportedModels);
 				} else {
 					Log::error('Failed to parse models.json: ' . json_last_error_msg());

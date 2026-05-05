@@ -31,7 +31,7 @@
 					'input_images_2' => 'required|json',
 					'width' => 'required|integer',
 					'height' => 'required|integer',
-					'model' => 'required|in:schnell,dev,outpaint',
+					'model' => 'required|in:flux-1/schnell,flux-1/dev,outpaint',
 					'upload_to_s3' => 'required|in:0,1,true,false',
 					'aspect_ratio' => 'required|string',
 					'render_each_prompt_times' => 'required|integer|min:1',
@@ -201,7 +201,7 @@
 			$settings = PromptSetting::where('user_id', auth()->id())
 				//  Include 'kontext-basic' to share upload history
 				->whereIn('generation_type', ['mix', 'mix-one', 'kontext-basic', 'kontext-lora'])
-				
+
 				->where(function ($query) {
 					$query->whereNotNull('input_images_1')
 						->orWhereNotNull('input_images_2');
@@ -222,7 +222,7 @@
 					if (!is_array($inputImages1)) {
 						continue;
 					}
-					
+
 					foreach ($inputImages1 as $img) {
 						if (isset($img['path']) && !empty($img['path'])) {
 							$path = $img['path'];

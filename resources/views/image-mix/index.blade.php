@@ -58,8 +58,8 @@
 						<div class="col-md-2">
 							<label class="form-label">Model</label>
 							<select class="form-select" name="model">
-								<option value="schnell">Schnell</option>
-								<option value="dev" selected>Dev</option>
+								<option value="flux-1/schnell">Schnell</option>
+								<option value="flux-1/dev" selected>Dev</option>
 							</select>
 						</div>
 						<div class="col-md-1">

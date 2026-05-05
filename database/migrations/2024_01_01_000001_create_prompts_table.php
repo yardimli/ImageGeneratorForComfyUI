@@ -17,7 +17,7 @@
 				$table->text('generated_prompt')->nullable();
 				$table->integer('width')->default(1024);
 				$table->integer('height')->default(1024);
-				$table->string('model')->default('schnell');
+				$table->string('model')->default('flux-1/dev');
 				$table->integer('upload_to_s3')->default(0);
 				$table->string('filename')->nullable();
 				$table->string('notes',512)->nullable();
@@ -41,7 +41,7 @@
 				$table->integer('render_each_prompt_times')->default(1);
 				$table->integer('width')->default(1024);
 				$table->integer('height')->default(1024);
-				$table->string('model')->default('schnell');
+				$table->string('model')->default('flux-1/dev');
 				$table->integer('upload_to_s3')->default(0);
 				$table->string('aspect_ratio',50)->default('1:1');
 				$table->string('prepend_text')->nullable();

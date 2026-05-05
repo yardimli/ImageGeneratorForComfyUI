@@ -39,32 +39,17 @@
 				return [];
 			}
 
-			// This map defines which models get a "short name". Others will use their full name.
-			$supportedModelsMap = [
-				'schnell' => 'flux-1/schnell',
-				'dev' => 'flux-1/dev',
-				'minimax' => 'minimax/image-01',
-				'imagen3' => 'imagen4/preview/ultra',
-				'aura-flow' => 'aura-flow',
-				'ideogram-v2a' => 'ideogram/v2a',
-				'luma-photon' => 'luma-photon',
-				'recraft-20b' => 'recraft-20b',
-				'fal-ai/qwen-image' => 'qwen-image',
-				'z-image-turbo' => 'z-image/turbo',
-			];
-
 			$viewModels = [];
 			$foundModels = [];
 
 			foreach ($allModels as $modelData) {
 				$fullName = $modelData['name'];
-				$shortName = array_search($fullName, $supportedModelsMap);
 
 				// The ID for the form value. Use short name if it exists, otherwise full name.
-				$id = ($shortName !== false) ? $shortName : $fullName;
+				$id = $fullName;
 
 				// The name for display in the dropdown.
-				$displayNameBase = ($shortName !== false) ? $shortName : $fullName;
+				$displayNameBase = $fullName;
 				$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $displayNameBase));
 				if (isset($modelData['price'])) {
 					$displayName .= " (\${$modelData['price']})";
@@ -73,18 +58,6 @@
 				$viewModels[] = [
 					'id' => $id,
 					'name' => $displayName,
-				];
-
-				if ($shortName === 'minimax') {
-					$foundModels['minimax'] = true;
-				}
-			}
-
-			// Manually add minimax-expand if minimax was found
-			if (isset($foundModels['minimax'])) {
-				$viewModels[] = [
-					'id' => 'minimax-expand',
-					'name' => 'Minimax Expand ($0.01)', // Price is hardcoded as it's a variant
 				];
 			}
 
