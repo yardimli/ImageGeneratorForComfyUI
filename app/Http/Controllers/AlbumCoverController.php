@@ -316,7 +316,7 @@
 			$modelEndpoints = [
 				'dev' => 'fal-ai/flux-kontext/dev',
 				'pro' => 'fal-ai/flux-pro/kontext',
-				'qwen' => 'fal-ai/qwen-image-edit',
+				'qwen' => 'fal-ai/qwen-image-2/edit',
 			];
 			$endpoint = 'https://queue.fal.run/' . $modelEndpoints[$request->input('model_type')];
 
@@ -382,7 +382,7 @@
 			$modelBasePaths = [
 				'dev' => 'fal-ai/flux-kontext',
 				'pro' => 'fal-ai/flux-pro',
-				'qwen' => 'fal-ai/qwen-image-edit', // qwen uses the same base path as pro
+				'qwen' => 'fal-ai/qwen-image-2/edit', // qwen uses the same base path as pro
 			];
 			$basePath = $modelBasePaths[$modelType];
 			$statusUrl = "https://queue.fal.run/{$basePath}/requests/{$requestId}/status";
