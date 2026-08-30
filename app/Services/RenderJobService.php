@@ -776,7 +776,19 @@ class RenderJobService
             ->update(['updated_at' => now()]);
         $prompt->refresh();
 
-        return $updated === 1;
+        $isStillProcessing = (int) $prompt->render_status === 1;
+
+        Log::channel('fal_ajax')->debug('Render job heartbeat.', [
+            'prompt_id' => $prompt->id,
+            'affected_rows' => $updated,
+            'render_status' => (int) $prompt->render_status,
+            'still_processing' => $isStillProcessing,
+        ]);
+
+        // MySQL reports zero affected rows when updated_at already has the same
+        // second-level value. That is not a cancellation; the persisted status
+        // is the source of truth.
+        return $isStillProcessing;
     }
 
     private function jobWasCancelledOrFailed(Prompt $prompt): bool
