@@ -11,7 +11,13 @@
 						<input type="hidden" name="perPage" value="{{ $perPage ?? 40 }}">
 						<input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search prompts & notes"
 						       class="form-control h-10 min-w-0">
-						<button type="submit" class="btn btn-primary h-10 shrink-0 whitespace-nowrap">Search</button>
+						<button type="submit" class="btn btn-primary h-10 w-10 shrink-0 px-0" aria-label="Search" title="Search">
+							<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							     aria-hidden="true">
+								<circle cx="11" cy="11" r="7"></circle>
+								<path d="m20 20-3.5-3.5"></path>
+							</svg>
+						</button>
 						@if(isset($search) && !empty($search))
 							<a
 								href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'perPage' => $perPage ?? 40]) }}"
@@ -37,8 +43,8 @@
 						@if(!empty($search))
 							<input type="hidden" name="search" value="{{ $search }}">
 						@endif
-						<label for="galleryPerPage" class="whitespace-nowrap">Images per page</label>
-						<select id="galleryPerPage" name="perPage" class="form-select h-10 w-24 py-0" onchange="this.form.submit()">
+						<select id="galleryPerPage" name="perPage" class="form-select h-10 w-24 py-0"
+						        aria-label="Images per page" title="Images per page" onchange="this.form.submit()">
 							@foreach([10, 40, 80, 160, 240] as $size)
 								<option value="{{ $size }}" @selected(($perPage ?? 40) === $size)>{{ $size }}</option>
 							@endforeach
@@ -46,6 +52,15 @@
 					</form>
 
 					<div class="flex shrink-0 items-center gap-2">
+						<button id="galleryDetailsToggle" type="button" role="switch" aria-checked="false"
+						        class="btn btn-outline-secondary h-10 w-10 px-0" title="Show image details">
+							<svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+							     aria-hidden="true">
+								<path d="M12 20h9"></path>
+								<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4Z"></path>
+							</svg>
+							<span class="sr-only">Show image details</span>
+						</button>
 						<button id="selectAllBtn" class="btn btn-secondary h-10 whitespace-nowrap">Select All</button>
 						<button id="bulkDeleteBtn" class="btn btn-danger h-10 whitespace-nowrap" disabled>Delete Selected</button>
 						<button id="deleteUnselectedBtn" class="btn btn-danger h-10 whitespace-nowrap" disabled>Delete Unselected</button>
@@ -72,7 +87,7 @@
 									</div>
 									<img src="{{ $image->preview_thumbnail_url }}" class="card-img-top cursor-pointer"
 									     onclick="openImageModal({{ Js::from($image->preview_url) }})" alt="Generated Image">
-									<div class="card-body">
+									<div class="gallery-image-details card-body hidden">
 										<div class="mb-3">
 											<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
 											<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
@@ -108,15 +123,17 @@
 											</button>
 										@elseif($image->upscale_status === 1)
 											<div class="text-warning">Upscale in progress...</div>
-										@elseif($image->upscale_status === 2)
-											<a href="/storage/upscaled/{{ $image->upscale_url }}" class="btn btn-info btn-sm mb-2"
-											   target="_blank">
-												View Upscaled
-											</a>
 										@endif
 										<div id="upscale-status-{{ $image->id }}" class="mt-2"></div>
 									</div>
 								</div>
+								@if($image->upscale_status === 2)
+									<a href="/storage/upscaled/{{ $image->upscale_url }}"
+									   class="btn btn-info mt-2 w-full"
+									   target="_blank" rel="noopener">
+										View Upscaled
+									</a>
+								@endif
 							</div>
 						@endforeach
 					</div>
@@ -236,6 +253,44 @@
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
 			const sourceImagesModal = new DreamModal(document.getElementById('sourceImagesModal'));
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
+			const detailsToggle = document.getElementById('galleryDetailsToggle');
+			const detailPanels = document.querySelectorAll('.gallery-image-details');
+			const detailsStorageKey = 'dreamcover.gallery.showImageDetails';
+			let detailsVisible = false;
+
+			try {
+				detailsVisible = localStorage.getItem(detailsStorageKey) === 'true';
+			} catch (error) {
+				console.warn('Unable to read the gallery detail preference.', error);
+			}
+
+			function applyDetailsVisibility() {
+				detailPanels.forEach(panel => panel.classList.toggle('hidden', !detailsVisible));
+
+				if (!detailsToggle) {
+					return;
+				}
+
+				const actionLabel = detailsVisible ? 'Hide image details' : 'Show image details';
+				detailsToggle.setAttribute('aria-checked', String(detailsVisible));
+				detailsToggle.setAttribute('title', actionLabel);
+				detailsToggle.querySelector('.sr-only').textContent = actionLabel;
+				detailsToggle.classList.toggle('btn-primary', detailsVisible);
+				detailsToggle.classList.toggle('btn-outline-secondary', !detailsVisible);
+			}
+
+			applyDetailsVisibility();
+
+			detailsToggle?.addEventListener('click', function () {
+				detailsVisible = !detailsVisible;
+				applyDetailsVisibility();
+
+				try {
+					localStorage.setItem(detailsStorageKey, String(detailsVisible));
+				} catch (error) {
+					console.warn('Unable to save the gallery detail preference.', error);
+				}
+			});
 			
 			imageModal = new DreamModal(document.getElementById('imageModal'));
 		
