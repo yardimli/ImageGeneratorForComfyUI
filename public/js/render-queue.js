@@ -76,7 +76,7 @@
 
     function applyStatus(data) {
         const counts = data.counts;
-        panel.classList.toggle('hidden', data.active_count <= 1);
+        panel.classList.toggle('hidden', data.active_count === 0);
         elements.queued.textContent = counts.queued;
         elements.processing.textContent = counts.processing;
         elements.retrying.textContent = counts.retrying;

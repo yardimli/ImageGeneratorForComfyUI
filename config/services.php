@@ -38,6 +38,7 @@
 		'fal' => [
 			'api_key' => env('FAL_API_KEY', env('FAL_KEY')),
 			'platform_url' => env('FAL_PLATFORM_URL', 'https://api.fal.ai/v1'),
+			'render_timeout' => (int) env('FAL_TIMEOUT', 180),
 		],
 
 		'python' => [

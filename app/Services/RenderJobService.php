@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Prompt;
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -21,7 +22,7 @@ class RenderJobService
 
     private const LOCK_GRACE_SECONDS = 600;
 
-    private const RESULT_WAIT_TIMEOUT_SECONDS = 30;
+    private const NO_RESPONSE_TIMEOUT_SECONDS = 30;
 
     /**
      * Claim and render one job from the shared queue.
@@ -30,7 +31,7 @@ class RenderJobService
      */
     public function processNext(): array
     {
-        $timeout = self::RESULT_WAIT_TIMEOUT_SECONDS;
+        $timeout = max(self::NO_RESPONSE_TIMEOUT_SECONDS, (int) config('services.fal.render_timeout', 180));
         $lock = Cache::lock(self::WORKER_LOCK, $timeout + self::LOCK_GRACE_SECONDS);
 
         if (! $lock->get()) {
@@ -129,7 +130,7 @@ class RenderJobService
         Prompt::query()
             ->where('generation_type', 'prompt')
             ->where('render_status', 1)
-            ->where('updated_at', '<=', now()->subSeconds(self::RESULT_WAIT_TIMEOUT_SECONDS))
+            ->where('updated_at', '<=', now()->subSeconds(self::NO_RESPONSE_TIMEOUT_SECONDS))
             ->update(['render_status' => 4]);
     }
 
@@ -205,8 +206,12 @@ class RenderJobService
                 return;
             }
 
-            if (! $imageUrl || ! $this->downloadImage($imageUrl, $localTempPath)) {
-                throw new \RuntimeException('fal.ai did not return a downloadable image.');
+            if (! $imageUrl) {
+                throw new \RuntimeException('fal.ai completed without returning an image URL.');
+            }
+
+            if (! $this->downloadImage($imageUrl, $localTempPath, $prompt)) {
+                throw new \RuntimeException('The fal.ai image URL could not be downloaded by the server.');
             }
 
             if ($this->jobWasCancelledOrFailed($prompt)) {
@@ -265,7 +270,9 @@ class RenderJobService
 
     private function generateWithFal(string $falKey, string $modelName, Prompt $prompt): ?string
     {
-        $deadline = microtime(true) + self::RESULT_WAIT_TIMEOUT_SECONDS;
+        $overallTimeout = max(self::NO_RESPONSE_TIMEOUT_SECONDS, (int) config('services.fal.render_timeout', 180));
+        $overallDeadline = microtime(true) + $overallTimeout;
+        $lastSuccessfulResponseAt = microtime(true);
         $arguments = [
             'prompt' => $prompt->generated_prompt,
             'image_size' => [
@@ -285,71 +292,137 @@ class RenderJobService
 
         $response = Http::withHeaders($headers)
             ->acceptJson()
-            ->timeout(self::RESULT_WAIT_TIMEOUT_SECONDS)
+            ->timeout(self::NO_RESPONSE_TIMEOUT_SECONDS)
             ->post($submitUrl, $arguments);
 
-        if (microtime(true) >= $deadline || $response->failed()) {
+        if ($response->failed()) {
             Log::warning('fal.ai render submission failed.', [
                 'prompt_id' => $prompt->id,
                 'status' => $response->status(),
                 'body' => Str::limit($response->body(), 1000),
             ]);
 
+            throw new \RuntimeException("fal.ai rejected the render submission with HTTP {$response->status()}.");
+        }
+
+        $lastSuccessfulResponseAt = microtime(true);
+        if (! $this->touchProcessingHeartbeat($prompt)) {
             return null;
         }
 
         $data = $response->json();
         $requestId = $data['request_id'] ?? null;
         if (! $requestId) {
-            return null;
+            Log::warning('fal.ai submission response did not include a request ID.', [
+                'prompt_id' => $prompt->id,
+                'body' => Str::limit($response->body(), 1000),
+            ]);
+            throw new \RuntimeException('fal.ai accepted the submission without returning a request ID.');
         }
 
         $statusUrl = $data['status_url'] ?? "{$submitUrl}/requests/{$requestId}/status";
         $resultUrl = $data['response_url'] ?? "{$submitUrl}/requests/{$requestId}";
         $methodNotAllowedCount = 0;
 
-        while (microtime(true) < $deadline) {
+        while (microtime(true) < $overallDeadline) {
             if ($this->jobWasCancelledOrFailed($prompt)) {
                 return null;
             }
 
-            $remainingBeforePoll = $deadline - microtime(true);
-            usleep((int) (min(3, max(0, $remainingBeforePoll)) * 1_000_000));
-            if (microtime(true) >= $deadline) {
-                return null;
+            if (microtime(true) - $lastSuccessfulResponseAt >= self::NO_RESPONSE_TIMEOUT_SECONDS) {
+                throw new \RuntimeException('fal.ai did not respond for 30 seconds while the render was processing.');
             }
 
-            $requestTimeout = max(1, min(30, (int) ceil($deadline - microtime(true))));
-            $statusResponse = Http::withHeaders($headers)->timeout($requestTimeout)->get($statusUrl);
+            $remainingBeforePoll = $overallDeadline - microtime(true);
+            usleep((int) (min(3, max(0, $remainingBeforePoll)) * 1_000_000));
+            if (microtime(true) >= $overallDeadline) {
+                break;
+            }
 
-            if (microtime(true) >= $deadline || $this->jobWasCancelledOrFailed($prompt)) {
+            $noResponseTimeLeft = self::NO_RESPONSE_TIMEOUT_SECONDS - (microtime(true) - $lastSuccessfulResponseAt);
+            $requestTimeout = max(1, min(
+                self::NO_RESPONSE_TIMEOUT_SECONDS,
+                (int) ceil($noResponseTimeLeft),
+                (int) ceil($overallDeadline - microtime(true))
+            ));
+            try {
+                $statusResponse = Http::withHeaders($headers)->timeout($requestTimeout)->get($statusUrl);
+            } catch (ConnectionException $exception) {
+                Log::notice('fal.ai status polling did not receive a response.', [
+                    'prompt_id' => $prompt->id,
+                    'request_id' => $requestId,
+                    'message' => $exception->getMessage(),
+                ]);
+                continue;
+            }
+
+            if ($this->jobWasCancelledOrFailed($prompt)) {
                 return null;
             }
 
             if ($statusResponse->failed()) {
                 if ($statusResponse->status() === 405 && ++$methodNotAllowedCount >= 5) {
-                    return null;
+                    throw new \RuntimeException('fal.ai repeatedly rejected status polling with HTTP 405.');
                 }
                 continue;
+            }
+
+            $lastSuccessfulResponseAt = microtime(true);
+            if (! $this->touchProcessingHeartbeat($prompt)) {
+                return null;
             }
 
             $jobStatus = $statusResponse->json('status', 'UNKNOWN');
             if ($jobStatus === 'COMPLETED') {
                 $resultResponse = Http::withHeaders($headers)->timeout(30)->get($resultUrl);
                 if ($resultResponse->failed()) {
-                    return null;
+                    Log::warning('fal.ai result request failed.', [
+                        'prompt_id' => $prompt->id,
+                        'request_id' => $requestId,
+                        'status' => $resultResponse->status(),
+                        'body' => Str::limit($resultResponse->body(), 1000),
+                    ]);
+                    throw new \RuntimeException("fal.ai result retrieval failed with HTTP {$resultResponse->status()}.");
                 }
 
-                return $resultResponse->json('images.0.url')
+                $imageUrl = $resultResponse->json('images.0.url')
                     ?? $resultResponse->json('image.url');
+                if (! is_string($imageUrl) || $imageUrl === '') {
+                    Log::warning('fal.ai completed without an image URL.', [
+                        'prompt_id' => $prompt->id,
+                        'request_id' => $requestId,
+                        'body' => Str::limit($resultResponse->body(), 2000),
+                    ]);
+                    throw new \RuntimeException('fal.ai completed but its result did not contain a supported image URL.');
+                }
+
+                return $imageUrl;
             }
 
             if (in_array($jobStatus, ['FAILED', 'ERROR'], true)) {
-                return null;
+                $remoteError = $statusResponse->json('error') ?? $statusResponse->json('message');
+                Log::warning('fal.ai reported a failed render.', [
+                    'prompt_id' => $prompt->id,
+                    'request_id' => $requestId,
+                    'remote_error' => $remoteError,
+                    'body' => Str::limit($statusResponse->body(), 2000),
+                ]);
+                throw new \RuntimeException('fal.ai reported that the render failed.'.($remoteError ? ' '.$remoteError : ''));
             }
         }
 
-        return null;
+        throw new \RuntimeException("fal.ai did not complete the render within {$overallTimeout} seconds.");
+    }
+
+    private function touchProcessingHeartbeat(Prompt $prompt): bool
+    {
+        $updated = Prompt::query()
+            ->whereKey($prompt->id)
+            ->where('render_status', 1)
+            ->update(['updated_at' => now()]);
+        $prompt->refresh();
+
+        return $updated === 1;
     }
 
     private function jobWasCancelledOrFailed(Prompt $prompt): bool
@@ -417,12 +490,34 @@ class RenderJobService
         return is_file($imagePath) ? file_get_contents($imagePath) : null;
     }
 
-    private function downloadImage(string $url, string $outputPath): bool
+    private function downloadImage(string $url, string $outputPath, Prompt $prompt): bool
     {
         $response = Http::timeout(60)->get($url);
 
-        return $response->successful()
-            && file_put_contents($outputPath, $response->body()) !== false;
+        if ($response->failed()) {
+            Log::warning('Generated fal.ai image download failed.', [
+                'prompt_id' => $prompt->id,
+                'host' => parse_url($url, PHP_URL_HOST),
+                'status' => $response->status(),
+                'content_type' => $response->header('Content-Type'),
+                'body' => Str::limit($response->body(), 1000),
+            ]);
+
+            return false;
+        }
+
+        $body = $response->body();
+        if ($body === '' || file_put_contents($outputPath, $body) === false) {
+            Log::warning('Generated fal.ai image could not be written to temporary storage.', [
+                'prompt_id' => $prompt->id,
+                'temp_directory' => dirname($outputPath),
+                'content_length' => strlen($body),
+            ]);
+
+            return false;
+        }
+
+        return true;
     }
 
     private function uploadToS3(string $localFile, string $s3File): ?string

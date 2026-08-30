@@ -156,7 +156,7 @@
             csrfToken: @json(csrf_token()),
         };
     </script>
-    <script src="{{ asset('js/render-queue.js') }}"></script>
+    <script src="{{ asset('js/render-queue.js') }}?v={{ filemtime(public_path('js/render-queue.js')) }}"></script>
 @endauth
 @yield('scripts')
 </body>
