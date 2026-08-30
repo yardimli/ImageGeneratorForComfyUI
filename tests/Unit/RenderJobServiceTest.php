@@ -3,6 +3,7 @@
 namespace Tests\Unit;
 
 use App\Services\RenderJobService;
+use ReflectionClass;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -85,5 +86,16 @@ class RenderJobServiceTest extends TestCase
             'https://queue.fal.run/fal-ai/qwen-image-2/edit',
             $submitUrl->invoke($service, 'fal-ai/qwen-image-2/edit')
         );
+    }
+
+    public function test_it_polls_completed_results_twenty_times_across_one_minute(): void
+    {
+        $service = new ReflectionClass(RenderJobService::class);
+        $attempts = $service->getConstant('RESULT_POLL_ATTEMPTS');
+        $interval = $service->getConstant('RESULT_POLL_INTERVAL_SECONDS');
+
+        $this->assertSame(20, $attempts);
+        $this->assertSame(3, $interval);
+        $this->assertGreaterThanOrEqual(60, $attempts * $interval);
     }
 }

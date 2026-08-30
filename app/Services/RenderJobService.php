@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Prompt;
 use App\Models\Layer;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
@@ -23,7 +24,11 @@ class RenderJobService
 
     private const LOCK_GRACE_SECONDS = 600;
 
-    private const NO_RESPONSE_TIMEOUT_SECONDS = 30;
+    private const HTTP_REQUEST_TIMEOUT_SECONDS = 30;
+
+    private const RESULT_POLL_ATTEMPTS = 20;
+
+    private const RESULT_POLL_INTERVAL_SECONDS = 3;
 
     /**
      * Claim and render one job from the shared queue.
@@ -32,7 +37,10 @@ class RenderJobService
      */
     public function processNext(): array
     {
-        $timeout = max(self::NO_RESPONSE_TIMEOUT_SECONDS, (int) config('services.fal.render_timeout', 180));
+        $timeout = max(
+            self::RESULT_POLL_ATTEMPTS * self::RESULT_POLL_INTERVAL_SECONDS,
+            (int) config('services.fal.render_timeout', 180)
+        );
         $lock = Cache::lock(self::WORKER_LOCK, $timeout + self::LOCK_GRACE_SECONDS);
 
         if (! $lock->get()) {
@@ -42,7 +50,7 @@ class RenderJobService
         try {
             ignore_user_abort(true);
             @set_time_limit($timeout + self::LOCK_GRACE_SECONDS);
-            $this->recoverStaleJobs();
+            $this->recoverStaleJobs(workerLockHeld: true);
             $prompt = $this->claimNextPrompt();
 
             if (! $prompt) {
@@ -133,18 +141,33 @@ class RenderJobService
         ];
     }
 
-    private function recoverStaleJobs(): void
+    private function recoverStaleJobs(bool $workerLockHeld = false): void
     {
+        // Status requests run in parallel with the long-running AJAX worker.
+        // Never let one of those requests mark the active worker's job failed.
+        if (! $workerLockHeld) {
+            $workerProbe = Cache::lock(self::WORKER_LOCK, 1);
+            if (! $workerProbe->get()) {
+                return;
+            }
+            $workerProbe->release();
+        }
+
+        $staleAfter = max(
+            self::RESULT_POLL_ATTEMPTS * self::RESULT_POLL_INTERVAL_SECONDS,
+            (int) config('services.fal.render_timeout', 180)
+        ) + self::RESULT_POLL_INTERVAL_SECONDS;
+
         $staleLayerPromptIds = Prompt::query()
             ->where('generation_type', 'layerize')
             ->where('render_status', 1)
-            ->where('updated_at', '<=', now()->subSeconds(self::NO_RESPONSE_TIMEOUT_SECONDS))
+            ->where('updated_at', '<=', now()->subSeconds($staleAfter))
             ->pluck('id');
 
         Prompt::query()
             ->whereIn('generation_type', ['prompt', 'layerize'])
             ->where('render_status', 1)
-            ->where('updated_at', '<=', now()->subSeconds(self::NO_RESPONSE_TIMEOUT_SECONDS))
+            ->where('updated_at', '<=', now()->subSeconds($staleAfter))
             ->update(['render_status' => 4]);
 
         if ($staleLayerPromptIds->isNotEmpty()) {
@@ -298,9 +321,11 @@ class RenderJobService
 
     private function generateWithFal(string $falKey, string $modelName, Prompt $prompt): mixed
     {
-        $overallTimeout = max(self::NO_RESPONSE_TIMEOUT_SECONDS, (int) config('services.fal.render_timeout', 180));
+        $overallTimeout = max(
+            self::RESULT_POLL_ATTEMPTS * self::RESULT_POLL_INTERVAL_SECONDS,
+            (int) config('services.fal.render_timeout', 180)
+        );
         $overallDeadline = microtime(true) + $overallTimeout;
-        $lastSuccessfulResponseAt = microtime(true);
         $imageReferences = $this->prepareInputImages($prompt);
         if ($prompt->generation_type === 'layerize') {
             if ($imageReferences === []) {
@@ -342,10 +367,21 @@ class RenderJobService
         $submitUrl = $this->falSubmitUrl($modelName);
         $headers = ['Authorization' => 'Key '.$falKey];
 
-        $response = Http::withHeaders($headers)
-            ->acceptJson()
-            ->timeout(self::NO_RESPONSE_TIMEOUT_SECONDS)
-            ->post($submitUrl, $arguments);
+        try {
+            $response = Http::withHeaders($headers)
+                ->acceptJson()
+                ->timeout(self::HTTP_REQUEST_TIMEOUT_SECONDS)
+                ->post($submitUrl, $arguments);
+        } catch (ConnectionException $exception) {
+            Log::channel('fal_ajax')->notice('fal.ai submit request did not receive a response.', [
+                'prompt_id' => $prompt->id,
+                'method' => 'POST',
+                'url' => $submitUrl,
+                'message' => $exception->getMessage(),
+            ]);
+            throw $exception;
+        }
+        $this->logFalResponse('submit', 'POST', $submitUrl, $response, $prompt);
 
         if ($response->failed()) {
             Log::warning('fal.ai render submission failed.', [
@@ -357,7 +393,6 @@ class RenderJobService
             throw new \RuntimeException("fal.ai rejected the render submission with HTTP {$response->status()}.");
         }
 
-        $lastSuccessfulResponseAt = microtime(true);
         if (! $this->touchProcessingHeartbeat($prompt)) {
             return null;
         }
@@ -391,28 +426,25 @@ class RenderJobService
                 return null;
             }
 
-            if (microtime(true) - $lastSuccessfulResponseAt >= self::NO_RESPONSE_TIMEOUT_SECONDS) {
-                throw new \RuntimeException('fal.ai did not respond for 30 seconds while the render was processing.');
-            }
-
             $remainingBeforePoll = $overallDeadline - microtime(true);
             usleep((int) (min(3, max(0, $remainingBeforePoll)) * 1_000_000));
             if (microtime(true) >= $overallDeadline) {
                 break;
             }
 
-            $noResponseTimeLeft = self::NO_RESPONSE_TIMEOUT_SECONDS - (microtime(true) - $lastSuccessfulResponseAt);
             $requestTimeout = max(1, min(
-                self::NO_RESPONSE_TIMEOUT_SECONDS,
-                (int) ceil($noResponseTimeLeft),
+                self::HTTP_REQUEST_TIMEOUT_SECONDS,
                 (int) ceil($overallDeadline - microtime(true))
             ));
             try {
                 $statusResponse = Http::withHeaders($headers)->timeout($requestTimeout)->get($statusUrl);
+                $this->logFalResponse('status', 'GET', $statusUrl, $statusResponse, $prompt, $requestId);
             } catch (ConnectionException $exception) {
-                Log::notice('fal.ai status polling did not receive a response.', [
+                Log::channel('fal_ajax')->notice('fal.ai status request did not receive a response.', [
                     'prompt_id' => $prompt->id,
                     'request_id' => $requestId,
+                    'method' => 'GET',
+                    'url' => $statusUrl,
                     'message' => $exception->getMessage(),
                 ]);
                 continue;
@@ -423,13 +455,15 @@ class RenderJobService
             }
 
             if ($statusResponse->failed()) {
-                if ($statusResponse->status() === 405 && ++$methodNotAllowedCount >= 5) {
-                    throw new \RuntimeException('fal.ai repeatedly rejected status polling with HTTP 405.');
+                if ($statusResponse->status() === 405
+                    && ++$methodNotAllowedCount >= self::RESULT_POLL_ATTEMPTS) {
+                    throw new \RuntimeException(
+                        'fal.ai rejected status polling with HTTP 405 for 20 consecutive polls.'
+                    );
                 }
                 continue;
             }
 
-            $lastSuccessfulResponseAt = microtime(true);
             if (! $this->touchProcessingHeartbeat($prompt)) {
                 return null;
             }
@@ -505,26 +539,32 @@ class RenderJobService
         Prompt $prompt,
         string $requestId
     ): array {
-        $resultDeadline = microtime(true) + self::NO_RESPONSE_TIMEOUT_SECONDS;
         $diagnostics = [];
 
-        do {
+        for ($attempt = 1; $attempt <= self::RESULT_POLL_ATTEMPTS; $attempt++) {
             if ($this->jobWasCancelledOrFailed($prompt)) {
                 return [];
             }
 
-            foreach ($resultUrls as $resultUrl) {
-                if (microtime(true) >= $resultDeadline) {
-                    break;
-                }
+            sleep(self::RESULT_POLL_INTERVAL_SECONDS);
 
+            foreach ($resultUrls as $resultUrl) {
                 try {
-                    $requestTimeout = max(1, min(10, (int) ceil($resultDeadline - microtime(true))));
                     $resultResponse = Http::withHeaders($headers)
-                        ->timeout($requestTimeout)
+                        ->timeout(self::HTTP_REQUEST_TIMEOUT_SECONDS)
                         ->get($resultUrl);
+                    $this->logFalResponse(
+                        'result',
+                        'GET',
+                        $resultUrl,
+                        $resultResponse,
+                        $prompt,
+                        $requestId,
+                        $attempt
+                    );
                     $rawPayload = $resultResponse->json();
                     $diagnostics[$resultUrl] = [
+                        'attempt' => $attempt,
                         'status' => $resultResponse->status(),
                         'top_level_keys' => is_array($rawPayload) ? array_keys($rawPayload) : [],
                         'body' => Str::limit($resultResponse->body(), 4000),
@@ -543,10 +583,19 @@ class RenderJobService
                     }
                 } catch (ConnectionException $exception) {
                     $diagnostics[$resultUrl] = [
+                        'attempt' => $attempt,
                         'status' => null,
                         'top_level_keys' => [],
                         'body' => $exception->getMessage(),
                     ];
+                    Log::channel('fal_ajax')->notice('fal.ai result request did not receive a response.', [
+                        'prompt_id' => $prompt->id,
+                        'request_id' => $requestId,
+                        'attempt' => $attempt,
+                        'method' => 'GET',
+                        'url' => $resultUrl,
+                        'message' => $exception->getMessage(),
+                    ]);
                 }
 
                 if (! $this->touchProcessingHeartbeat($prompt)) {
@@ -554,13 +603,9 @@ class RenderJobService
                 }
             }
 
-            $remaining = $resultDeadline - microtime(true);
-            if ($remaining > 0) {
-                usleep((int) (min(2, $remaining) * 1_000_000));
-            }
-        } while (microtime(true) < $resultDeadline);
+        }
 
-        Log::error('fal.ai completed but its result payload never became available.', [
+        Log::channel('fal_ajax')->error('fal.ai completed but its result payload never became available.', [
             'prompt_id' => $prompt->id,
             'request_id' => $requestId,
             'attempts' => $diagnostics,
@@ -571,6 +616,27 @@ class RenderJobService
                 ? 'fal.ai completed without returning layer data.'
                 : 'fal.ai completed without returning an image URL.'
         );
+    }
+
+    private function logFalResponse(
+        string $phase,
+        string $method,
+        string $url,
+        Response $response,
+        Prompt $prompt,
+        ?string $requestId = null,
+        ?int $attempt = null
+    ): void {
+        Log::channel('fal_ajax')->debug('fal.ai HTTP response.', [
+            'phase' => $phase,
+            'prompt_id' => $prompt->id,
+            'request_id' => $requestId,
+            'attempt' => $attempt,
+            'method' => $method,
+            'url' => $url,
+            'http_status' => $response->status(),
+            'response_body' => $response->body(),
+        ]);
     }
 
     /**
