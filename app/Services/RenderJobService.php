@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Prompt;
+use App\Models\Layer;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -65,7 +66,7 @@ class RenderJobService
     {
         $this->recoverStaleJobs();
 
-        $baseQuery = Prompt::query()->where('generation_type', 'prompt');
+        $baseQuery = Prompt::query()->whereIn('generation_type', ['prompt', 'layerize']);
         $counts = [
             'queued' => (clone $baseQuery)->where('render_status', 0)->count(),
             'processing' => (clone $baseQuery)->where('render_status', 1)->count(),
@@ -100,7 +101,7 @@ class RenderJobService
     /** @return array<string, mixed> */
     public function cancel(Prompt $prompt): array
     {
-        if ($prompt->generation_type !== 'prompt' || (int) $prompt->render_status !== 1) {
+        if (! in_array($prompt->generation_type, ['prompt', 'layerize'], true) || (int) $prompt->render_status !== 1) {
             return [
                 'state' => 'not_cancelled',
                 'message' => 'This render job is no longer processing.',
@@ -110,11 +111,18 @@ class RenderJobService
 
         $cancelled = Prompt::query()
             ->whereKey($prompt->id)
-            ->where('generation_type', 'prompt')
+            ->whereIn('generation_type', ['prompt', 'layerize'])
             ->where('render_status', 1)
             ->update(['render_status' => 4]);
 
         $prompt->refresh();
+
+        if ($cancelled === 1 && $prompt->generation_type === 'layerize') {
+            Layer::query()->where('prompt_id', $prompt->id)->update([
+                'status' => 4,
+                'error' => 'Cancelled by user.',
+            ]);
+        }
 
         return [
             'state' => $cancelled === 1 ? 'cancelled' : 'not_cancelled',
@@ -127,18 +135,31 @@ class RenderJobService
 
     private function recoverStaleJobs(): void
     {
+        $staleLayerPromptIds = Prompt::query()
+            ->where('generation_type', 'layerize')
+            ->where('render_status', 1)
+            ->where('updated_at', '<=', now()->subSeconds(self::NO_RESPONSE_TIMEOUT_SECONDS))
+            ->pluck('id');
+
         Prompt::query()
-            ->where('generation_type', 'prompt')
+            ->whereIn('generation_type', ['prompt', 'layerize'])
             ->where('render_status', 1)
             ->where('updated_at', '<=', now()->subSeconds(self::NO_RESPONSE_TIMEOUT_SECONDS))
             ->update(['render_status' => 4]);
+
+        if ($staleLayerPromptIds->isNotEmpty()) {
+            Layer::query()->whereIn('prompt_id', $staleLayerPromptIds)->update([
+                'status' => 4,
+                'error' => 'The layerize job stopped responding.',
+            ]);
+        }
     }
 
     private function claimNextPrompt(): ?Prompt
     {
         return DB::transaction(function () {
             $eligible = Prompt::query()
-                ->where('generation_type', 'prompt')
+                ->whereIn('generation_type', ['prompt', 'layerize'])
                 ->whereIn('render_status', [0, 3])
                 ->whereNotNull('model');
 
@@ -191,6 +212,13 @@ class RenderJobService
     private function render(Prompt $prompt): void
     {
         $modelName = $prompt->model;
+
+        if ($prompt->generation_type === 'layerize') {
+            $this->renderLayerize($prompt);
+
+            return;
+        }
+
         $outputFilename = "{$prompt->generation_type}_".Str::slug($modelName, '-')."_{$prompt->id}_{$prompt->user_id}.png";
         $s3FilePath = "images/{$outputFilename}";
         $localTempPath = sys_get_temp_dir().DIRECTORY_SEPARATOR.$outputFilename;
@@ -268,25 +296,49 @@ class RenderJobService
         return config('services.fal.api_key');
     }
 
-    private function generateWithFal(string $falKey, string $modelName, Prompt $prompt): ?string
+    private function generateWithFal(string $falKey, string $modelName, Prompt $prompt): mixed
     {
         $overallTimeout = max(self::NO_RESPONSE_TIMEOUT_SECONDS, (int) config('services.fal.render_timeout', 180));
         $overallDeadline = microtime(true) + $overallTimeout;
         $lastSuccessfulResponseAt = microtime(true);
-        $arguments = [
-            'prompt' => $prompt->generated_prompt,
-            'image_size' => [
-                'width' => $prompt->width ?? 1024,
-                'height' => $prompt->height ?? 1024,
-            ],
-        ];
-
         $imageReferences = $this->prepareInputImages($prompt);
-        if ($imageReferences !== []) {
-            $arguments['image_urls'] = $imageReferences;
+        if ($prompt->generation_type === 'layerize') {
+            if ($imageReferences === []) {
+                throw new \RuntimeException('The layerize input image could not be prepared.');
+            }
+
+            $arguments = [
+                'prompt' => '',
+                'image_url' => $imageReferences[0],
+                'image_size' => 'auto',
+                'enable_safety_checker' => true,
+                'enhance_prompt_mode' => 'standard',
+            ];
+        } else {
+            $arguments = [
+                'prompt' => $prompt->generated_prompt,
+                'image_size' => $modelName === 'bytedance/seedream/v5/pro/edit'
+                    ? 'auto_2K'
+                    : [
+                        'width' => $prompt->width ?? 1024,
+                        'height' => $prompt->height ?? 1024,
+                    ],
+            ];
+
+            if ($modelName === 'bytedance/seedream/v5/pro/edit') {
+                $arguments['num_images'] = 1;
+                $arguments['output_format'] = 'png';
+                $arguments['enable_safety_checker'] = true;
+            }
+
+            if ($imageReferences !== []) {
+                $arguments['image_urls'] = $imageReferences;
+            }
         }
 
-        $queueEndpoint = Str::startsWith($modelName, 'fal-ai/') ? $modelName : "fal-ai/{$modelName}";
+        $queueEndpoint = Str::startsWith($modelName, ['fal-ai/', 'bytedance/'])
+            ? $modelName
+            : "fal-ai/{$modelName}";
         $submitUrl = "https://queue.fal.run/{$queueEndpoint}";
         $headers = ['Authorization' => 'Key '.$falKey];
 
@@ -385,6 +437,10 @@ class RenderJobService
                     throw new \RuntimeException("fal.ai result retrieval failed with HTTP {$resultResponse->status()}.");
                 }
 
+                if ($prompt->generation_type === 'layerize') {
+                    return $resultResponse->json();
+                }
+
                 $imageUrl = $resultResponse->json('images.0.url')
                     ?? $resultResponse->json('image.url');
                 if (! is_string($imageUrl) || $imageUrl === '') {
@@ -412,6 +468,62 @@ class RenderJobService
         }
 
         throw new \RuntimeException("fal.ai did not complete the render within {$overallTimeout} seconds.");
+    }
+
+    private function renderLayerize(Prompt $prompt): void
+    {
+        $layer = Layer::query()->where('prompt_id', $prompt->id)->first();
+
+        if (! $layer) {
+            $prompt->forceFill(['render_status' => 4])->save();
+
+            return;
+        }
+
+        try {
+            $falKey = $this->falKeyFor($prompt);
+            if (! $falKey) {
+                throw new \RuntimeException('FAL_API_KEY is not configured.');
+            }
+
+            $result = $this->generateWithFal($falKey, $prompt->model, $prompt);
+            if ($this->jobWasCancelledOrFailed($prompt)) {
+                $layer->forceFill(['status' => 4, 'error' => 'Cancelled by user.'])->save();
+
+                return;
+            }
+
+            if (! is_array($result) || empty($result['layers'])) {
+                throw new \RuntimeException('fal.ai completed without returning layer data.');
+            }
+
+            $flattenedImages = $result['images'] ?? [];
+            $structuredLayers = array_map(function (array $item, int $index) use ($flattenedImages) {
+                if (empty($item['image']['url']) && ! empty($flattenedImages[$index]['url'])) {
+                    $item['image'] = array_merge($flattenedImages[$index], $item['image'] ?? []);
+                    $item['image']['url'] = $flattenedImages[$index]['url'];
+                }
+
+                return $item;
+            }, $result['layers'], array_keys($result['layers']));
+
+            $layer->forceFill([
+                'status' => 2,
+                'images' => $flattenedImages,
+                'layers' => $structuredLayers,
+                'error' => null,
+            ])->save();
+            $prompt->forceFill(['render_status' => 2])->save();
+        } catch (Throwable $exception) {
+            Log::error('AJAX layerize job failed.', [
+                'layer_id' => $layer->id,
+                'prompt_id' => $prompt->id,
+                'message' => $exception->getMessage(),
+            ]);
+            report($exception);
+            $layer->forceFill(['status' => 4, 'error' => $exception->getMessage()])->save();
+            $prompt->forceFill(['render_status' => 4])->save();
+        }
     }
 
     private function touchProcessingHeartbeat(Prompt $prompt): bool

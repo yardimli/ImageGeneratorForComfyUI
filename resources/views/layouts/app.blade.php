@@ -32,18 +32,20 @@
             <div id="mobile-menu" class="absolute inset-x-4 top-[4.25rem] hidden flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl lg:static lg:flex lg:flex-row lg:items-center lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none dark:border-slate-700 dark:bg-slate-900 lg:dark:bg-transparent">
                 @auth
                     <a href="{{ route('home') }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Overview</a>
-                    <a href="{{ route('gallery.index', ['date' => '', 'sort' => 'updated_at']) }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Gallery</a>
+                    <a href="{{ route('gallery.index', ['sort' => 'updated_at']) }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Gallery</a>
                     <div class="relative" data-menu>
                         <button type="button" data-menu-button class="flex w-full items-center justify-between gap-1 rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Create <span aria-hidden="true">⌄</span></button>
                         <div data-menu-panel class="hidden min-w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-xl lg:absolute lg:left-0 lg:top-full dark:border-slate-700 dark:bg-slate-900">
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('prompts.index') }}">Image prompts</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('prompt-dictionary.index') }}">Prompt dictionary</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('image-edit.index') }}">Image editor</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('image-editor-pro.index') }}">Image editor pro</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('layers.index') }}">Layerize</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('stories.index') }}">Story studio</a>
                         </div>
                     </div>
                     <a href="{{ route('prompts.queue') }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
-                        Queue <span id="navQueueCount" class="ml-1 rounded-full bg-dream-100 px-2 py-0.5 text-xs font-bold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">{{ \App\Models\Prompt::where('generation_type', 'prompt')->whereIn('render_status', [0, 1, 3])->count() }}</span>
+                        Queue <span id="navQueueCount" class="ml-1 rounded-full bg-dream-100 px-2 py-0.5 text-xs font-bold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">{{ \App\Models\Prompt::whereIn('generation_type', ['prompt', 'layerize'])->whereIn('render_status', [0, 1, 3])->count() }}</span>
                     </a>
                     @if(auth()->user()->is_admin)
                         <div class="relative" data-menu>

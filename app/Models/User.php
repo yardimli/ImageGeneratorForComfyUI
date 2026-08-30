@@ -64,4 +64,9 @@
 		{
 			return $this->hasMany(PromptDictionaryEntry::class);
 		}
+
+		public function layers()
+		{
+			return $this->hasMany(Layer::class);
+		}
 	}

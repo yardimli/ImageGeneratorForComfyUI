@@ -7,8 +7,10 @@
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
+	use App\Http\Controllers\ImageEditorProController;
 	use App\Http\Controllers\ImageEditController; // MODIFICATION: Import new controller
 	use App\Http\Controllers\ImageUploadController;
+	use App\Http\Controllers\LayerController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\LlmPromptController;
@@ -149,6 +151,22 @@
 			Route::get('/', [ImageEditorController::class, 'index'])->name('index');
 			Route::post('/save', [ImageEditorController::class, 'save'])->name('save');
 			Route::post('/proxy-image', [ImageEditorController::class, 'proxyImage'])->name('proxy');
+		});
+
+		Route::prefix('image-editor-pro')->name('image-editor-pro.')->group(function () {
+			Route::get('/', [ImageEditorProController::class, 'index'])->name('index');
+			Route::post('/generate', [ImageEditorProController::class, 'generate'])->name('generate');
+			Route::get('/status/{prompt}', [ImageEditorProController::class, 'status'])->name('status');
+		});
+
+		Route::prefix('layers')->name('layers.')->group(function () {
+			Route::get('/', [LayerController::class, 'index'])->name('index');
+			Route::post('/', [LayerController::class, 'store'])->name('store');
+			Route::get('/{layer}', [LayerController::class, 'show'])->name('show');
+			Route::get('/{layer}/status', [LayerController::class, 'status'])->name('status');
+			Route::get('/{layer}/download/{index}', [LayerController::class, 'download'])
+				->whereNumber('index')
+				->name('download');
 		});
 
 		// --- Queue Management ---

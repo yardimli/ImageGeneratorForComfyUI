@@ -23,6 +23,7 @@ class ImageUploadController extends Controller
         return response()->json([
             'success' => true,
             'path' => ImageUrl::preview('storage/uploads/'.$filename),
+            'source_path' => '/storage/uploads/'.$filename,
             'filename' => $filename,
         ]);
     }
