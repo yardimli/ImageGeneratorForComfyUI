@@ -3,53 +3,53 @@
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
-				<div class="d-flex justify-content-between align-items-center">
-					<h3 class="mb-0">Image Gallery</h3>
-					<div class="d-flex me-2">
-						<form action="{{ route('gallery.index') }}" method="GET" class="d-flex me-3">
-							<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
-							<input type="hidden" name="perPage" value="{{ $perPage ?? 40 }}">
-							<input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search prompts & notes"
-							       class="form-control form-control-sm me-2">
-							<button type="submit" class="btn btn-primary btn-sm">Search</button>
-							@if(isset($search) && !empty($search))
-								<a
-									href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'perPage' => $perPage ?? 40]) }}"
-									class="btn btn-outline-secondary btn-sm ms-2">Clear</a>
-							@endif
-						</form>
-					</div>
-					<div>
-						<div class="btn-group me-2">
+				<div class="flex flex-wrap items-center gap-3 xl:flex-nowrap">
+					<h3 class="mb-0 mr-auto shrink-0">Image Gallery</h3>
+
+					<form action="{{ route('gallery.index') }}" method="GET" class="flex min-w-64 items-center gap-2">
+						<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
+						<input type="hidden" name="perPage" value="{{ $perPage ?? 40 }}">
+						<input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search prompts & notes"
+						       class="form-control h-10 min-w-0">
+						<button type="submit" class="btn btn-primary h-10 shrink-0 whitespace-nowrap">Search</button>
+						@if(isset($search) && !empty($search))
 							<a
-								href="{{ route('gallery.index', ['sort' => 'updated_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
-								class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
-								by Last Updated</a>
-							<a
-								href="{{ route('gallery.index', ['sort' => 'created_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
-								class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
-								by Creation Date</a>
-						</div>
-						<form action="{{ route('gallery.index') }}" method="GET" class="d-flex align-items-center gap-2">
-							<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
-							@if(!empty($search))
-								<input type="hidden" name="search" value="{{ $search }}">
-							@endif
-							<label for="galleryPerPage" class="text-nowrap">Images per page</label>
-							<select id="galleryPerPage" name="perPage" class="form-select form-select-sm" onchange="this.form.submit()">
-								@foreach([10, 40, 80, 160, 240] as $size)
-									<option value="{{ $size }}" @selected(($perPage ?? 40) === $size)>{{ $size }}</option>
-								@endforeach
-							</select>
-						</form>
+								href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'perPage' => $perPage ?? 40]) }}"
+								class="btn btn-outline-secondary h-10 shrink-0">Clear</a>
+						@endif
+					</form>
+
+					<div class="btn-group shrink-0">
+						<a
+							href="{{ route('gallery.index', ['sort' => 'updated_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
+							class="btn h-10 whitespace-nowrap {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">
+							Last Updated
+						</a>
+						<a
+							href="{{ route('gallery.index', ['sort' => 'created_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
+							class="btn h-10 whitespace-nowrap {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">
+							Creation Date
+						</a>
 					</div>
-					
-				</div>
-				
-				<div class="mt-2">
-					<button id="selectAllBtn" class="btn btn-sm btn-secondary me-2">Select All</button>
-					<button id="bulkDeleteBtn" class="btn btn-sm btn-danger" disabled>Delete Selected</button>
-					<button id="deleteUnselectedBtn" class="btn btn-sm btn-danger" disabled>Delete Unselected</button>
+
+					<form action="{{ route('gallery.index') }}" method="GET" class="flex shrink-0 items-center gap-2">
+						<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
+						@if(!empty($search))
+							<input type="hidden" name="search" value="{{ $search }}">
+						@endif
+						<label for="galleryPerPage" class="whitespace-nowrap">Images per page</label>
+						<select id="galleryPerPage" name="perPage" class="form-select h-10 w-24 py-0" onchange="this.form.submit()">
+							@foreach([10, 40, 80, 160, 240] as $size)
+								<option value="{{ $size }}" @selected(($perPage ?? 40) === $size)>{{ $size }}</option>
+							@endforeach
+						</select>
+					</form>
+
+					<div class="flex shrink-0 items-center gap-2">
+						<button id="selectAllBtn" class="btn btn-secondary h-10 whitespace-nowrap">Select All</button>
+						<button id="bulkDeleteBtn" class="btn btn-danger h-10 whitespace-nowrap" disabled>Delete Selected</button>
+						<button id="deleteUnselectedBtn" class="btn btn-danger h-10 whitespace-nowrap" disabled>Delete Unselected</button>
+					</div>
 				</div>
 				
 				@if(isset($filterActive) && $filterActive)
