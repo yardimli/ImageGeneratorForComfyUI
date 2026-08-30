@@ -373,10 +373,10 @@ class RenderJobService
         }
 
         $statusUrl = $data['status_url'] ?? "{$submitUrl}/requests/{$requestId}/status";
-        // Always use fal.ai's canonical result endpoint. Some responses provide a
-        // response_url without the final /response segment, which only returns
-        // queue metadata even after the job has completed.
-        $resultUrl = "{$submitUrl}/requests/{$requestId}/response";
+        $submittedResultUrl = is_string($data['response_url'] ?? null)
+            ? $data['response_url']
+            : null;
+        $canonicalResultUrl = "{$submitUrl}/requests/{$requestId}/response";
         $methodNotAllowedCount = 0;
 
         while (microtime(true) < $overallDeadline) {
@@ -429,12 +429,16 @@ class RenderJobService
 
             $jobStatus = $statusResponse->json('status', 'UNKNOWN');
             if ($jobStatus === 'COMPLETED') {
+                $resultUrls = $this->falResultUrlCandidates([
+                    $statusResponse->json('response_url'),
+                    $submittedResultUrl,
+                    $canonicalResultUrl,
+                ]);
                 $resultPayload = $this->retrieveFalResult(
-                    $resultUrl,
+                    $resultUrls,
                     $headers,
                     $prompt,
-                    $requestId,
-                    $overallDeadline
+                    $requestId
                 );
                 if ($prompt->generation_type === 'layerize') {
                     return $resultPayload;
@@ -464,57 +468,63 @@ class RenderJobService
     /**
      * fal.ai can report COMPLETED briefly before its model output is readable.
      *
+     * @param  array<int, string>  $resultUrls
      * @param  array<string, string>  $headers
      * @return array<string, mixed>
      */
     private function retrieveFalResult(
-        string $resultUrl,
+        array $resultUrls,
         array $headers,
         Prompt $prompt,
-        string $requestId,
-        float $overallDeadline
+        string $requestId
     ): array {
-        $resultDeadline = min($overallDeadline, microtime(true) + self::NO_RESPONSE_TIMEOUT_SECONDS);
-        $lastBody = '';
-        $lastStatus = null;
-        $lastTopLevelKeys = [];
+        $resultDeadline = microtime(true) + self::NO_RESPONSE_TIMEOUT_SECONDS;
+        $diagnostics = [];
 
         do {
             if ($this->jobWasCancelledOrFailed($prompt)) {
                 return [];
             }
 
-            try {
-                $resultResponse = Http::withHeaders($headers)
-                    ->timeout(max(1, min(30, (int) ceil($resultDeadline - microtime(true)))))
-                    ->get($resultUrl);
-                $lastStatus = $resultResponse->status();
-                $lastBody = $resultResponse->body();
-
-                if ($resultResponse->successful()) {
-                    $rawPayload = $resultResponse->json();
-                    $lastTopLevelKeys = is_array($rawPayload) ? array_keys($rawPayload) : [];
-                    $payload = $this->normalizeFalResultPayload($rawPayload);
-                    $hasExpectedOutput = $prompt->generation_type === 'layerize'
-                        ? ! empty($payload['layers'])
-                        : is_string(data_get($payload, 'images.0.url'))
-                            || is_string(data_get($payload, 'image.url'));
-
-                    if ($hasExpectedOutput) {
-                        return $payload;
-                    }
-
-                    $remoteError = data_get($rawPayload, 'error')
-                        ?? data_get($rawPayload, 'data.error')
-                        ?? data_get($rawPayload, 'response.error');
-                    if ($remoteError) {
-                        throw new \RuntimeException('fal.ai result reported an error: '.$remoteError);
-                    }
+            foreach ($resultUrls as $resultUrl) {
+                if (microtime(true) >= $resultDeadline) {
+                    break;
                 }
 
-                $this->touchProcessingHeartbeat($prompt);
-            } catch (ConnectionException $exception) {
-                $lastBody = $exception->getMessage();
+                try {
+                    $requestTimeout = max(1, min(10, (int) ceil($resultDeadline - microtime(true))));
+                    $resultResponse = Http::withHeaders($headers)
+                        ->timeout($requestTimeout)
+                        ->get($resultUrl);
+                    $rawPayload = $resultResponse->json();
+                    $diagnostics[$resultUrl] = [
+                        'status' => $resultResponse->status(),
+                        'top_level_keys' => is_array($rawPayload) ? array_keys($rawPayload) : [],
+                        'body' => Str::limit($resultResponse->body(), 4000),
+                    ];
+
+                    if ($resultResponse->successful()) {
+                        $payload = $this->normalizeFalResultPayload($rawPayload);
+                        $hasExpectedOutput = $prompt->generation_type === 'layerize'
+                            ? ! empty($payload['layers'])
+                            : is_string(data_get($payload, 'images.0.url'))
+                                || is_string(data_get($payload, 'image.url'));
+
+                        if ($hasExpectedOutput) {
+                            return $payload;
+                        }
+                    }
+                } catch (ConnectionException $exception) {
+                    $diagnostics[$resultUrl] = [
+                        'status' => null,
+                        'top_level_keys' => [],
+                        'body' => $exception->getMessage(),
+                    ];
+                }
+
+                if (! $this->touchProcessingHeartbeat($prompt)) {
+                    return [];
+                }
             }
 
             $remaining = $resultDeadline - microtime(true);
@@ -526,10 +536,7 @@ class RenderJobService
         Log::error('fal.ai completed but its result payload never became available.', [
             'prompt_id' => $prompt->id,
             'request_id' => $requestId,
-            'result_url' => $resultUrl,
-            'status' => $lastStatus,
-            'top_level_keys' => $lastTopLevelKeys,
-            'body' => Str::limit($lastBody, 10000),
+            'attempts' => $diagnostics,
         ]);
 
         throw new \RuntimeException(
@@ -537,6 +544,35 @@ class RenderJobService
                 ? 'fal.ai completed without returning layer data.'
                 : 'fal.ai completed without returning an image URL.'
         );
+    }
+
+    /**
+     * Keep fal-provided URLs first for backward compatibility, then try their
+     * canonical /response variants for endpoints that return queue metadata.
+     *
+     * @param  array<int, mixed>  $urls
+     * @return array<int, string>
+     */
+    private function falResultUrlCandidates(array $urls): array
+    {
+        $candidates = [];
+
+        foreach ($urls as $url) {
+            if (! is_string($url) || trim($url) === '') {
+                continue;
+            }
+
+            $url = trim($url);
+            $candidates[] = $url;
+
+            if (str_ends_with($url, '/status')) {
+                $candidates[] = substr($url, 0, -strlen('/status')).'/response';
+            } elseif (! str_ends_with($url, '/response')) {
+                $candidates[] = rtrim($url, '/').'/response';
+            }
+        }
+
+        return array_values(array_unique($candidates));
     }
 
     /**

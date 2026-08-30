@@ -39,4 +39,21 @@ class RenderJobServiceTest extends TestCase
             'request_id' => 'request-id',
         ]));
     }
+
+    public function test_it_preserves_provided_result_urls_and_adds_response_fallbacks(): void
+    {
+        $service = app(RenderJobService::class);
+        $candidates = new ReflectionMethod($service, 'falResultUrlCandidates');
+        $candidates->setAccessible(true);
+
+        $this->assertSame([
+            'https://queue.fal.run/model/requests/one',
+            'https://queue.fal.run/model/requests/one/response',
+            'https://queue.fal.run/model/requests/two/response',
+        ], $candidates->invoke($service, [
+            'https://queue.fal.run/model/requests/one',
+            'https://queue.fal.run/model/requests/two/response',
+            'https://queue.fal.run/model/requests/one',
+        ]));
+    }
 }
