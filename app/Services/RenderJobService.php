@@ -336,10 +336,10 @@ class RenderJobService
             }
         }
 
-        $queueEndpoint = Str::startsWith($modelName, ['fal-ai/', 'bytedance/'])
-            ? $modelName
-            : "fal-ai/{$modelName}";
-        $submitUrl = "https://queue.fal.run/{$queueEndpoint}";
+        // Keep the queue routing identical to the original ProcessRenderJobs
+        // command. Model identifiers stored without the fal-ai/ namespace are
+        // submitted below that namespace, including Bytedance edit endpoints.
+        $submitUrl = $this->falSubmitUrl($modelName);
         $headers = ['Authorization' => 'Key '.$falKey];
 
         $response = Http::withHeaders($headers)
@@ -372,11 +372,18 @@ class RenderJobService
             throw new \RuntimeException('fal.ai accepted the submission without returning a request ID.');
         }
 
-        $statusUrl = $data['status_url'] ?? "{$submitUrl}/requests/{$requestId}/status";
         $submittedResultUrl = is_string($data['response_url'] ?? null)
             ? $data['response_url']
             : null;
-        $canonicalResultUrl = "{$submitUrl}/requests/{$requestId}/response";
+
+        // Preserve the original ProcessRenderJobs behavior: submit on the full
+        // model path, then poll and fetch results through its first path segment.
+        $pollingBaseUrl = $this->falPollingBaseUrl($modelName, $requestId);
+        $statusUrl = "{$pollingBaseUrl}/status";
+        $baseResultUrls = [
+            $pollingBaseUrl,
+            $submittedResultUrl,
+        ];
         $methodNotAllowedCount = 0;
 
         while (microtime(true) < $overallDeadline) {
@@ -429,10 +436,11 @@ class RenderJobService
 
             $jobStatus = $statusResponse->json('status', 'UNKNOWN');
             if ($jobStatus === 'COMPLETED') {
+                // Try the original result URL first. fal-provided response URLs
+                // and /response variants remain fallbacks for newer endpoints.
                 $resultUrls = $this->falResultUrlCandidates([
+                    ...$baseResultUrls,
                     $statusResponse->json('response_url'),
-                    $submittedResultUrl,
-                    $canonicalResultUrl,
                 ]);
                 $resultPayload = $this->retrieveFalResult(
                     $resultUrls,
@@ -463,6 +471,25 @@ class RenderJobService
         }
 
         throw new \RuntimeException("fal.ai did not complete the render within {$overallTimeout} seconds.");
+    }
+
+    private function falSubmitUrl(string $modelName): string
+    {
+        $normalizedModelName = Str::startsWith($modelName, 'fal-ai/')
+            ? Str::after($modelName, 'fal-ai/')
+            : $modelName;
+
+        return "https://queue.fal.run/fal-ai/{$normalizedModelName}";
+    }
+
+    private function falPollingBaseUrl(string $modelName, string $requestId): string
+    {
+        $normalizedModelName = Str::startsWith($modelName, 'fal-ai/')
+            ? Str::after($modelName, 'fal-ai/')
+            : $modelName;
+        $pollingModelPath = Str::before($normalizedModelName, '/');
+
+        return "https://queue.fal.run/fal-ai/{$pollingModelPath}/requests/{$requestId}";
     }
 
     /**
