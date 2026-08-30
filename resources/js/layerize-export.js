@@ -107,7 +107,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .forEach((layer) => compositeContext.drawImage(layer.canvas, layer.left, layer.top));
 
             const children = [...psdLayers]
-                .sort((a, b) => b.zIndex - a.zIndex)
+                // ag-psd writes the children stack in reverse display order.
+                // Pass base-to-top so the resulting PSD starts with the last frame.
+                .sort((a, b) => a.zIndex - b.zIndex)
                 .map(({ zIndex, ...layer }) => layer);
 
             status.textContent = 'Writing PSD file…';
