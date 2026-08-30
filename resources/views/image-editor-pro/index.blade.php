@@ -23,6 +23,8 @@
                     <div class="flex flex-wrap gap-2">
                         <button type="button" id="addAreaButton" class="btn btn-primary">Add area</button>
                         <button type="button" id="clearAreasButton" class="btn btn-outline-danger">Clear areas</button>
+                        <button type="button" id="replaceProImage" class="btn btn-outline-primary">Replace image</button>
+                        <button type="button" id="removeProImage" class="btn btn-outline-danger">Remove image</button>
                     </div>
                     <div class="overflow-auto rounded-2xl bg-slate-950/90 p-3">
                         <canvas id="proEditCanvas" class="mx-auto max-h-[65vh] max-w-full cursor-crosshair"></canvas>
@@ -31,7 +33,7 @@
             </div>
         </section>
 
-        <section id="proPromptSection" class="card self-start">
+        <section id="proPromptSection" class="card self-start lg:sticky lg:top-24">
             <div class="card-header">2. Describe the edits</div>
             <div class="card-body space-y-5">
                 <div>

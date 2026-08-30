@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', () => {
     const config = window.seedreamProConfig;
-    const editorGrid = document.getElementById('proEditorGrid');
-    const imageSection = document.getElementById('proImageSection');
-    const promptSection = document.getElementById('proPromptSection');
+    const pickerPanel = document.getElementById('singleImagePickerPanel');
     const canvas = document.getElementById('proEditCanvas');
     const context = canvas.getContext('2d');
     const canvasPanel = document.getElementById('proCanvasPanel');
     const addAreaButton = document.getElementById('addAreaButton');
     const clearAreasButton = document.getElementById('clearAreasButton');
+    const replaceImageButton = document.getElementById('replaceProImage');
+    const removeImageButton = document.getElementById('removeProImage');
     const promptsContainer = document.getElementById('areaPrompts');
     const generateButton = document.getElementById('generateProEdit');
     const status = document.getElementById('proEditStatus');
@@ -27,20 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let draft = null;
 
     function setSelectedLayout(hasSelection) {
-        if (hasSelection) {
-            editorGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
-            promptSection.style.order = '1';
-            promptSection.style.gridColumn = '1 / -1';
-            imageSection.style.order = '2';
-            imageSection.style.gridColumn = '1 / -1';
-            return;
-        }
-
-        editorGrid.style.removeProperty('grid-template-columns');
-        promptSection.style.removeProperty('order');
-        promptSection.style.removeProperty('grid-column');
-        imageSection.style.removeProperty('order');
-        imageSection.style.removeProperty('grid-column');
+        pickerPanel.classList.toggle('hidden', hasSelection);
     }
 
     async function canvasSafeUrl(path) {
@@ -78,8 +65,8 @@ document.addEventListener('DOMContentLoaded', () => {
             generateButton.disabled = false;
             redraw();
             status.textContent = '';
-            requestAnimationFrame(() => promptSection.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         } catch (error) {
+            setSelectedLayout(false);
             status.textContent = error.message;
         }
     }
@@ -148,6 +135,8 @@ document.addEventListener('DOMContentLoaded', () => {
         renderAreaInputs();
         redraw();
     });
+    replaceImageButton.addEventListener('click', () => document.getElementById('selectSingleImage').click());
+    removeImageButton.addEventListener('click', () => document.getElementById('removeSingleImage').click());
     canvas.addEventListener('pointerdown', (event) => {
         if (!drawing) return;
         start = point(event);
