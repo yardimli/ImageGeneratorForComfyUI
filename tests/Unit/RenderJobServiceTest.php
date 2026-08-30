@@ -58,7 +58,7 @@ class RenderJobServiceTest extends TestCase
         ]));
     }
 
-    public function test_it_uses_the_original_queue_routes_for_all_fal_models(): void
+    public function test_it_uses_namespace_appropriate_queue_routes(): void
     {
         $service = app(RenderJobService::class);
         $submitUrl = new ReflectionMethod($service, 'falSubmitUrl');
@@ -75,12 +75,12 @@ class RenderJobServiceTest extends TestCase
             $pollingUrl->invoke($service, 'flux-1/schnell', 'request-1')
         );
         $this->assertSame(
-            'https://queue.fal.run/fal-ai/bytedance/seedream/v5/pro/edit',
+            'https://queue.fal.run/bytedance/seedream/v5/pro/edit',
             $submitUrl->invoke($service, 'bytedance/seedream/v5/pro/edit')
         );
         $this->assertSame(
-            'https://queue.fal.run/fal-ai/bytedance/requests/request-2',
-            $pollingUrl->invoke($service, 'bytedance/seedream/v5/pro/edit', 'request-2')
+            'https://queue.fal.run/bytedance/seedream/v5/pro/layerize',
+            $submitUrl->invoke($service, 'bytedance/seedream/v5/pro/layerize')
         );
         $this->assertSame(
             'https://queue.fal.run/fal-ai/qwen-image-2/edit',

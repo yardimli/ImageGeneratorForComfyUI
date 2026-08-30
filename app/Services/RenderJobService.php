@@ -411,14 +411,27 @@ class RenderJobService
             ? $data['response_url']
             : null;
 
-        // Preserve the original ProcessRenderJobs behavior: submit on the full
-        // model path, then poll and fetch results through its first path segment.
-        $pollingBaseUrl = $this->falPollingBaseUrl($modelName, $requestId);
-        $statusUrl = "{$pollingBaseUrl}/status";
-        $baseResultUrls = [
-            $pollingBaseUrl,
-            $submittedResultUrl,
-        ];
+        if ($this->isSeedreamProModel($modelName)) {
+            // Seedream Pro is a partner endpoint whose identifier intentionally
+            // does not use the fal-ai/ prefix. Keep its full path and prefer the
+            // authoritative URLs returned by the submission response.
+            $statusUrl = is_string($data['status_url'] ?? null)
+                ? $data['status_url']
+                : "{$submitUrl}/requests/{$requestId}/status";
+            $baseResultUrls = [
+                $submittedResultUrl,
+                "{$submitUrl}/requests/{$requestId}",
+            ];
+        } else {
+            // Preserve the original ProcessRenderJobs behavior for existing
+            // fal-ai models: poll through the first model path segment.
+            $pollingBaseUrl = $this->falPollingBaseUrl($modelName, $requestId);
+            $statusUrl = "{$pollingBaseUrl}/status";
+            $baseResultUrls = [
+                $pollingBaseUrl,
+                $submittedResultUrl,
+            ];
+        }
         $methodNotAllowedCount = 0;
 
         while (microtime(true) < $overallDeadline) {
@@ -513,7 +526,20 @@ class RenderJobService
             ? Str::after($modelName, 'fal-ai/')
             : $modelName;
 
+        if ($this->isSeedreamProModel($normalizedModelName)) {
+            return "https://queue.fal.run/{$normalizedModelName}";
+        }
+
         return "https://queue.fal.run/fal-ai/{$normalizedModelName}";
+    }
+
+    private function isSeedreamProModel(string $modelName): bool
+    {
+        $normalizedModelName = Str::startsWith($modelName, 'fal-ai/')
+            ? Str::after($modelName, 'fal-ai/')
+            : $modelName;
+
+        return Str::startsWith($normalizedModelName, 'bytedance/seedream/v5/pro/');
     }
 
     private function falPollingBaseUrl(string $modelName, string $requestId): string
