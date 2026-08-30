@@ -162,8 +162,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('historyImagesContainer').addEventListener('click', (event) => {
         const card = event.target.closest('.history-image-card');
         if (!card) return;
-        document.querySelectorAll('.history-image-card.selected').forEach((item) => item.classList.remove('selected', 'border-dream-600'));
-        card.classList.add('selected', 'border-dream-600');
+        document.querySelectorAll('.history-image-card.selected').forEach((item) => item.classList.remove('selected'));
+        card.classList.add('selected');
     });
     document.getElementById('addSelectedHistoryImageBtn').addEventListener('click', () => {
         const selected = document.querySelector('.history-image-card.selected');

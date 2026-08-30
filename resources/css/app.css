@@ -40,6 +40,12 @@
     .card-header { @apply border-b border-slate-200 bg-slate-50 px-5 py-4 font-semibold dark:border-slate-800 dark:bg-slate-900/70; }
     .card-body { @apply p-5; } .card-footer { @apply border-t border-slate-200 px-5 py-4 dark:border-slate-800; }
     .card-title { @apply mb-2 text-lg font-semibold; } .card-img-top { @apply block w-full object-cover; }
+    .history-image-card { @apply cursor-pointer border-2 border-transparent transition duration-150; }
+    .history-image-card.selected {
+        border-color: var(--color-dream-500) !important;
+        box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-dream-500) 32%, transparent);
+        transform: translateY(-2px);
+    }
 
     .btn { @apply inline-flex items-center justify-center gap-2 rounded-xl border border-transparent px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-dream-500 focus:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 dark:focus:ring-offset-slate-950; }
     .btn-sm, .btn-group-sm > .btn { @apply rounded-lg px-3 py-1.5 text-xs; } .btn-lg { @apply px-6 py-3 text-base; }

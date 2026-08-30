@@ -226,7 +226,6 @@
 	<link rel="stylesheet" href="{{asset('vendor/cropperjs/1.6.1/cropper.min.css')}}"/>
 	<style>
       .history-image-card { cursor: pointer; border: 2px solid transparent; }
-      .history-image-card.selected { border-color: var(--bs-primary); }
       .history-image-card img { width: 100%; height: 150px; object-fit: cover; }
       .fixed-save-bar {
           position: fixed;

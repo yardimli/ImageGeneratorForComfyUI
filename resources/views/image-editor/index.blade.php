@@ -16,9 +16,6 @@
           border: 2px solid transparent;
           transition: border-color 0.2s;
       }
-      .history-image-card.selected {
-          border-color: var(--bs-primary);
-      }
       .history-image-card img {
           width: 100%;
           height: 150px;
