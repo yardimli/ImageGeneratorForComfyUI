@@ -76,7 +76,7 @@
 					</div>
 					
 					<div class="mt-4">
-						{{ $stories->links('pagination::bootstrap-5') }}
+						{{ $stories->links() }}
 					</div>
 				@endif
 			</div>
@@ -85,5 +85,4 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 @endsection

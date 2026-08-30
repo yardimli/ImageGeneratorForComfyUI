@@ -9,6 +9,7 @@
 	use App\Models\StoryCharacter;
 	use App\Models\StoryPage;
 	use App\Models\StoryPlace;
+	use App\Services\FalModelService;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\DB;
 	use Illuminate\Support\Facades\File;
@@ -40,6 +41,9 @@
 
 			foreach ($allModels as $modelData) {
 				$fullName = $modelData['name'];
+				if (stripos($fullName, 'lora') !== false) {
+					continue;
+				}
 
 				// The ID for the form value. Use short name if it exists, otherwise full name.
 				$id = $fullName;
@@ -218,7 +222,7 @@
 		/**
 		 * Show the form for editing the specified story.
 		 */
-		public function edit(Story $story, LlmController $llmController)
+		public function edit(Story $story, LlmController $llmController, FalModelService $falModels)
 		{
 			$story->load(['pages.characters', 'pages.places', 'pages.dictionary', 'characters', 'places']);
 
@@ -242,9 +246,10 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator. The feature will be unavailable.');
 			}
 
-			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
-			$imageModels = $this->getAvailableImageModels();
-			// MODIFICATION END
+			// The story editor deliberately reads only the existing catalogues. Model updates
+			// remain explicit actions on the Prompts and Image Edit pages.
+			$textToImageModels = $falModels->cachedModels('text-to-image');
+			$imageToImageModels = $falModels->cachedModels('image-to-image');
 
 			//  Fetch full prompt templates for JS, including the new dictionary prompt.
 			$promptTemplates = LlmPrompt::whereIn('name', [
@@ -254,7 +259,7 @@
 			])->get(['name', 'system_prompt', 'options'])->keyBy('name');
 
 
-			return view('story.edit', compact('story', 'models', 'imageModels', 'promptTemplates'));
+			return view('story.edit', compact('story', 'models', 'textToImageModels', 'imageToImageModels', 'promptTemplates'));
 		}
 
 		/**
@@ -729,7 +734,7 @@
 		/**
 		 * Show the character management page for a story.
 		 */
-		public function characters(Story $story, LlmController $llmController)
+		public function characters(Story $story, LlmController $llmController, FalModelService $falModels)
 		{
 			$story->load('characters');
 
@@ -751,9 +756,7 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
-			$imageModels = $this->getAvailableImageModels();
-			// MODIFICATION END
+			$imageModels = $falModels->cachedModels('text-to-image');
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')
@@ -801,7 +804,7 @@
 		/**
 		 * Show the place management page for a story.
 		 */
-		public function places(Story $story, LlmController $llmController)
+		public function places(Story $story, LlmController $llmController, FalModelService $falModels)
 		{
 			$story->load('places');
 
@@ -823,9 +826,7 @@
 				session()->flash('error', 'Could not fetch AI models for the prompt generator.');
 			}
 
-			// MODIFICATION START: Replaced hardcoded model list with a dynamic one from the helper method.
-			$imageModels = $this->getAvailableImageModels();
-			// MODIFICATION END
+			$imageModels = $falModels->cachedModels('text-to-image');
 
 			//  Fetch full prompt templates for JS.
 			$promptTemplates = LlmPrompt::where('name', 'like', 'story.asset.%')

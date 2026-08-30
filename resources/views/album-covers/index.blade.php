@@ -72,7 +72,7 @@
 						</div>
 					</form>
 					<div class="mt-4">
-						{{ $paginator->links('pagination::bootstrap-5') }}
+						{{ $paginator->links() }}
 					</div>
 				@endif
 			</div>

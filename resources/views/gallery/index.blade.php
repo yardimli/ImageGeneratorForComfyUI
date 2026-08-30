@@ -1,10 +1,5 @@
 @extends('layouts.app')
 @section('content')
-	<div class="queue-status">
-		<span class="me-2">Queue:</span>
-		<span id="queueCount" class="badge bg-primary">0</span>
-	</div>
-	
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
@@ -87,8 +82,8 @@
 												<input type="checkbox" class="form-check-input image-checkbox"
 												       data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
 											</div>
-											<img src="{{ $image->thumbnail }}" class="card-img-top cursor-pointer"
-											     onclick="openImageModal('{{ $image->filename }}')" alt="Generated Image">
+											<img src="{{ $image->preview_thumbnail_url }}" class="card-img-top cursor-pointer"
+											     onclick="openImageModal({{ Js::from($image->preview_url) }})" alt="Generated Image">
 											<div class="card-body">
 												<div class="mb-3">
 													<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
@@ -122,7 +117,7 @@
 												@endif
 												@if($image->upscale_status === 0)
 													<button class="btn btn-success btn-sm upscale-btn mb-2" data-prompt-id="{{ $image->id }}"
-													        data-filename="{{ $image->filename }}">
+															        data-filename="{{ $image->preview_url }}">
 														Upscale
 													</button>
 												@elseif($image->upscale_status === 1)
@@ -148,7 +143,7 @@
 									'group' => $groupByDay ?? true,
 									'date' => $date ?? null,
 									'search' => $search ?? null
-							])->links('pagination::bootstrap-5') }}
+							])->links() }}
 					</div>
 				@else
 					<div class="row">
@@ -159,8 +154,8 @@
 										<input type="checkbox" class="form-check-input image-checkbox" data-prompt-id="{{ $image->id }}"
 										       style="transform: scale(1.3);">
 									</div>
-									<img src="{{ $image->thumbnail }}" class="card-img-top cursor-pointer"
-									     onclick="openImageModal('{{ $image->filename }}')" alt="Generated Image">
+									<img src="{{ $image->preview_thumbnail_url }}" class="card-img-top cursor-pointer"
+									     onclick="openImageModal({{ Js::from($image->preview_url) }})" alt="Generated Image">
 									<div class="card-body">
 										<div class="mb-3">
 											<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
@@ -192,7 +187,7 @@
 										@endif
 										@if($image->upscale_status === 0)
 											<button class="btn btn-success btn-sm upscale-btn mb-2" data-prompt-id="{{ $image->id }}"
-											        data-filename="{{ $image->filename }}">
+												        data-filename="{{ $image->preview_url }}">
 												Upscale
 											</button>
 										@elseif($image->upscale_status === 1)
@@ -216,7 +211,7 @@
 									'group' => $groupByDay ?? true,
 									'date' => $date ?? null,
 									'search' => $search ?? null
-							])->links('pagination::bootstrap-5') }}
+							])->links() }}
 					</div>
 				@endif
 			</div>
@@ -229,7 +224,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body text-center">
 					<img id="modalImage" src="" style="max-width: 100%; height: auto;" alt="Full size image">
@@ -244,14 +239,14 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Confirm Delete</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Are you sure you want to delete <span id="deleteCount">0</span> <span id="deleteTypeText">selected</span>
 					images? This cannot be undone.
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-danger" id="confirmBulkDeleteBtn">Delete</button>
 				</div>
 			</div>
@@ -264,7 +259,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Source Images</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -287,7 +282,7 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>
@@ -312,7 +307,6 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 	<script>
 		let imageModal;
 		
@@ -325,15 +319,15 @@
 		
 		
 		document.addEventListener('DOMContentLoaded', function () {
-			const deleteConfirmModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+			const deleteConfirmModal = new DreamModal(document.getElementById('confirmDeleteModal'));
 			const selectAllBtn = document.getElementById('selectAllBtn');
 			const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
 			const checkboxes = document.querySelectorAll('.image-checkbox');
 			const confirmBulkDeleteBtn = document.getElementById('confirmBulkDeleteBtn');
-			const sourceImagesModal = new bootstrap.Modal(document.getElementById('sourceImagesModal'));
+			const sourceImagesModal = new DreamModal(document.getElementById('sourceImagesModal'));
 			const deleteUnselectedBtn = document.getElementById('deleteUnselectedBtn');
 			
-			imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+			imageModal = new DreamModal(document.getElementById('imageModal'));
 		
 			document.querySelectorAll('.form-check-label').forEach(label => {
 				label.addEventListener('click', function (e) {

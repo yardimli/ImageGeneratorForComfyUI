@@ -2,6 +2,7 @@
 
 	namespace App\Http\Controllers;
 
+	use App\Support\ImageUrl;
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
 	use Illuminate\Http\Request;
@@ -39,7 +40,7 @@
 					'upload_to_s3' => 'required|in:0,1,true,false',
 				]);
 
-				// Create a JSON structure for the input image, similar to ImageMixController
+				// Create the JSON structure used by the shared upload history.
 				$inputImage = [
 					[
 						'path' => $validated['image_url'],
@@ -136,8 +137,7 @@
 			$renders->getCollection()->transform(function ($prompt) {
 				if ($prompt->filename) {
 					// Check if it's a full URL (S3) or just a filename
-					$isS3Url = filter_var($prompt->filename, FILTER_VALIDATE_URL);
-					$imageUrl = $isS3Url ? $prompt->filename : asset('storage/images/' . $prompt->filename);
+					$imageUrl = ImageUrl::preview($prompt->filename);
 
 					$prompt->image_url = $imageUrl;
 					try {

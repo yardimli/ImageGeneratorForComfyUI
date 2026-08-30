@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="generatePromptModalLabel">Generate Image Prompt with AI</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<div id="prompt-generator-form">
@@ -42,7 +42,7 @@
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-success d-none" id="update-prompt-btn">Update Prompt</button>
 			</div>
 		</div>

@@ -1,11 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-	<div class="queue-status">
-		<span class="me-2">Queue:</span>
-		<span id="queueCount" class="badge bg-primary">0</span>
-	</div>
-	
 	<div class="container py-4">
 		<div class="card mb-4">
 			<div class="card-header">
@@ -96,20 +91,41 @@
 							</div>
 						</div>
 					</div>
-					{{-- MODIFICATION START: Replaced the model checkboxes with a single dropdown menu. --}}
 					<div class="row mb-3">
-						<div class="col-md-4">
-							<label for="model" class="form-label">Image Model</label>
-							<select class="form-select" name="model" id="model">
+						<div class="col-md-6">
+							<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+								<label for="model" class="form-label mb-0">fal.ai Model</label>
+								<button type="button" id="refreshFalModels" class="btn btn-secondary btn-sm">
+									Update models
+								</button>
+							</div>
+							<select class="form-select" name="model" id="model" required>
+								<option value="" selected disabled>Select a fal.ai model…</option>
 								@forelse ($imageModels as $model)
-									<option value="{{ $model['id'] }}">{{ $model['name'] }}</option>
+									@php
+										$metadata = $model['metadata'] ?? [];
+										$displayName = $metadata['display_name'] ?? $model['endpoint_id'];
+										$category = $metadata['category'] ?? null;
+									@endphp
+									<option value="{{ $model['endpoint_id'] }}">
+										{{ $displayName }} — {{ $model['endpoint_id'] }}{{ $category ? ' · '.$category : '' }}
+									</option>
 								@empty
 									<option value="" disabled>No models available.</option>
 								@endforelse
 							</select>
+							<p id="falModelPrice" class="mt-2 text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+								Select a model to load its current price.
+							</p>
+							<p id="falModelRefreshStatus" class="mt-1 text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+								@if ($modelSyncError)
+									<span class="text-red-600 dark:text-red-400">{{ $modelSyncError }}</span>
+								@elseif ($modelsUpdatedAt)
+									{{ count($imageModels) }} models cached {{ \Illuminate\Support\Carbon::parse($modelsUpdatedAt)->diffForHumans() }}.
+								@endif
+							</p>
 						</div>
 					</div>
-					{{-- MODIFICATION END --}}
 					
 					
 					<div class="mb-3">
@@ -199,7 +215,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="imageModalLabel">Full Size Image</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body text-center">
 					<img id="modalImage" src="" style="max-width: 100%; height: auto;" alt="Full size image">
@@ -215,13 +231,13 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="promptQueuedModalLabel">Success</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Your prompts have been queued for image generation!
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>
@@ -248,7 +264,7 @@
       #dictionary-results-container .dictionary-item:hover {
           background-color: #f0f0f0;
       }
-      /* Bootstrap's .active class handles the highlight for keyboard nav */
+      /* The .active class handles the highlight for keyboard nav */
       #dictionary-results-container .dictionary-item.active {
           background-color: #0d6efd;
           color: white;
@@ -285,7 +301,84 @@
 			"{{ $template['name'] }}": {!! json_encode($template['content']) !!},
 			@endforeach
 		};
+
+		const falModels = {{ Illuminate\Support\Js::from($imageModels) }};
+		const falModelsByEndpoint = Object.fromEntries(
+			falModels.map(model => [model.endpoint_id, model])
+		);
+		const falModelSelect = document.getElementById('model');
+		const falModelPrice = document.getElementById('falModelPrice');
+		const falModelRefreshStatus = document.getElementById('falModelRefreshStatus');
+		const refreshFalModelsButton = document.getElementById('refreshFalModels');
+
+		async function loadFalModelPrice() {
+			const endpointId = falModelSelect.value;
+			if (!endpointId) {
+				falModelPrice.textContent = 'No model selected.';
+				return;
+			}
+
+			console.log('Selected fal.ai model metadata:', falModelsByEndpoint[endpointId]);
+			falModelPrice.textContent = 'Loading current price…';
+
+			try {
+				const url = new URL(@json(route('prompts.models.pricing')), window.location.origin);
+				url.searchParams.set('endpoint_id', endpointId);
+				const response = await fetch(url, { headers: { Accept: 'application/json' } });
+				const data = await response.json();
+
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not load pricing.');
+				}
+
+				if (!data.price) {
+					falModelPrice.textContent = 'No fixed price is available for this model.';
+					return;
+				}
+
+				const amount = new Intl.NumberFormat(undefined, {
+					style: 'currency',
+					currency: data.price.currency || 'USD',
+					minimumFractionDigits: 0,
+					maximumFractionDigits: 6,
+				}).format(Number(data.price.unit_price));
+				falModelPrice.textContent = `${amount} per ${data.price.unit}`;
+			} catch (error) {
+				console.error('Failed to load fal.ai pricing:', error);
+				falModelPrice.textContent = error.message;
+			}
+		}
+
+		falModelSelect.addEventListener('change', loadFalModelPrice);
+
+		refreshFalModelsButton.addEventListener('click', async () => {
+			refreshFalModelsButton.disabled = true;
+			refreshFalModelsButton.textContent = 'Updating…';
+			falModelRefreshStatus.textContent = 'Fetching every model from fal.ai…';
+
+			try {
+				const response = await fetch(@json(route('prompts.models.refresh')), {
+					method: 'POST',
+					headers: {
+						Accept: 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+					},
+				});
+				const data = await response.json();
+
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not update models.');
+				}
+
+				falModelRefreshStatus.textContent = `${data.count} models updated. Reloading…`;
+				window.location.reload();
+			} catch (error) {
+				console.error('Failed to refresh fal.ai models:', error);
+				falModelRefreshStatus.textContent = error.message;
+				refreshFalModelsButton.disabled = false;
+				refreshFalModelsButton.textContent = 'Update models';
+			}
+		});
 	</script>
-	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{ asset('js/prompt-script.js') }}"></script>
 @endsection

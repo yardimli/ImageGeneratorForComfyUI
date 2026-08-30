@@ -5,6 +5,7 @@
 	use App\Models\Prompt;
 	use App\Models\UserUpscaleSetting; // Import
 	use App\Models\UpscaleModel; // Import
+	use App\Support\ImageUrl;
 	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Http;
@@ -142,7 +143,7 @@
 				$prompt->upscale_status = 2;
 				$prompt->save();
 
-				return ['message' => 'Image upscaled successfully.', 'upscale_result' => asset("storage/upscaled/{$imageName}")];
+				return ['message' => 'Image upscaled successfully.', 'upscale_result' => ImageUrl::preview("storage/upscaled/{$imageName}")];
 			} else if ($body['status'] === 'failed') {
 				return ['message' => 'Image upscale failed.', 'error' => $body['error']];
 			}

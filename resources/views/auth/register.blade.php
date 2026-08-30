@@ -1,77 +1,11 @@
 @extends('layouts.app')
-
+@section('title', 'Create user — DreamCover')
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Register') }}</div>
-
-                <div class="card-body">
-                    <form method="POST" action="{{ route('register') }}">
-                        @csrf
-
-                        <div class="row mb-3">
-                            <label for="name" class="col-md-4 col-form-label text-md-end">{{ __('Name') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" value="{{ old('name') }}" required autocomplete="name" autofocus>
-
-                                @error('name')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email">
-
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="new-password">
-
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="password-confirm" class="col-md-4 col-form-label text-md-end">{{ __('Confirm Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password-confirm" type="password" class="form-control" name="password_confirmation" required autocomplete="new-password">
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
-                            <div class="col-md-6 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Register') }}
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+<div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8"><a href="{{ route('admin.users.index') }}" class="mb-6 inline-flex text-sm font-semibold text-dream-600 hover:text-dream-700">← Back to users</a><div class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-900/5 dark:border-slate-800 dark:bg-slate-900"><div class="border-b border-slate-200 bg-gradient-to-r from-dream-600 to-indigo-600 p-7 text-white sm:p-9 dark:border-slate-800"><p class="text-sm font-bold uppercase tracking-[.18em] text-white/70">Administrator action</p><h1 class="mt-2 text-3xl font-bold">Create a DreamCover account</h1><p class="mt-2 max-w-xl text-white/75">The new user receives access to the creative workspace. Creating this account will not switch your current session.</p></div>
+    <form method="POST" action="{{ route('register') }}" class="space-y-6 p-7 sm:p-9">@csrf
+        <div class="grid gap-6 sm:grid-cols-2"><div><label for="name" class="mb-2 block text-sm font-semibold">Full name</label><input id="name" name="name" value="{{ old('name') }}" required autofocus class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:border-slate-700 dark:bg-slate-950">@error('name')<p class="mt-2 text-sm text-rose-600">{{ $message }}</p>@enderror</div><div><label for="email" class="mb-2 block text-sm font-semibold">Email address</label><input id="email" type="email" name="email" value="{{ old('email') }}" required class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:border-slate-700 dark:bg-slate-950">@error('email')<p class="mt-2 text-sm text-rose-600">{{ $message }}</p>@enderror</div></div>
+        <div class="grid gap-6 sm:grid-cols-2"><div><label for="password" class="mb-2 block text-sm font-semibold">Temporary password</label><input id="password" type="password" name="password" required autocomplete="new-password" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:border-slate-700 dark:bg-slate-950">@error('password')<p class="mt-2 text-sm text-rose-600">{{ $message }}</p>@enderror</div><div><label for="password_confirmation" class="mb-2 block text-sm font-semibold">Confirm password</label><input id="password_confirmation" type="password" name="password_confirmation" required autocomplete="new-password" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:border-slate-700 dark:bg-slate-950"></div></div>
+        <label class="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-800/50"><input type="checkbox" name="is_admin" value="1" class="mt-0.5 size-4 rounded border-slate-300 text-dream-600 focus:ring-dream-500" {{ old('is_admin') ? 'checked' : '' }}><span><strong class="block text-sm">Administrator access</strong><span class="mt-1 block text-xs leading-5 text-slate-500 dark:text-slate-400">Allows this user to create accounts, view all user statistics, and sign in as another user.</span></span></label>
+        <div class="flex justify-end gap-3"><a href="{{ route('admin.users.index') }}" class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold dark:border-slate-700">Cancel</a><button type="submit" class="rounded-xl bg-dream-600 px-5 py-3 text-sm font-semibold text-white shadow-glow hover:bg-dream-700">Create user</button></div>
+    </form></div></div>
 @endsection

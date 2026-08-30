@@ -1,11 +1,6 @@
 @extends('layouts.app')
 
 @section('content')
-	<div class="queue-status">
-		<span class="me-2">Queue:</span>
-		<span id="queueCount" class="badge bg-primary">0</span>
-	</div>
-	
 	<div class="container py-4">
 		<div class="card">
 			<div class="card-header">
@@ -59,7 +54,10 @@
 		@if($failedPrompts->count() > 0)
 			<div class="card">
 				<div class="card-header">
-					<h3 class="mb-0">Failed Generations</h3>
+					<div class="d-flex justify-content-between align-items-center">
+						<h3 class="mb-0">Failed Generations</h3>
+						<button id="deleteAllFailedBtn" class="btn btn-danger">Remove All Failed</button>
+					</div>
 				</div>
 				<div class="card-body">
 					<div class="table-responsive">
@@ -105,13 +103,13 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Confirm Delete</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Are you sure you want to delete this queued prompt? This cannot be undone.
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete</button>
 				</div>
 			</div>
@@ -124,14 +122,32 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title">Confirm Delete All</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Are you sure you want to delete all queued prompts? This cannot be undone.
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-danger" id="confirmDeleteAllBtn">Delete All</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal fade" id="confirmDeleteAllFailedModal" tabindex="-1" aria-hidden="true">
+		<div class="modal-dialog">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">Remove All Failed Generations</h5>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
+				</div>
+				<div class="modal-body">
+					Are you sure you want to permanently remove all your failed generation records from the database? This cannot be undone.
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-danger" id="confirmDeleteAllFailedBtn">Remove All Failed</button>
 				</div>
 			</div>
 		</div>
@@ -140,27 +156,10 @@
 
 @section('scripts')
 	<script>
-		function updateQueueCount() {
-			fetch('/api/prompts/queue-count')
-				.then(response => response.json())
-				.then(data => {
-					// Update all queue count elements on the page
-					document.querySelectorAll('#queueCount, #navQueueCount').forEach(element => {
-						if (element) {
-							element.textContent = data.count;
-							element.className = 'badge ' + (data.count > 10 ? 'bg-danger' : data.count > 5 ? 'bg-info' : 'bg-primary');
-						}
-					});
-				})
-				.catch(error => console.error('Error fetching queue count:', error));
-		}
-		
 		document.addEventListener('DOMContentLoaded', function () {
-			// Reload queue count every 5 seconds
-			setInterval(updateQueueCount, 5000);
-			
-			const deleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
-			const deleteAllModal = new bootstrap.Modal(document.getElementById('confirmDeleteAllModal'));
+			const deleteModal = new DreamModal(document.getElementById('confirmDeleteModal'));
+			const deleteAllModal = new DreamModal(document.getElementById('confirmDeleteAllModal'));
+			const deleteAllFailedModal = new DreamModal(document.getElementById('confirmDeleteAllFailedModal'));
 			
 			let promptIdToDelete = null;
 			
@@ -179,6 +178,10 @@
 					deleteAllModal.show();
 				});
 			}
+
+			document.getElementById('deleteAllFailedBtn')?.addEventListener('click', function () {
+				deleteAllFailedModal.show();
+			});
 			
 			// Handle confirm delete
 			document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
@@ -207,13 +210,39 @@
 						}
 						
 						deleteModal.hide();
-						updateQueueCount();
 					} else {
 						alert('Error: ' + (data.message || 'Failed to delete prompt'));
 					}
 				} catch (error) {
 					console.error('Error deleting prompt:', error);
 					alert('Error deleting prompt');
+				}
+			});
+
+			document.getElementById('confirmDeleteAllFailedBtn').addEventListener('click', async function () {
+				this.disabled = true;
+				this.textContent = 'Removing…';
+
+				try {
+					const response = await fetch(@json(route('prompts.queue.failed.delete-all')), {
+						method: 'DELETE',
+						headers: {
+							'Accept': 'application/json',
+							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+						}
+					});
+					const data = await response.json();
+
+					if (!response.ok || !data.success) {
+						throw new Error(data.message || 'Failed to remove failed generations.');
+					}
+
+					window.location.reload();
+				} catch (error) {
+					console.error('Error deleting failed generations:', error);
+					alert(error.message);
+					this.disabled = false;
+					this.textContent = 'Remove All Failed';
 				}
 			});
 			
@@ -269,9 +298,6 @@
 								failedCard?.remove();
 							}
 							
-							updateQueueCount(); // IMPORTANT: Update queue count as item is added back
-							// Add a success notification (optional)
-							// e.g., showToast('Prompt requeued successfully.');
 						} else {
 							console.error('Error requeueing prompt:', data.message || 'Unknown error');
 							alert('Error: ' + (data.message || 'Failed to requeue prompt'));

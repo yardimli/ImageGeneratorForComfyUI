@@ -34,6 +34,9 @@
 
 			foreach ($allModels as $modelData) {
 				$fullName = $modelData['name'];
+				if (stripos($fullName, 'lora') !== false) {
+					continue;
+				}
 
 				// The ID for the form value. Use short name if it exists, otherwise full name.
 				$id = $fullName;

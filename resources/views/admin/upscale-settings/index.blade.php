@@ -19,8 +19,8 @@
 							<li class="nav-item" role="presentation">
 								<button class="nav-link {{ $activeModelId == $model->id ? 'active' : '' }}"
 								        id="tab-{{ $model->id }}"
-								        data-bs-toggle="tab"
-								        data-bs-target="#content-{{ $model->id }}"
+								        data-ui-toggle="tab"
+								        data-ui-target="#content-{{ $model->id }}"
 								        type="button"
 								        role="tab">
 									{{ $model->name }}

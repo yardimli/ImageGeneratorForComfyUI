@@ -104,6 +104,8 @@
 						'status' => 'ready',
 						'filename' => $prompt->filename,
 						'thumbnail' => $prompt->thumbnail,
+						'preview_url' => $prompt->preview_url,
+						'preview_thumbnail_url' => $prompt->preview_thumbnail_url,
 						'prompt_id' => $prompt->id,
 						'upscale_status' => $prompt->upscale_status,
 						'upscale_url' => $prompt->upscale_url,

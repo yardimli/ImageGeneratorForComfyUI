@@ -222,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						
 						if (storeData.success) {
 							// Show the prompt queued modal
-							const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
+							const promptQueuedModal = new DreamModal(document.getElementById('promptQueuedModal'));
 							promptQueuedModal.show();
 							document.getElementById('storeGeneratedPrompts').innerHTML = 'Images are being generated. You can see them in the gallery once they are ready.';
 						} else {

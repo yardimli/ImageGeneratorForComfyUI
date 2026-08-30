@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="historyModalLabel">Select an Image</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<div class="row mb-3">
@@ -43,7 +43,7 @@
 				<input type="file" id="newImageUploadInput" class="d-none" accept="image/*">
 				<button type="button" class="btn btn-info me-auto" id="uploadNewImageBtn">Upload New Image</button>
 				{{-- END MODIFICATION --}}
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="addSelectedHistoryImageBtn">Use Selected Image</button>
 			</div>
 		</div>

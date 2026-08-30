@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="drawWithAiModalLabel">Draw with AI</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<form id="draw-with-ai-form">
@@ -15,11 +15,24 @@
 					<div class="row mb-3">
 						<div class="col-md-6">
 							<label for="draw-model" class="form-label">AI Model</label>
-							<select class="form-select" id="draw-model">
-								@foreach($imageModels as $model)
-									<option value="{{ $model['id'] }}">{{ $model['name'] }}</option>
-								@endforeach
+							<select class="form-select" id="draw-model" required>
+								<option value="" selected disabled>Select a text-to-image model…</option>
+								@forelse($imageModels as $model)
+									@php
+										$metadata = $model['metadata'] ?? [];
+										$endpointId = $model['endpoint_id'] ?? $model['id'] ?? '';
+										$displayName = $metadata['display_name'] ?? $model['name'] ?? $endpointId;
+									@endphp
+									<option value="{{ $endpointId }}">{{ $displayName }}{{ isset($model['endpoint_id']) ? ' — '.$endpointId : '' }}</option>
+								@empty
+									<option value="" disabled>No cached text-to-image models available.</option>
+								@endforelse
 							</select>
+							@if($showFalPricing ?? false)
+								<p id="draw-model-price" class="mt-2 text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+									Select a model to load its current price.
+								</p>
+							@endif
 						</div>
 						<div class="col-md-6">
 							<label for="draw-aspect-ratio" class="form-label">Aspect Ratio</label>
@@ -68,7 +81,7 @@
 				</form>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="generate-image-btn">
 					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 					Generate Image Only

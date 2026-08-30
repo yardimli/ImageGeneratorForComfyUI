@@ -24,8 +24,8 @@
 						</button>
 						
 						<!-- Original Buttons -->
-						<button type="button" class="btn btn-primary btn-sm me-2" data-bs-toggle="modal"
-						        data-bs-target="#uploadCoverModal">
+						<button type="button" class="btn btn-primary btn-sm me-2" data-ui-toggle="modal"
+						        data-ui-target="#uploadCoverModal">
 							Upload Cover
 						</button>
 						<button id="generatePromptsBtn" class="btn btn-success btn-sm me-2">Generate Prompts for Selected</button>
@@ -67,7 +67,7 @@
 													<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $image->id }}">
 														"{{ $image->mix_prompt ?? 'No Prompt'}}"</p>
 													<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
-													        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $image->id }}"
+													        data-ui-toggle="modal" data-ui-target="#editPromptModal" data-cover-id="{{ $image->id }}"
 													        data-prompt="{{ $image->mix_prompt }}">
 														Edit
 													</button>
@@ -95,7 +95,7 @@
 														        data-cover-id="{{ $image->id }}">Save Notes
 														</button>
 														<button type="button" class="btn btn-outline-danger btn-sm unlike-btn ms-1"
-														        data-bs-toggle="modal" data-bs-target="#unlikeConfirmModal"
+														        data-ui-toggle="modal" data-ui-target="#unlikeConfirmModal"
 														        data-cover-id="{{ $image->id }}">
 															Unlike
 														</button>
@@ -119,7 +119,7 @@
 																<p class="card-text small text-muted fst-italic mt-3" id="prompt-text-{{ $child->id }}">
 																	"{{ $child->mix_prompt ?? 'No Prompt'}}"</p>
 																<button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn"
-																        data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="{{ $child->id }}"
+																        data-ui-toggle="modal" data-ui-target="#editPromptModal" data-cover-id="{{ $child->id }}"
 																        data-prompt="{{ $child->mix_prompt }}">
 																	Edit
 																</button>
@@ -195,7 +195,7 @@
 						</div>
 					</form>
 					<div class="mt-4">
-						{{ $likedImages->links('pagination::bootstrap-5') }}
+						{{ $likedImages->links() }}
 					</div>
 				@endif
 			</div>
@@ -209,7 +209,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="uploadCoverModalLabel">Upload New Album Cover</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<form id="upload-cover-form" action="{{ route('album-covers.upload') }}" method="POST"
 				      enctype="multipart/form-data">
@@ -222,7 +222,7 @@
 						<div id="upload-status" class="mt-3"></div>
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+						<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Close</button>
 						<button type="submit" class="btn btn-primary" id="submit-upload-btn">Upload</button>
 					</div>
 				</form>
@@ -237,7 +237,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="generatePromptsModalLabel">Generate Prompts</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<p>The following prompt will be sent to the AI for each selected image. You can edit it below.</p>
@@ -251,7 +251,7 @@
 					</form>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-primary" id="submit-prompts-btn">Generate</button>
 				</div>
 			</div>
@@ -264,7 +264,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="editPromptModalLabel">Edit Mix Prompt</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<form id="edit-prompt-form">
 					<div class="modal-body">
@@ -275,7 +275,7 @@
 						</div>
 					</div>
 					<div class="modal-footer">
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 						<button type="submit" class="btn btn-primary" id="save-prompt-btn">Save Changes</button>
 					</div>
 				</form>
@@ -289,13 +289,13 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="unlikeConfirmModalLabel">Confirm Unlike</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Are you sure you want to unlike this cover? This will remove it from this page.
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-danger" id="confirm-unlike-btn">Unlike</button>
 				</div>
 			</div>
@@ -416,7 +416,7 @@
 			const generateBtn = document.getElementById('generatePromptsBtn');
 			const modalElement = document.getElementById('generatePromptsModal');
 			if (generateBtn && modalElement) {
-				const generatePromptsModal = new bootstrap.Modal(modalElement);
+				const generatePromptsModal = new DreamModal(modalElement);
 				const selectAllCheckbox = document.getElementById('selectAllCheckbox');
 				const imageCheckboxes = document.querySelectorAll('.image-checkbox');
 				const selectedCountSpan = document.getElementById('selected-count');
@@ -613,7 +613,7 @@
                                             <img src="${data.image_url}" class="card-img-top" alt="Kontext Result">
                                         </a>
                                         <p class="card-text small text-muted fst-italic mt-3" id="prompt-text-${newCoverId}">"${data.cover.mix_prompt || 'No Prompt'}"</p>
-                                        <button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-bs-toggle="modal" data-bs-target="#editPromptModal" data-cover-id="${newCoverId}" data-prompt="${data.cover.mix_prompt}">Edit</button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm edit-prompt-btn" data-ui-toggle="modal" data-ui-target="#editPromptModal" data-cover-id="${newCoverId}" data-prompt="${data.cover.mix_prompt}">Edit</button>
                                         <br>
                                         <div class="btn-group btn-group-sm kontext-controls" role="group" data-cover-id="${newCoverId}" data-parent-id="${parentId}">
                                             <button type="button" class="btn btn-primary kontext-btn" data-model="dev" ${!data.cover.mix_prompt ? 'disabled' : ''}>dev</button>
@@ -668,7 +668,7 @@
 			// --- New Script for Edit Prompt Modal ---
 			const editPromptModalEl = document.getElementById('editPromptModal');
 			const editPromptForm = document.getElementById('edit-prompt-form');
-			const editPromptModal = new bootstrap.Modal(editPromptModalEl);
+			const editPromptModal = new DreamModal(editPromptModalEl);
 			
 			document.body.addEventListener('click', function (event) {
 				if (event.target.classList.contains('edit-prompt-btn')) {
@@ -855,7 +855,7 @@
 			// --- START MODIFICATION: New Script for Unlike Confirmation ---
 			const unlikeModalEl = document.getElementById('unlikeConfirmModal');
 			if (unlikeModalEl) {
-				const unlikeModal = new bootstrap.Modal(unlikeModalEl);
+				const unlikeModal = new DreamModal(unlikeModalEl);
 				const confirmUnlikeBtn = document.getElementById('confirm-unlike-btn');
 				let coverToUnlikeId = null;
 				

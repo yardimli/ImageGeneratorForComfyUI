@@ -35,6 +35,11 @@
 			'key' => env('OPEN_ROUTER_API_KEY'),
 		],
 
+		'fal' => [
+			'api_key' => env('FAL_API_KEY', env('FAL_KEY')),
+			'platform_url' => env('FAL_PLATFORM_URL', 'https://api.fal.ai/v1'),
+		],
+
 		'python' => [
 			'executable' => env('PYTHON_EXECUTABLE_PATH', 'python3'),
 		]

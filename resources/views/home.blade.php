@@ -1,86 +1,10 @@
 @extends('layouts.app')
-
+@section('title', 'Overview — DreamCover')
 @section('content')
-	<div class="container">
-		<div class="row justify-content-center">
-			<div class="col-md-10">
-				@if (session('status'))
-					<div class="alert alert-success" role="alert">
-						{{ session('status') }}
-					</div>
-				@endif
-				
-				<!-- Image Statistics -->
-				<div class="card mt-4">
-					<div class="card-header">
-						<h5 class="mb-0">Image Statistics</h5>
-					</div>
-					
-					<div class="card-body">
-						<div class="row">
-							<div class="col-md-4">
-								<h6 class="border-bottom pb-2 mb-3">By Model</h6>
-								<ul class="list-group">
-									{{-- MODIFICATION START: Replaced hardcoded model list with a dynamic loop. --}}
-									@foreach($supportedModels as $model)
-										@if(isset($modelStats[$model]) && $modelStats[$model] > 0)
-											<li class="list-group-item d-flex justify-content-between align-items-center">
-												{{ ucfirst(str_replace(['-', '_', '/'], ' ', $model)) }}
-												<span class="badge bg-primary rounded-pill">{{ $modelStats[$model] }}</span>
-											</li>
-										@endif
-									@endforeach
-									{{-- MODIFICATION END --}}
-								</ul>
-							</div>
-							
-							<div class="col-md-4">
-								<h6 class="border-bottom pb-2 mb-3">By Generation Type</h6>
-								<ul class="list-group">
-									@foreach(['prompt', 'mix', 'mix-one', 'kontext-basic', 'kontext-lora'] as $type)
-										<li class="list-group-item d-flex justify-content-between align-items-center">
-											{{ ucfirst(str_replace('-', ' ', $type)) }}
-											<span class="badge bg-secondary rounded-pill">{{ $generationTypeStats[$type] ?? 0 }}</span>
-										</li>
-									@endforeach
-								</ul>
-								
-								<h6 class="border-bottom pb-2 mb-3 mt-4">Total</h6>
-								<div class="card bg-body-secondary">
-									<div class="card-body text-center">
-										<h3>{{ $totalImages }}</h3>
-										<p class="mb-0">Total Images</p>
-									</div>
-								</div>
-							</div>
-							
-							<div class="col-md-4">
-								<h6 class="border-bottom pb-2 mb-3">Special Categories</h6>
-								
-								<div class="card mb-3 bg-success text-white">
-									<div class="card-body text-center">
-										<h3>{{ $upscaledImages }}</h3>
-										<p class="mb-0">Upscaled Images</p>
-									</div>
-								</div>
-								
-								<div class="card bg-info text-white">
-									<div class="card-body text-center">
-										<h3>{{ $imagesWithNotes }}</h3>
-										<p class="mb-0">Images with Notes</p>
-									</div>
-								</div>
-							</div>
-						</div>
-						
-						<div class="mt-4">
-							<a href="{{ route('gallery.index') }}" class="btn btn-primary">
-								View Gallery
-							</a>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+<div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    @if(session('status'))<div class="mb-6 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950 dark:text-emerald-200">{{ session('status') }}</div>@endif
+    <div class="mb-10 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between"><div><p class="text-sm font-bold uppercase tracking-[.18em] text-dream-600">Workspace overview</p><h1 class="mt-2 text-4xl font-bold tracking-tight text-slate-950 dark:text-white">Welcome back, {{ auth()->user()->name }}.</h1><p class="mt-3 text-slate-500 dark:text-slate-400">Pick up where you left off or start a fresh direction.</p></div><div class="flex gap-3"><a href="{{ route('prompts.index') }}" class="rounded-xl bg-dream-600 px-5 py-3 text-sm font-semibold text-white shadow-glow hover:bg-dream-700">Create images</a><a href="{{ route('stories.create') }}" class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold dark:border-slate-700">New story</a></div></div>
+    <div class="grid gap-4 sm:grid-cols-3"><div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><p class="text-sm font-semibold text-slate-500">Generated images</p><p class="mt-2 text-4xl font-bold">{{ number_format($totalImages) }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><p class="text-sm font-semibold text-slate-500">Upscaled favorites</p><p class="mt-2 text-4xl font-bold text-emerald-600">{{ number_format($upscaledImages) }}</p></div><div class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><p class="text-sm font-semibold text-slate-500">Images with notes</p><p class="mt-2 text-4xl font-bold text-cyan-600">{{ number_format($imagesWithNotes) }}</p></div></div>
+    <div class="mt-8 grid gap-6 lg:grid-cols-3"><section class="rounded-2xl border border-slate-200 bg-white p-6 lg:col-span-2 dark:border-slate-800 dark:bg-slate-900"><div class="flex items-center justify-between"><h2 class="text-xl font-bold">Images by model</h2><a href="{{ route('gallery.index') }}" class="text-sm font-semibold text-dream-600">View gallery →</a></div><div class="mt-6 grid gap-3 sm:grid-cols-2">@forelse($supportedModels as $model)@if(($modelStats[$model] ?? 0) > 0)<div class="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3 dark:bg-slate-800"><span class="truncate text-sm font-medium">{{ ucfirst(str_replace(['-', '_', '/'], ' ', $model)) }}</span><span class="ml-3 rounded-full bg-dream-100 px-2.5 py-1 text-xs font-bold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">{{ $modelStats[$model] }}</span></div>@endif @empty<p class="text-slate-500">Your model activity will appear here after the first generation.</p>@endforelse</div></section><section class="rounded-2xl border border-slate-200 bg-white p-6 dark:border-slate-800 dark:bg-slate-900"><h2 class="text-xl font-bold">By workflow</h2><div class="mt-6 space-y-3">@foreach(['prompt' => 'Prompt', 'kontext-basic' => 'Kontext basic', 'kontext-lora' => 'Kontext LoRA'] as $type => $label)<div class="flex items-center justify-between border-b border-slate-100 pb-3 last:border-0 dark:border-slate-800"><span class="text-sm text-slate-600 dark:text-slate-300">{{ $label }}</span><strong>{{ $generationTypeStats[$type] ?? 0 }}</strong></div>@endforeach</div></section></div>
+</div>
 @endsection

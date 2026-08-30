@@ -3,10 +3,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// --- Image Selection & Cropper Logic (from story-editor.js) ---
 	const cropperModalEl = document.getElementById('cropperModal');
-	const cropperModal = new bootstrap.Modal(cropperModalEl);
+	const cropperModal = new DreamModal(cropperModalEl);
 	const imageToCrop = document.getElementById('imageToCrop');
 	const historyModalEl = document.getElementById('historyModal');
-	const historyModal = new bootstrap.Modal(historyModalEl);
+	const historyModal = new DreamModal(historyModalEl);
 	let cropper;
 	let activeImageUploadContainer = document.getElementById('input-images-container'); // Target the main container
 	const thumbnailTemplate = document.getElementById('input-image-thumbnail-template');
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		cropperModal.show();
 	};
 	
-	cropperModalEl.addEventListener('shown.bs.modal', function () {
+	cropperModalEl.addEventListener('shown.dream.modal', function () {
 		if (cropper) cropper.destroy();
 		cropper = new Cropper(imageToCrop, {
 			aspectRatio: 1,
@@ -25,7 +25,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	});
 	
-	cropperModalEl.addEventListener('hidden.bs.modal', function () {
+	cropperModalEl.addEventListener('hidden.dream.modal', function () {
 		if (cropper) {
 			cropper.destroy();
 			cropper = null;
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				const formData = new FormData();
 				formData.append('image', blob, 'full-image.png');
 				formData.append('_token', csrfToken);
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			formData.append('image', blob, 'cropped-image.png');
 			formData.append('_token', csrfToken);
 			try {
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -125,7 +125,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const perPage = document.getElementById('historyPerPage').value;
 		const container = document.getElementById('historyImagesContainer');
 		container.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
-		const endpoint = source === 'uploads' ? `/image-mix/uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
+		const endpoint = source === 'uploads' ? `/image-uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
 		const response = await fetch(endpoint);
 		const data = await response.json();
 		container.innerHTML = '';
@@ -252,8 +252,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	generateBtn.addEventListener('click', async () => {
 		const promptText = document.getElementById('prompt').value;
+		const selectedModel = document.getElementById('model').value;
 		const inputImagePaths = Array.from(activeImageUploadContainer.querySelectorAll('.image-path-input')).map(input => input.value);
 		
+		if (!selectedModel) {
+			alert('Please select an image-to-image model.');
+			return;
+		}
 		if (!promptText) {
 			alert('Please enter a prompt.');
 			return;
@@ -270,17 +275,15 @@ document.addEventListener('DOMContentLoaded', function () {
 		spinnerContainer.classList.remove('d-none');
 		resultImage.src = '';
 		
-		// START MODIFICATION: Add model to request body.
 		const body = {
 			prompt: promptText,
-			model: document.getElementById('model').value, // Assuming an element with id="model" exists.
+			model: selectedModel,
 			width: widthInput.value,
 			height: heightInput.value,
 			upload_to_s3: document.getElementById('upload-to-s3').checked,
 			aspect_ratio: aspectRatioSelect.value,
 			input_images: inputImagePaths,
 		};
-		// END MODIFICATION
 		
 		try {
 			const response = await fetch('/image-edit/generate', {
@@ -324,7 +327,7 @@ document.addEventListener('DOMContentLoaded', function () {
 					clearInterval(pollInterval);
 					spinnerContainer.classList.remove('d-flex');
 					spinnerContainer.classList.add('d-none');
-					resultImage.src = statusData.filename;
+					resultImage.src = statusData.preview_url || statusData.filename;
 					generateBtn.disabled = false;
 					generateBtn.querySelector('.spinner-border').classList.add('d-none');
 				}

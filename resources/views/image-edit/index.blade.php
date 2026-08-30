@@ -17,22 +17,45 @@
 				<h1>Image Edit</h1>
 			</div>
 			<div class="card-body">
-				{{-- START MODIFICATION --}}
 				<div class="alert alert-info small">
 					This feature uses an image editing model to generate a new image based on your prompt and the input images provided below.
 				</div>
 				
-				<div class="mb-3">
-					<label for="model" class="form-label">AI Model</label>
-					<select class="form-select" id="model">
-						<option value="gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
-						<option value="nano-banana-2/edit">Nano Banana 2 Image Edit ($0.16)</option>
-						<option value="qwen-image-2/edit">Qwen Image Edit 2 ($0.035)</option>
-						<option value="qwen-image-2/pro/edit">Qwen Image Edit 2 Pro ($0.075)</option>
-						<option value="bytedance/seedream/v4.5/edit">SeeDream v4.5 Edit ($0.04)</option>
-					</select>
+				<div class="row mb-3">
+					<div class="col-md-6">
+						<div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+							<label for="model" class="form-label mb-0">fal.ai Image-to-Image Model</label>
+							<button type="button" id="refreshFalImageModels" class="btn btn-secondary btn-sm">
+								Update models
+							</button>
+						</div>
+						<select class="form-select" id="model" required>
+							<option value="" selected disabled>Select a fal.ai model…</option>
+							@forelse ($imageModels as $model)
+								@php
+									$metadata = $model['metadata'] ?? [];
+									$displayName = $metadata['display_name'] ?? $model['endpoint_id'];
+									$category = $metadata['category'] ?? null;
+								@endphp
+								<option value="{{ $model['endpoint_id'] }}">
+									{{ $displayName }} — {{ $model['endpoint_id'] }}{{ $category ? ' · '.$category : '' }}
+								</option>
+							@empty
+								<option value="" disabled>No image-to-image models available.</option>
+							@endforelse
+						</select>
+						<p id="falImageModelPrice" class="mt-2 text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+							Select a model to load its current price.
+						</p>
+						<p id="falImageModelRefreshStatus" class="mt-1 text-xs text-slate-500 dark:text-slate-400" aria-live="polite">
+							@if ($modelSyncError)
+								<span class="text-red-600 dark:text-red-400">{{ $modelSyncError }}</span>
+							@elseif ($modelsUpdatedAt)
+								{{ count($imageModels) }} models cached {{ \Illuminate\Support\Carbon::parse($modelsUpdatedAt)->diffForHumans() }}.
+							@endif
+						</p>
+					</div>
 				</div>
-				{{-- END MODIFICATION --}}
 				
 				<div class="mb-3">
 					<label class="form-label fw-bold">Input Images (click to remove):</label>
@@ -134,7 +157,95 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
+	<script>
+		const falImageModels = {{ Illuminate\Support\Js::from($imageModels) }};
+		const falImageModelsByEndpoint = Object.fromEntries(
+			falImageModels.map(model => [model.endpoint_id, model])
+		);
+		const falImageModelSelect = document.getElementById('model');
+		const falImageModelPrice = document.getElementById('falImageModelPrice');
+		const falImageModelRefreshStatus = document.getElementById('falImageModelRefreshStatus');
+		const refreshFalImageModelsButton = document.getElementById('refreshFalImageModels');
+		let falImagePriceRequest = 0;
+
+		async function loadFalImageModelPrice() {
+			const endpointId = falImageModelSelect.value;
+			const requestNumber = ++falImagePriceRequest;
+
+			if (!endpointId) {
+				falImageModelPrice.textContent = 'No model selected.';
+				return;
+			}
+
+			console.log('Selected fal.ai image-to-image model metadata:', falImageModelsByEndpoint[endpointId]);
+			falImageModelPrice.textContent = 'Loading current price…';
+
+			try {
+				const url = new URL(@json(route('image-edit.models.pricing')), window.location.origin);
+				url.searchParams.set('endpoint_id', endpointId);
+				const response = await fetch(url, { headers: { Accept: 'application/json' } });
+				const data = await response.json();
+
+				if (requestNumber !== falImagePriceRequest) {
+					return;
+				}
+
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not load pricing.');
+				}
+
+				if (!data.price) {
+					falImageModelPrice.textContent = 'No fixed price is available for this model.';
+					return;
+				}
+
+				const amount = new Intl.NumberFormat(undefined, {
+					style: 'currency',
+					currency: data.price.currency || 'USD',
+					minimumFractionDigits: 0,
+					maximumFractionDigits: 6,
+				}).format(Number(data.price.unit_price));
+				falImageModelPrice.textContent = `${amount} per ${data.price.unit}`;
+			} catch (error) {
+				if (requestNumber !== falImagePriceRequest) {
+					return;
+				}
+				console.error('Failed to load fal.ai image-to-image pricing:', error);
+				falImageModelPrice.textContent = error.message;
+			}
+		}
+
+		falImageModelSelect.addEventListener('change', loadFalImageModelPrice);
+
+		refreshFalImageModelsButton.addEventListener('click', async () => {
+			refreshFalImageModelsButton.disabled = true;
+			refreshFalImageModelsButton.textContent = 'Updating…';
+			falImageModelRefreshStatus.textContent = 'Fetching image-to-image models from fal.ai…';
+
+			try {
+				const response = await fetch(@json(route('image-edit.models.refresh')), {
+					method: 'POST',
+					headers: {
+						Accept: 'application/json',
+						'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+					},
+				});
+				const data = await response.json();
+
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not update models.');
+				}
+
+				falImageModelRefreshStatus.textContent = `${data.count} models updated. Reloading…`;
+				window.location.reload();
+			} catch (error) {
+				console.error('Failed to refresh fal.ai image-to-image models:', error);
+				falImageModelRefreshStatus.textContent = error.message;
+				refreshFalImageModelsButton.disabled = false;
+				refreshFalImageModelsButton.textContent = 'Update models';
+			}
+		});
+	</script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	<script src="{{ asset('js/image-edit.js') }}"></script>
 @endsection

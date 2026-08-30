@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	const imageUrlInput = document.getElementById('imageUrlInput');
 	const kontextBasicForm = document.getElementById('kontextBasicForm');
 	
-	const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
+	const promptQueuedModal = new DreamModal(document.getElementById('promptQueuedModal'));
 	
 	// --- Image Selection Logic ---
 	function selectImage(url) {

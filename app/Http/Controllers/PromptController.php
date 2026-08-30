@@ -6,6 +6,7 @@
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
 	use App\Models\UserTemplate;
+	use App\Services\FalModelService;
 	use GuzzleHttp\Client;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Http;
@@ -17,65 +18,78 @@
 	class PromptController extends Controller
 	{
 		protected $llmController;
+		protected FalModelService $falModels;
 
-		public function __construct(LlmController $llmController)
+		public function __construct(LlmController $llmController, FalModelService $falModels)
 		{
 			$this->llmController = $llmController;
+			$this->falModels = $falModels;
 		}
-
-		// MODIFICATION START: Updated to load all models from JSON, using short names where available.
-		/**
-		 * Loads and formats the available image generation models for use in views.
-		 *
-		 * @return array
-		 */
-		protected function getAvailableImageModels(): array
-		{
-			try {
-				$jsonString = file_get_contents(resource_path('text-to-image-models/models.json'));
-				$allModels = json_decode($jsonString, true);
-			} catch (Exception $e) {
-				Log::error('Failed to load image models from JSON: ' . $e->getMessage());
-				return [];
-			}
-
-			$viewModels = [];
-			$foundModels = [];
-
-			foreach ($allModels as $modelData) {
-				$fullName = $modelData['name'];
-
-				// The ID for the form value. Use short name if it exists, otherwise full name.
-				$id = $fullName;
-
-				// The name for display in the dropdown.
-				$displayNameBase = $fullName;
-				$displayName = ucfirst(str_replace(['-', '_', '/'], ' ', $displayNameBase));
-				if (isset($modelData['price'])) {
-					$displayName .= " (\${$modelData['price']})";
-				}
-
-				$viewModels[] = [
-					'id' => $id,
-					'name' => $displayName,
-				];
-			}
-
-			usort($viewModels, fn($a, $b) => strcmp($a['name'], $b['name']));
-			return $viewModels;
-		}
-		// MODIFICATION END
 
 		public function index()
 		{
 			$templates = $this->getTemplates(resource_path('templates'));
 			$settings = PromptSetting::where('user_id', auth()->id())->
 			orderBy('created_at', 'desc')->get();
-			// MODIFICATION START: Load image models for the new dropdown.
-			$imageModels = $this->getAvailableImageModels();
+			$modelSyncError = null;
 
-			return view('prompts.index', compact('templates', 'settings', 'imageModels'));
-			// MODIFICATION END
+			try {
+				$imageModels = $this->falModels->models();
+			} catch (Exception $e) {
+				report($e);
+				$imageModels = [];
+				$modelSyncError = $e->getMessage();
+			}
+
+			$modelsUpdatedAt = $this->falModels->lastUpdatedAt();
+
+			return view('prompts.index', compact(
+				'templates',
+				'settings',
+				'imageModels',
+				'modelSyncError',
+				'modelsUpdatedAt'
+			));
+		}
+
+		public function refreshModels()
+		{
+			try {
+				$models = $this->falModels->refreshModels();
+
+				return response()->json([
+					'success' => true,
+					'count' => count($models),
+				]);
+			} catch (Exception $e) {
+				report($e);
+
+				return response()->json([
+					'success' => false,
+					'message' => $e->getMessage(),
+				], 502);
+			}
+		}
+
+		public function modelPricing(Request $request)
+		{
+			$validated = $request->validate([
+				'endpoint_id' => ['required', 'string', 'max:255'],
+			]);
+
+			try {
+				return response()->json([
+					'success' => true,
+					'price' => $this->falModels->price($validated['endpoint_id']),
+				]);
+			} catch (Exception $e) {
+				report($e);
+
+				return response()->json([
+					'success' => false,
+					'message' => $e->getMessage(),
+				], 502);
+			}
 		}
 
 		public function generate(Request $request)
@@ -431,15 +445,13 @@
 		{
 			// Get queued prompts for the current user
 			$queuedPrompts = Prompt::where('user_id', auth()->id())
-				->whereIn('render_status', ['queued', 'pending', null]) // Not yet processed
+				->where('render_status', 0)
 				->orderBy('created_at', 'desc')
 				->get();
 
 			$failedPrompts = Prompt::where('user_id', auth()->id())
-				->where('render_status', 4) // Status for failed
-				->orWhere('render_status', 3) // In progress
-				->orWhere('render_status', 1) // In progress
-				->orderBy('updated_at', 'desc') // Show most recently failed first
+				->where('render_status', 4)
+				->orderBy('updated_at', 'desc')
 				->get();
 
 			return view('prompts.queue', compact('queuedPrompts', 'failedPrompts'));
@@ -470,6 +482,19 @@
 				'success' => true,
 				'message' => "Successfully deleted $deleted queued prompts",
 				'deleted_count' => $deleted
+			]);
+		}
+
+		public function deleteAllFailedPrompts()
+		{
+			$deleted = Prompt::where('user_id', auth()->id())
+				->where('render_status', 4)
+				->delete();
+
+			return response()->json([
+				'success' => true,
+				'message' => "Successfully deleted {$deleted} failed generations",
+				'deleted_count' => $deleted,
 			]);
 		}
 

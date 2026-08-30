@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="drawWithAiV2ModalLabel">Draw with AI v2 (Image Edit)</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<form id="draw-with-ai-v2-form">
@@ -17,18 +17,24 @@
 						<label class="form-label fw-bold">Image Prompt:</label>
 						<p class="form-control-plaintext p-2 bg-body-secondary rounded" id="draw-v2-image-prompt-text"></p>
 					</div>
-					{{-- START MODIFICATION: Add model selection dropdown. --}}
 					<div class="mb-3">
 						<label for="draw-v2-model" class="form-label">AI Model</label>
-						<select class="form-select" id="draw-v2-model">
-							<option value="gemini-25-flash-image/edit" selected>Gemini 2.5 Flash Image Edit ($0.04)</option>
-							<option value="nano-banana-2/edit">Nano Banana 2 Image Edit ($0.16)</option>
-							<option value="qwen-image-2/edit">Qwen Image Edit 2 ($0.035)</option>
-							<option value="qwen-image-2/pro/edit">Qwen Image Edit 2 Pro ($0.075)</option>
-							<option value="bytedance/seedream/v4.5/edit">SeeDream v4.5 Edit ($0.04)</option>
+						<select class="form-select" id="draw-v2-model" required>
+							<option value="" selected disabled>Select an image-to-image model…</option>
+							@forelse($imageModels as $model)
+								@php
+									$metadata = $model['metadata'] ?? [];
+									$displayName = $metadata['display_name'] ?? $model['endpoint_id'];
+								@endphp
+								<option value="{{ $model['endpoint_id'] }}">{{ $displayName }} — {{ $model['endpoint_id'] }}</option>
+							@empty
+								<option value="" disabled>No cached image-to-image models available.</option>
+							@endforelse
 						</select>
+						<p id="draw-v2-model-price" class="mt-2 text-sm text-slate-500 dark:text-slate-400" aria-live="polite">
+							Select a model to load its current price.
+						</p>
 					</div>
-					{{-- END MODIFICATION --}}
 					<div class="mb-3">
 						<label class="form-label fw-bold">Input Images (click to remove):</label>
 						<div id="draw-v2-input-images-container" class="d-flex flex-wrap gap-2 border p-2 rounded" style="min-height: 110px;">
@@ -79,7 +85,7 @@
 				</form>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="generate-image-v2-btn">
 					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 					Generate Image

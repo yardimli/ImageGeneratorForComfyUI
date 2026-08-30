@@ -4,8 +4,10 @@
 
 	use App\Models\Prompt;
 	use App\Models\PromptSetting;
+	use App\Services\FalModelService;
 	use Illuminate\Http\Request;
 	use Illuminate\Support\Facades\Log;
+	use Illuminate\Validation\Rule;
 	use Throwable;
 
 	/**
@@ -18,9 +20,63 @@
 		 *
 		 * @return \Illuminate\View\View
 		 */
-		public function index()
+		public function index(FalModelService $falModels)
 		{
-			return view('image-edit.index');
+			$modelSyncError = null;
+
+			try {
+				$imageModels = $falModels->models('image-to-image');
+			} catch (Throwable $exception) {
+				report($exception);
+				$imageModels = [];
+				$modelSyncError = $exception->getMessage();
+			}
+
+			return view('image-edit.index', [
+				'imageModels' => $imageModels,
+				'modelSyncError' => $modelSyncError,
+				'modelsUpdatedAt' => $falModels->lastUpdatedAt('image-to-image'),
+			]);
+		}
+
+		public function refreshModels(FalModelService $falModels)
+		{
+			try {
+				$models = $falModels->refreshModels('image-to-image');
+
+				return response()->json([
+					'success' => true,
+					'count' => count($models),
+				]);
+			} catch (Throwable $exception) {
+				report($exception);
+
+				return response()->json([
+					'success' => false,
+					'message' => $exception->getMessage(),
+				], 502);
+			}
+		}
+
+		public function modelPricing(Request $request, FalModelService $falModels)
+		{
+			$validated = $request->validate([
+				'endpoint_id' => ['required', 'string', 'max:255'],
+			]);
+
+			try {
+				return response()->json([
+					'success' => true,
+					'price' => $falModels->price($validated['endpoint_id']),
+				]);
+			} catch (Throwable $exception) {
+				report($exception);
+
+				return response()->json([
+					'success' => false,
+					'message' => $exception->getMessage(),
+				], 502);
+			}
 		}
 
 		/**
@@ -29,12 +85,22 @@
 		 * @param  \Illuminate\Http\Request  $request
 		 * @return \Illuminate\Http\JsonResponse
 		 */
-		public function generate(Request $request)
+		public function generate(Request $request, FalModelService $falModels)
 		{
-			// START MODIFICATION: Add model to validation rules.
+			try {
+				$allowedModels = array_column($falModels->models('image-to-image'), 'endpoint_id');
+			} catch (Throwable $exception) {
+				report($exception);
+
+				return response()->json([
+					'success' => false,
+					'message' => 'Image-to-image models are currently unavailable.',
+				], 503);
+			}
+
 			$validated = $request->validate([
 				'prompt' => 'required|string',
-				'model' => 'required|string',
+				'model' => ['required', 'string', Rule::in($allowedModels)],
 				'width' => 'required|integer|min:1',
 				'height' => 'required|integer|min:1',
 				'upload_to_s3' => 'required|boolean',
@@ -42,10 +108,9 @@
 				'input_images' => 'present|array|min:1',
 				'input_images.*' => 'string',
 			]);
-			// END MODIFICATION
 
 			try {
-				$model = $validated['model']; // MODIFICATION: Use model from request instead of hardcoded value.
+				$model = $validated['model'];
 
 				$promptSetting = PromptSetting::create([
 					'user_id' => auth()->id(),
@@ -115,6 +180,8 @@
 						'status' => 'ready',
 						'filename' => $prompt->filename,
 						'thumbnail' => $prompt->thumbnail,
+						'preview_url' => $prompt->preview_url,
+						'preview_thumbnail_url' => $prompt->preview_thumbnail_url,
 					]);
 				}
 

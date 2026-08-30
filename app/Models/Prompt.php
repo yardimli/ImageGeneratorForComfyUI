@@ -2,6 +2,7 @@
 
 	namespace App\Models;
 
+	use App\Support\ImageUrl;
 	use Illuminate\Database\Eloquent\Factories\HasFactory;
 	use Illuminate\Database\Eloquent\Model;
 
@@ -51,6 +52,21 @@
 			'upload_to_s3' => 'boolean',
 			'input_images' => 'array', // END MODIFICATION
 		];
+
+		protected $appends = [
+			'preview_url',
+			'preview_thumbnail_url',
+		];
+
+		public function getPreviewUrlAttribute(): ?string
+		{
+			return ImageUrl::preview($this->attributes['filename'] ?? null);
+		}
+
+		public function getPreviewThumbnailUrlAttribute(): ?string
+		{
+			return ImageUrl::preview($this->attributes['thumbnail'] ?? null) ?? $this->preview_url;
+		}
 
 		public function setting()
 		{

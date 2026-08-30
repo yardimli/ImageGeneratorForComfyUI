@@ -1,3 +1,6 @@
+@php
+	$pageImagePath = data_get($page ?? null, 'image_path');
+@endphp
 <div class="card mb-3 page-card" data-id="{{ $page->id ?? '' }}">
 	<div class="card-header d-flex justify-content-between align-items-center">
 		<div class="d-flex align-items-center gap-2">
@@ -30,7 +33,7 @@
 					<label class="form-label">Story Text</label>
 					<textarea name="pages[{{ $index }}][story_text]" class="form-control story-text-textarea" rows="8">{{ $page->story_text ?? '' }}</textarea>
 					
-					<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-story-text-btn" data-bs-toggle="modal" data-bs-target="#rewriteTextModal">
+					<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-story-text-btn" data-ui-toggle="modal" data-ui-target="#rewriteTextModal">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 						Rewrite
 					</button>
@@ -38,7 +41,7 @@
 				<div class="mb-3">
 					<label class="form-label">Image Prompt</label>
 					<textarea name="pages[{{ $index }}][image_prompt]" class="form-control image-prompt-textarea" rows="5" data-initial-value="{{ e($page->image_prompt ?? '') }}">{{ $page->image_prompt ?? '' }}</textarea>
-					<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-bs-toggle="modal" data-bs-target="#generatePromptModal">
+					<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-ui-toggle="modal" data-ui-target="#generatePromptModal">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-magic me-1" viewBox="0 0 16 16"><path d="M9.5 2.672a.5.5 0 1 0 1 0V.843a.5.5 0 0 0-1 0v1.829Zm4.5.035A.5.5 0 0 0 13.293 2L12 3.293a.5.5 0 1 0 .707.707L14 2.707a.5.5 0 0 0 0-.707ZM7.293 4L8 3.293a.5.5 0 1 0-.707-.707L6.586 3.5a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L8 4.707 7.293 4Zm-.646 10.646a.5.5 0 0 0 .708 0L8 13.914l-1.06-1.06a.5.5 0 0 0-.854.353v.534a.5.5 0 0 0 .146.354l.646.646ZM.5 10.828a.5.5 0 0 0 1 0V9.157a.5.5 0 0 0-1 0v1.671Zm1.829-4.5A.5.5 0 0 0 2 6.586l.707.707a.5.5 0 0 0 .707 0L4 6.586a.5.5 0 0 0 0-.707L2.707 4.586a.5.5 0 0 0-.707 0ZM10.828.5a.5.5 0 0 0 0 1h1.671a.5.5 0 0 0 0-1h-1.671Z"/><path d="M3.5 13.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm9.025-5.99a1.5 1.5 0 0 0-1.025.433L6.932 12.47a1.5 1.5 0 0 0-1.025.433L3.025 15.8a.5.5 0 0 0 .854.353L5.5 14.5l.646.646a.5.5 0 0 0 .708 0L8.5 13.5l.646.646a.5.5 0 0 0 .708 0L11.5 12.5l.646.646a.5.5 0 0 0 .708 0L14.5 11.5l.646.646a.5.5 0 0 0 .854-.353l-2.882-2.882a1.5 1.5 0 0 0-1.025-.433Z"/></svg>
 						Fill with AI
 					</button>
@@ -47,7 +50,7 @@
 						Draw with AI
 					</button>
 					{{-- START MODIFICATION: Add new "Draw with AI v2" button --}}
-					<button type="button" class="btn btn-sm btn-outline-primary mt-2 draw-with-ai-v2-btn" data-bs-toggle="modal" data-bs-target="#drawWithAiV2Modal" data-story-page-id="{{ $page->id ?? '' }}">
+					<button type="button" class="btn btn-sm btn-outline-primary mt-2 draw-with-ai-v2-btn" data-ui-toggle="modal" data-ui-target="#drawWithAiV2Modal" data-story-page-id="{{ $page->id ?? '' }}">
 						<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-images me-1" viewBox="0 0 16 16">
 							<path d="M4.502 9a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
 							<path d="M14.002 13a2 2 0 0 1-2 2h-10a2 2 0 0 1-2-2V5A2 2 0 0 1 2 3a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-1.998 2zM14 2H4a1 1 0 0 0-1 1h9.002a2 2 0 0 1 2 2v7A1 1 0 0 0 15 11V3a1 1 0 0 0-1-1zM2.002 4a1 1 0 0 0-1 1v8l2.646-2.354a.5.5 0 0 1 .63-.062l2.66 1.773 3.71-3.71a.5.5 0 0 1 .577-.094l1.777 1.947V5a1 1 0 0 0-1-1h-10z"/>
@@ -68,7 +71,7 @@
 									       {{ ($page && $page->characters->contains($character->id)) ? 'checked' : '' }}
 									       data-description="{{ e($character->name . ": " . $character->description) }}"
 									       data-image-path="{{ $character->image_path ?? '' }}">
-									<img src="{{ $character->image_path ? asset($character->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $character->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
+									<img src="{{ $character->image_path ? \App\Support\ImageUrl::preview($character->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $character->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
 									<label class="form-check-label" for="char_{{ $index }}_{{ $character->id }}">{{ $character->name }}</label>
 								</div>
 								{{-- END MODIFICATION --}}
@@ -87,7 +90,7 @@
 									       {{ ($page && $page->places->contains($place->id)) ? 'checked' : '' }}
 									       data-description="{{ e($place->name . ": " .$place->description) }}"
 									       data-image-path="{{ $place->image_path ?? '' }}">
-									<img src="{{ $place->image_path ? asset($place->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $place->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
+									<img src="{{ $place->image_path ? \App\Support\ImageUrl::preview($place->image_path) : 'https://via.placeholder.com/48' }}" alt="{{ $place->name }}" class="rounded me-2" style="width: 48px; height: 48px; object-fit: cover;">
 									<label class="form-check-label" for="place_{{ $index }}_{{ $place->id }}">{{ $place->name }}</label>
 								</div>
 								{{-- END MODIFICATION --}}
@@ -111,7 +114,7 @@
 						</div>
 						<div class="mt-2">
 							<button type="button" class="btn btn-sm btn-success add-dictionary-entry-btn">Add Entry</button>
-							<button type="button" class="btn btn-sm btn-info generate-dictionary-btn" data-bs-toggle="modal" data-bs-target="#dictionaryModal" data-page-id="{{ $page->id ?? '' }}">
+							<button type="button" class="btn btn-sm btn-info generate-dictionary-btn" data-ui-toggle="modal" data-ui-target="#dictionaryModal" data-page-id="{{ $page->id ?? '' }}">
 								Generate with AI
 							</button>
 						</div>
@@ -131,16 +134,16 @@
 					@endif
 				</label>
 				<div class="image-upload-container mb-2 position-relative" style="min-height: 400px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
-					<img src="{{ $page->image_path ?? 'https://picsum.photos/200' }}"
+					<img src="{{ $pageImagePath ? \App\Support\ImageUrl::preview($pageImagePath) : 'https://picsum.photos/200' }}"
 					     class="page-image-preview"
-					     style="max-width: 100%; object-fit: contain; {{ $page && $page->image_path ? 'cursor: pointer;' : '' }}"
-					     @if($page && $page->image_path && isset($page->prompt_data))
-						     data-bs-toggle="modal"
-					     data-bs-target="#imageDetailModal"
-					     data-image-url="{{ $page->image_path }}"
+					     style="max-width: 100%; object-fit: contain; {{ $pageImagePath ? 'cursor: pointer;' : '' }}"
+					     @if($pageImagePath && isset($page->prompt_data))
+						     data-ui-toggle="modal"
+					     data-ui-target="#imageDetailModal"
+					     data-image-url="{{ \App\Support\ImageUrl::preview($pageImagePath) }}"
 					     data-prompt-id="{{ $page->prompt_data->id }}"
 					     data-upscale-status="{{ $page->prompt_data->upscale_status }}"
-					     data-upscale-url="{{ $page->prompt_data->upscale_url ? asset('storage/upscaled/' . $page->prompt_data->upscale_url) : '' }}"
+					     data-upscale-url="{{ $page->prompt_data->upscale_url ? \App\Support\ImageUrl::preview($page->prompt_data->upscale_url, 'storage/upscaled') : '' }}"
 						@endif
 					>
 					<div class="spinner-overlay d-none position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(var(--bs-body-color-rgb), 0.5);">
@@ -150,7 +153,7 @@
 						<div class="mt-2 text-light">Generating...</div>
 					</div>
 				</div>
-				<input type="hidden" name="pages[{{ $index }}][image_path]" class="image-path-input" value="{{ $page->image_path ?? '' }}">
+				<input type="hidden" name="pages[{{ $index }}][image_path]" class="image-path-input" value="{{ $pageImagePath ?? '' }}">
 				<button type="button" class="btn btn-sm btn-primary select-image-btn">Upload/Select Image</button>
 				
 				@php
@@ -159,12 +162,12 @@
 					// Prepare parameters for the Image Editor route.
 					$kontextLoraParams = [
 						'return_url' => route('kontext-lora.index'),
-						'bg_url' => $page->image_path ?? null,
+						'bg_url' => $pageImagePath,
 						'overlay_urls' => $characterImageUrls,
 					];
 				@endphp
 				<a href="{{ route('image-editor.index', $kontextLoraParams) }}"
-				   class="btn btn-sm btn-outline-warning {{ !($page && $page->image_path) ? 'disabled' : '' }}"
+				   class="btn btn-sm btn-outline-warning {{ !$pageImagePath ? 'disabled' : '' }}"
 				   target="_blank"
 				   title="Open in Image Editor to compose for Kontext Lora">
 					Kontext Lora

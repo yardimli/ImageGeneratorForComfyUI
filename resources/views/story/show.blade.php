@@ -52,7 +52,7 @@
 					<div class="card bg-body-tertiary mb-4">
 						<div class="card-header">
 							<h5 class="mb-0">
-								<a class="text-decoration-none" data-bs-toggle="collapse" href="#ai-details" role="button" aria-expanded="false" aria-controls="ai-details">
+								<a class="text-decoration-none" data-ui-toggle="collapse" href="#ai-details" role="button" aria-expanded="false" aria-controls="ai-details">
 									AI Generation Details
 								</a>
 							</h5>
@@ -80,7 +80,7 @@
 					<div class="row mb-5 align-items-center story-page-row">
 						<div class="col-md-6 page-image-col">
 							@if($page->image_path)
-								<img src="{{ asset($page->image_path) }}" class="img-fluid rounded shadow-sm w-100" alt="Page image" style="aspect-ratio: 1/1; object-fit: cover;">
+								<img src="{{ \App\Support\ImageUrl::preview($page->image_path) }}" class="img-fluid rounded shadow-sm w-100" alt="Page image" style="aspect-ratio: 1/1; object-fit: cover;">
 							@else
 								<div class="d-flex align-items-center justify-content-center bg-body-secondary rounded shadow-sm w-100" style="aspect-ratio: 1/1;">
 									<span class="text-muted">No Image</span>
@@ -103,5 +103,4 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 @endsection

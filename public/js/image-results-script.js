@@ -8,5 +8,5 @@ function openImageModal(filename) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-	imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+	imageModal = new DreamModal(document.getElementById('imageModal'));
 });

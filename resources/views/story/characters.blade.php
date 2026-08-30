@@ -41,7 +41,7 @@
 									<div class="mb-3">
 										<label class="form-label">Description</label>
 										<textarea name="characters[{{ $index }}][description]" class="form-control asset-description" rows="5">{{ $character->description }}</textarea>
-										<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-bs-toggle="modal" data-bs-target="#rewriteAssetDescriptionModal">
+										<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-ui-toggle="modal" data-ui-target="#rewriteAssetDescriptionModal">
 											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 											Rewrite
 										</button>
@@ -49,7 +49,7 @@
 									<div class="mb-3">
 										<label class="form-label">Image Prompt</label>
 										<textarea name="characters[{{ $index }}][image_prompt]" class="form-control image-prompt-textarea" rows="3" data-initial-value="{{ e($character->image_prompt ?? '') }}">{{ $character->image_prompt ?? '' }}</textarea>
-										<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-bs-toggle="modal" data-bs-target="#generatePromptModal">
+										<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-ui-toggle="modal" data-ui-target="#generatePromptModal">
 											<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-magic me-1" viewBox="0 0 16 16"><path d="M9.5 2.672a.5.5 0 1 0 1 0V.843a.5.5 0 0 0-1 0v1.829Zm4.5.035A.5.5 0 0 0 13.293 2L12 3.293a.5.5 0 1 0 .707.707L14 2.707a.5.5 0 0 0 0-.707ZM7.293 4L8 3.293a.5.5 0 1 0-.707-.707L6.586 3.5a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L8 4.707 7.293 4Zm-.646 10.646a.5.5 0 0 0 .708 0L8 13.914l-1.06-1.06a.5.5 0 0 0-.854.353v.534a.5.5 0 0 0 .146.354l.646.646ZM.5 10.828a.5.5 0 0 0 1 0V9.157a.5.5 0 0 0-1 0v1.671Zm1.829-4.5A.5.5 0 0 0 2 6.586l.707.707a.5.5 0 0 0 .707 0L4 6.586a.5.5 0 0 0 0-.707L2.707 4.586a.5.5 0 0 0-.707 0ZM10.828.5a.5.5 0 0 0 0 1h1.671a.5.5 0 0 0 0-1h-1.671Z"/><path d="M3.5 13.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm9.025-5.99a1.5 1.5 0 0 0-1.025.433L6.932 12.47a1.5 1.5 0 0 0-1.025.433L3.025 15.8a.5.5 0 0 0 .854.353L5.5 14.5l.646.646a.5.5 0 0 0 .708 0L8.5 13.5l.646.646a.5.5 0 0 0 .708 0L11.5 12.5l.646.646a.5.5 0 0 0 .708 0L14.5 11.5l.646.646a.5.5 0 0 0 .854-.353l-2.882-2.882a1.5 1.5 0 0 0-1.025-.433Z"/></svg>
 											Fill with AI
 										</button>
@@ -65,16 +65,16 @@
 								<div class="col-md-4">
 									<label class="form-label">Image</label>
 									<div class="image-upload-container mb-2 position-relative" style="min-height: 150px; border: 2px dashed #ccc; padding: 10px; text-align: center;">
-										<img src="{{ $character->image_path ?: 'https://picsum.photos/200' }}"
+										<img src="{{ $character->image_path ? \App\Support\ImageUrl::preview($character->image_path) : 'https://picsum.photos/200' }}"
 										     class="asset-image-preview"
 										     style="max-width: 100%; object-fit: contain; {{ $character->image_path ? 'cursor: pointer;' : '' }}"
 										     @if($character->image_path && isset($character->prompt_data))
-											     data-bs-toggle="modal"
-										     data-bs-target="#imageDetailModal"
-										     data-image-url="{{ $character->image_path }}"
+											     data-ui-toggle="modal"
+										     data-ui-target="#imageDetailModal"
+										     data-image-url="{{ \App\Support\ImageUrl::preview($character->image_path) }}"
 										     data-prompt-id="{{ $character->prompt_data->id }}"
 										     data-upscale-status="{{ $character->prompt_data->upscale_status }}"
-										     data-upscale-url="{{ $character->prompt_data->upscale_url ? asset('storage/upscaled/' . $character->prompt_data->upscale_url) : '' }}"
+										     data-upscale-url="{{ $character->prompt_data->upscale_url ? \App\Support\ImageUrl::preview($character->prompt_data->upscale_url, 'storage/upscaled') : '' }}"
 											@endif
 										>
 										<div class="spinner-overlay d-none position-absolute top-0 start-0 w-100 h-100 d-flex flex-column justify-content-center align-items-center" style="background-color: rgba(var(--bs-body-color-rgb), 0.5);">
@@ -104,14 +104,14 @@
 	@include('story.partials.cropper-modal')
 	@include('story.partials.history-modal')
 	@include('story.partials.modals.generate-prompt-modal', ['models' => $models])
-	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $imageModels])
+	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $imageModels, 'showFalPricing' => true])
 	@include('story.partials.modals.image-detail-modal')
 	<div class="modal fade" id="rewriteAssetDescriptionModal" tabindex="-1" aria-labelledby="rewriteAssetDescriptionModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="rewriteAssetDescriptionModalLabel">Rewrite Description with AI</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="mb-3">
@@ -148,7 +148,7 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-success d-none" id="replace-asset-text-btn">Replace Description</button>
 				</div>
 			</div>
@@ -173,7 +173,7 @@
 						<div class="mb-3">
 							<label class="form-label">Description</label>
 							<textarea name="characters[__INDEX__][description]" class="form-control asset-description" rows="5"></textarea>
-							<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-bs-toggle="modal" data-bs-target="#rewriteAssetDescriptionModal">
+							<button type="button" class="btn btn-sm btn-outline-secondary mt-2 rewrite-asset-description-btn" data-ui-toggle="modal" data-ui-target="#rewriteAssetDescriptionModal">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square me-1" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
 								Rewrite
 							</button>
@@ -181,7 +181,7 @@
 						<div class="mb-3">
 							<label class="form-label">Image Prompt</label>
 							<textarea name="characters[__INDEX__][image_prompt]" class="form-control image-prompt-textarea" rows="3" data-initial-value=""></textarea>
-							<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-bs-toggle="modal" data-bs-target="#generatePromptModal">
+							<button type="button" class="btn btn-sm btn-outline-info mt-2 generate-prompt-btn" data-ui-toggle="modal" data-ui-target="#generatePromptModal">
 								<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-magic me-1" viewBox="0 0 16 16"><path d="M9.5 2.672a.5.5 0 1 0 1 0V.843a.5.5 0 0 0-1 0v1.829Zm4.5.035A.5.5 0 0 0 13.293 2L12 3.293a.5.5 0 1 0 .707.707L14 2.707a.5.5 0 0 0 0-.707ZM7.293 4L8 3.293a.5.5 0 1 0-.707-.707L6.586 3.5a.5.5 0 0 0 0 .707l.707.707a.5.5 0 0 0 .707 0L8 4.707 7.293 4Zm-.646 10.646a.5.5 0 0 0 .708 0L8 13.914l-1.06-1.06a.5.5 0 0 0-.854.353v.534a.5.5 0 0 0 .146.354l.646.646ZM.5 10.828a.5.5 0 0 0 1 0V9.157a.5.5 0 0 0-1 0v1.671Zm1.829-4.5A.5.5 0 0 0 2 6.586l.707.707a.5.5 0 0 0 .707 0L4 6.586a.5.5 0 0 0 0-.707L2.707 4.586a.5.5 0 0 0-.707 0ZM10.828.5a.5.5 0 0 0 0 1h1.671a.5.5 0 0 0 0-1h-1.671Z"/><path d="M3.5 13.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm9.025-5.99a1.5 1.5 0 0 0-1.025.433L6.932 12.47a1.5 1.5 0 0 0-1.025.433L3.025 15.8a.5.5 0 0 0 .854.353L5.5 14.5l.646.646a.5.5 0 0 0 .708 0L8.5 13.5l.646.646a.5.5 0 0 0 .708 0L11.5 12.5l.646.646a.5.5 0 0 0 .708 0L14.5 11.5l.646.646a.5.5 0 0 0 .854-.353l-2.882-2.882a1.5 1.5 0 0 0-1.025-.433Z"/></svg>
 								Fill with AI
 							</button>
@@ -233,10 +233,13 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	<script>
 		window.promptTemplates = @json($promptTemplates ?? []);
+		window.storyFalModels = {
+			pricingUrl: @json(route('prompts.models.pricing')),
+			textToImage: {{ Illuminate\Support\Js::from($imageModels) }},
+		};
 	</script>
 	<script src="{{ asset('js/story-asset-manager.js') }}"></script>
 	{{-- START MODIFICATION: Add script for the "Copy to Description" button --}}

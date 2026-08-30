@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	const imageUrlInput = document.getElementById('imageUrlInput');
 	const kontextLoraForm = document.getElementById('kontextLoraForm');
 	
-	const promptQueuedModal = new bootstrap.Modal(document.getElementById('promptQueuedModal'));
+	const promptQueuedModal = new DreamModal(document.getElementById('promptQueuedModal'));
 	
 	const loraSelect = document.getElementById('loraNameSelect');
 	const loraInfo = document.getElementById('loraInfo');

@@ -21,6 +21,7 @@
 			'name',
 			'email',
 			'password',
+			'is_admin',
 		];
 
 		/**
@@ -41,10 +42,26 @@
 		protected $casts = [
 			'email_verified_at' => 'datetime',
 			'password' => 'hashed',
+			'is_admin' => 'boolean',
 		];
 
 		public function stories()
 		{
 			return $this->hasMany(Story::class);
+		}
+
+		public function prompts()
+		{
+			return $this->hasMany(Prompt::class);
+		}
+
+		public function albumCovers()
+		{
+			return $this->hasMany(GoodAlbumCover::class);
+		}
+
+		public function dictionaryEntries()
+		{
+			return $this->hasMany(PromptDictionaryEntry::class);
 		}
 	}

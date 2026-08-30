@@ -5,10 +5,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// --- Image Handling Logic (shared with story-asset-manager.js) ---
 	const cropperModalEl = document.getElementById('cropperModal');
-	const cropperModal = new bootstrap.Modal(cropperModalEl);
+	const cropperModal = new DreamModal(cropperModalEl);
 	const imageToCrop = document.getElementById('imageToCrop');
 	const historyModalEl = document.getElementById('historyModal');
-	const historyModal = new bootstrap.Modal(historyModalEl);
+	const historyModal = new DreamModal(historyModalEl);
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let cropper;
 	let activeImageUploadContainer = null;
@@ -26,7 +26,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			.replace(/&#x([0-9a-fA-F]+);/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
 	}
 	
-	cropperModalEl.addEventListener('shown.bs.modal', function () {
+	cropperModalEl.addEventListener('shown.dream.modal', function () {
 		if (cropper) cropper.destroy();
 		cropper = new Cropper(imageToCrop, {
 			aspectRatio: 1,
@@ -35,7 +35,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	});
 	
-	cropperModalEl.addEventListener('hidden.bs.modal', function () {
+	cropperModalEl.addEventListener('hidden.dream.modal', function () {
 		if (cropper) {
 			cropper.destroy();
 			cropper = null;
@@ -78,7 +78,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				formData.append('image', blob, 'full-image.png'); // Filename can be anything.
 				formData.append('_token', csrfToken);
 				
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			formData.append('_token', csrfToken);
 			
 			try {
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const container = document.getElementById('historyImagesContainer');
 		container.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 		
-		const endpoint = source === 'uploads' ? `/image-mix/uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
+		const endpoint = source === 'uploads' ? `/image-uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
 		const response = await fetch(endpoint);
 		const data = await response.json();
 		
@@ -356,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {
-		const generatePromptModal = new bootstrap.Modal(generatePromptModalEl);
+		const generatePromptModal = new DreamModal(generatePromptModalEl);
 		const writePromptBtn = document.getElementById('write-prompt-btn');
 		const updatePromptBtn = document.getElementById('update-prompt-btn');
 		const promptResultArea = document.getElementById('prompt-result-area');
@@ -381,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 		
 		// Load saved settings when modal is shown
-		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
+		generatePromptModalEl.addEventListener('shown.dream.modal', () => {
 			const savedModel = localStorage.getItem(promptModelKey);
 			if (savedModel) {
 				document.getElementById('prompt-model').value = savedModel;
@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		// Reset modal on close
-		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
+		generatePromptModalEl.addEventListener('hidden.dream.modal', () => {
 			activeImagePromptTextarea = null;
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
@@ -503,7 +503,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	const rewriteTextModalEl = document.getElementById('rewriteTextModal');
 	if (rewriteTextModalEl) {
-		const rewriteTextModal = new bootstrap.Modal(rewriteTextModalEl);
+		const rewriteTextModal = new DreamModal(rewriteTextModalEl);
 		const rewriteStyleSelect = document.getElementById('rewrite-style');
 		const rewriteFullPromptTextarea = document.getElementById('rewrite-full-prompt');
 		const rewriteModelSelect = document.getElementById('rewrite-model');
@@ -555,7 +555,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			});
 		}
 		
-		rewriteTextModalEl.addEventListener('shown.bs.modal', () => {
+		rewriteTextModalEl.addEventListener('shown.dream.modal', () => {
 			if (!activeStoryTextarea) {
 				alert('Could not find the story text. Please close this and try again.');
 				rewriteTextModal.hide();
@@ -582,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			updateRewritePromptPreview();
 		});
 		
-		rewriteTextModalEl.addEventListener('hidden.bs.modal', () => {
+		rewriteTextModalEl.addEventListener('hidden.dream.modal', () => {
 			activeStoryTextarea = null;
 			originalText = '';
 			rewriteResultArea.classList.add('d-none');
@@ -648,7 +648,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	const dictionaryModalEl = document.getElementById('dictionaryModal');
 	if (dictionaryModalEl) {
-		const dictionaryModal = new bootstrap.Modal(dictionaryModalEl);
+		const dictionaryModal = new DreamModal(dictionaryModalEl);
 		const dictionaryPromptTextarea = document.getElementById('dictionary-prompt-text');
 		const dictionaryModelSelect = document.getElementById('dictionary-model');
 		const generateDictionaryBtn = document.getElementById('generate-dictionary-btn');
@@ -684,7 +684,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		// Load saved model on modal show
-		dictionaryModalEl.addEventListener('shown.bs.modal', () => {
+		dictionaryModalEl.addEventListener('shown.dream.modal', () => {
 			const savedModel = localStorage.getItem(dictionaryModelKey);
 			if (savedModel && dictionaryModelSelect) {
 				dictionaryModelSelect.value = savedModel;
@@ -699,7 +699,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 		
 		// Reset modal on close
-		dictionaryModalEl.addEventListener('hidden.bs.modal', () => {
+		dictionaryModalEl.addEventListener('hidden.dream.modal', () => {
 			activePageCard = null;
 			dictionaryPromptTextarea.value = '';
 			dictionaryResultContainer.innerHTML = '';
@@ -818,29 +818,93 @@ document.addEventListener('DOMContentLoaded', function () {
 	});
 	
 	
+	function setupFalModelPricing(selectId, priceId, models, categoryLabel) {
+		const select = document.getElementById(selectId);
+		const price = document.getElementById(priceId);
+		const config = window.storyFalModels || {};
+		const modelsByEndpoint = Object.fromEntries((models || []).map(model => [model.endpoint_id, model]));
+		let latestRequest = 0;
+
+		if (!select || !price || !config.pricingUrl) {
+			return () => {};
+		}
+
+		const loadPrice = async () => {
+			const endpointId = select.value;
+			const requestNumber = ++latestRequest;
+
+			if (!endpointId) {
+				price.textContent = 'Select a model to load its current price.';
+				return;
+			}
+
+			console.log(`Selected fal.ai ${categoryLabel} model metadata:`, modelsByEndpoint[endpointId]);
+			price.textContent = 'Loading current price…';
+
+			try {
+				const url = new URL(config.pricingUrl, window.location.origin);
+				url.searchParams.set('endpoint_id', endpointId);
+				const response = await fetch(url, { headers: { Accept: 'application/json' } });
+				const data = await response.json();
+
+				if (requestNumber !== latestRequest) return;
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not load pricing.');
+				}
+				if (!data.price) {
+					price.textContent = 'No fixed price is available for this model.';
+					return;
+				}
+
+				const amount = new Intl.NumberFormat(undefined, {
+					style: 'currency',
+					currency: data.price.currency || 'USD',
+					minimumFractionDigits: 0,
+					maximumFractionDigits: 6,
+				}).format(Number(data.price.unit_price));
+				price.textContent = `${amount} per ${data.price.unit}`;
+			} catch (error) {
+				if (requestNumber !== latestRequest) return;
+				console.error(`Failed to load fal.ai ${categoryLabel} pricing:`, error);
+				price.textContent = error.message;
+			}
+		};
+
+		select.addEventListener('change', loadPrice);
+		return loadPrice;
+	}
+
 	// Logic for "Draw with AI" Modal
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {
-		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
+		const drawWithAiModal = new DreamModal(drawWithAiModalEl);
 		const generateImageBtn = document.getElementById('generate-image-btn');
 		const drawAssetIdInput = document.getElementById('draw-asset-id');
 		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
 		const drawHeightInput = document.getElementById('draw-height');
+		const drawModelSelect = document.getElementById('draw-model');
+		const loadDrawModelPrice = setupFalModelPricing(
+			'draw-model',
+			'draw-model-price',
+			window.storyFalModels?.textToImage,
+			'text-to-image'
+		);
 		
 		const drawModelKey = 'storyEditor_drawModel';
 		
 		// Load saved settings when modal is shown
-		drawWithAiModalEl.addEventListener('shown.bs.modal', () => {
+		drawWithAiModalEl.addEventListener('shown.dream.modal', () => {
 			const savedModel = localStorage.getItem(drawModelKey);
-			if (savedModel) {
-				document.getElementById('draw-model').value = savedModel;
+			if (savedModel && Array.from(drawModelSelect.options).some(option => option.value === savedModel)) {
+				drawModelSelect.value = savedModel;
+				loadDrawModelPrice();
 			}
 		});
 		
 		// Save settings on change
-		document.getElementById('draw-model').addEventListener('change', (e) => {
+		drawModelSelect.addEventListener('change', (e) => {
 			localStorage.setItem(drawModelKey, e.target.value);
 		});
 		
@@ -931,6 +995,10 @@ document.addEventListener('DOMContentLoaded', function () {
 			}
 			
 			const model = document.getElementById('draw-model').value;
+			if (!model) {
+				alert('Please select a text-to-image model.');
+				return;
+			}
 			const width = drawWidthInput.value;
 			const height = drawHeightInput.value;
 			const upload_to_s3 = document.getElementById('draw-upload-to-s3').checked;
@@ -991,7 +1059,7 @@ document.addEventListener('DOMContentLoaded', function () {
 								spinner.classList.add('d-none');
 								
 								// Update image and inputs
-								imagePreview.src = statusData.filename;
+								imagePreview.src = statusData.preview_url || statusData.filename;
 								imagePathInput.value = statusData.filename;
 								
 								// Update the initial prompt data attribute to prevent false unsaved changes warnings
@@ -1002,7 +1070,7 @@ document.addEventListener('DOMContentLoaded', function () {
 								imagePreview.style.cursor = 'pointer';
 								imagePreview.dataset.bsToggle = 'modal';
 								imagePreview.dataset.bsTarget = '#imageDetailModal';
-								imagePreview.dataset.imageUrl = statusData.filename;
+								imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
 								imagePreview.dataset.promptId = statusData.prompt_id;
 								imagePreview.dataset.upscaleStatus = statusData.upscale_status;
 								imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
@@ -1031,15 +1099,32 @@ document.addEventListener('DOMContentLoaded', function () {
 	// START MODIFICATION: Add logic for "Draw with AI v2" Modal
 	const drawWithAiV2ModalEl = document.getElementById('drawWithAiV2Modal');
 	if (drawWithAiV2ModalEl) {
-		const drawWithAiV2Modal = new bootstrap.Modal(drawWithAiV2ModalEl);
+		const drawWithAiV2Modal = new DreamModal(drawWithAiV2ModalEl);
 		const generateImageV2Btn = document.getElementById('generate-image-v2-btn');
 		const drawV2AssetIdInput = document.getElementById('draw-v2-asset-id');
 		const drawV2ImagePromptText = document.getElementById('draw-v2-image-prompt-text');
 		const drawV2AspectRatioSelect = document.getElementById('draw-v2-aspect-ratio');
 		const drawV2WidthInput = document.getElementById('draw-v2-width');
 		const drawV2HeightInput = document.getElementById('draw-v2-height');
+		const drawV2ModelSelect = document.getElementById('draw-v2-model');
 		const inputImagesContainer = document.getElementById('draw-v2-input-images-container');
 		const thumbnailTemplate = document.getElementById('input-image-thumbnail-template');
+		const drawV2ModelKey = 'storyEditor_drawV2Model';
+		const loadDrawV2ModelPrice = setupFalModelPricing(
+			'draw-v2-model',
+			'draw-v2-model-price',
+			window.storyFalModels?.imageToImage,
+			'image-to-image'
+		);
+
+		const savedV2Model = localStorage.getItem(drawV2ModelKey);
+		if (savedV2Model && Array.from(drawV2ModelSelect.options).some(option => option.value === savedV2Model)) {
+			drawV2ModelSelect.value = savedV2Model;
+			loadDrawV2ModelPrice();
+		}
+		drawV2ModelSelect.addEventListener('change', (event) => {
+			localStorage.setItem(drawV2ModelKey, event.target.value);
+		});
 		
 		function setDrawV2Dimensions(width, height) {
 			drawV2WidthInput.value = width;
@@ -1115,6 +1200,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		generateImageV2Btn.addEventListener('click', async () => {
 			const storyPageId = drawV2AssetIdInput.value;
 			if (!storyPageId) return;
+			if (!drawV2ModelSelect.value) {
+				alert('Please select an image-to-image model.');
+				return;
+			}
 			
 			const inputImagePaths = Array.from(inputImagesContainer.querySelectorAll('.image-path-input')).map(input => input.value);
 			
@@ -1123,7 +1212,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			
 			// START MODIFICATION: Add model to request body.
 			const body = {
-				model: document.getElementById('draw-v2-model').value,
+				model: drawV2ModelSelect.value,
 				width: drawV2WidthInput.value,
 				height: drawV2HeightInput.value,
 				upload_to_s3: document.getElementById('draw-v2-upload-to-s3').checked,
@@ -1162,12 +1251,12 @@ document.addEventListener('DOMContentLoaded', function () {
 							spinner.classList.add('d-none');
 							const imagePreview = imageContainer.querySelector('.page-image-preview');
 							const imagePathInput = pageCard.querySelector('.image-path-input');
-							imagePreview.src = statusData.filename;
+							imagePreview.src = statusData.preview_url || statusData.filename;
 							imagePathInput.value = statusData.filename;
 							imagePreview.style.cursor = 'pointer';
 							imagePreview.dataset.bsToggle = 'modal';
 							imagePreview.dataset.bsTarget = '#imageDetailModal';
-							imagePreview.dataset.imageUrl = statusData.filename;
+							imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
 							imagePreview.dataset.promptId = statusData.prompt_id;
 							imagePreview.dataset.upscaleStatus = statusData.upscale_status;
 							imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
@@ -1189,13 +1278,13 @@ document.addEventListener('DOMContentLoaded', function () {
 	// Logic for Image Detail Modal with Upscaling
 	const imageDetailModalEl = document.getElementById('imageDetailModal');
 	if (imageDetailModalEl) {
-		const imageDetailModal = new bootstrap.Modal(imageDetailModalEl);
+		const imageDetailModal = new DreamModal(imageDetailModalEl);
 		const modalImage = document.getElementById('modalDetailImage');
 		const upscaleBtnContainer = document.getElementById('upscale-button-container');
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
 		let activeImageTrigger = null;
 		
-		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
+		imageDetailModalEl.addEventListener('show.dream.modal', function (event) {
 			const triggerElement = event.relatedTarget; // The image that was clicked
 			if (!triggerElement || !triggerElement.dataset.imageUrl) {
 				// If triggered by something else, or image has no URL, do nothing.

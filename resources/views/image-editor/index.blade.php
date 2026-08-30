@@ -84,7 +84,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="historyModalLabel">Select an Image</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<!-- Filters -->
@@ -128,7 +128,7 @@
 						<input type="file" id="newImageUploadInput" class="d-none" accept="image/*">
 					</div>
 					<div>
-						<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+						<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 						<button type="button" class="btn btn-primary" id="addSelectedHistoryImageBtn">Add Selected</button>
 					</div>
 				</div>
@@ -136,13 +136,13 @@
 		</div>
 	</div>
 	
-	<!-- Cropping Modal (Bootstrap 5) -->
+	<!-- Cropping Modal (Tailwind UI) -->
 	<div class="modal fade" id="crop-modal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
 		<div class="modal-dialog modal-lg">
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="cropModalLabel">Adjust Your Image</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="cropper-container-wrapper">
@@ -151,7 +151,7 @@
 				</div>
 				<div class="modal-footer">
 					<button id="use-full-image-btn" type="button" class="btn btn-info me-auto">Use Full Image (No Crop)</button>
-					<button id="cancel-crop-btn" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button id="cancel-crop-btn" type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button id="confirm-crop-btn" type="button" class="btn btn-primary">Confirm and Add</button>
 				</div>
 			</div>
@@ -184,7 +184,7 @@
 			
 			// History Modal
 			const historyModalEl = document.getElementById('historyModal');
-			const historyModal = new bootstrap.Modal(historyModalEl);
+			const historyModal = new DreamModal(historyModalEl);
 			const historySource = document.getElementById('historySource');
 			const historySort = document.getElementById('historySort');
 			const historyPerPage = document.getElementById('historyPerPage');
@@ -196,7 +196,7 @@
 			
 			// Crop Modal
 			const cropModalEl = document.getElementById('crop-modal');
-			const cropModal = new bootstrap.Modal(cropModalEl);
+			const cropModal = new DreamModal(cropModalEl);
 			const imageToCrop = document.getElementById('image-to-crop');
 			const useFullImageBtn = document.getElementById('use-full-image-btn');
 			const confirmCropBtn = document.getElementById('confirm-crop-btn');
@@ -275,7 +275,7 @@
 				const perPage = historyPerPage.value;
 				historyImagesContainer.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 				
-				const endpoint = source === 'uploads' ? `/image-mix/uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
+				const endpoint = source === 'uploads' ? `/image-uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
 				const response = await fetch(endpoint);
 				const data = await response.json();
 				
@@ -352,7 +352,7 @@
 				cropModal.show();
 			};
 			
-			cropModalEl.addEventListener('shown.bs.modal', () => {
+			cropModalEl.addEventListener('shown.dream.modal', () => {
 				if (cropper) cropper.destroy();
 				cropper = new Cropper(imageToCrop, {
 					viewMode: 1,
@@ -361,7 +361,7 @@
 				});
 			});
 			
-			cropModalEl.addEventListener('hidden.bs.modal', () => {
+			cropModalEl.addEventListener('hidden.dream.modal', () => {
 				if (cropper) cropper.destroy();
 				cropper = null;
 				imageToCrop.src = '';

@@ -1,89 +1,15 @@
 @extends('layouts.app')
-
+@section('title', 'Sign in — DreamCover')
 @section('content')
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-8">
-                <div class="card bg-dark text-light">
-                    <div class="card-header">{{ __('Login') }}</div>
-                    
-                    <div class="card-body">
-                        <form method="POST" action="{{ route('login') }}">
-                            @csrf
-                            
-                            <div class="row mb-3">
-                                <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
-                                
-                                <div class="col-md-6">
-                                    <input id="email"
-                                           type="email"
-                                           class="form-control bg-dark text-light @error('email') is-invalid @enderror"
-                                           name="email"
-                                           value="{{ old('email') }}"
-                                           required
-                                           autocomplete="email"
-                                           autofocus>
-                                    
-                                    @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                    @enderror
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
-                                
-                                <div class="col-md-6">
-                                    <input id="password"
-                                           type="password"
-                                           class="form-control bg-dark text-light @error('password') is-invalid @enderror"
-                                           name="password"
-                                           required
-                                           autocomplete="current-password">
-                                    
-                                    @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                    @enderror
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-3">
-                                <div class="col-md-6 offset-md-4">
-                                    <div class="form-check">
-                                        <input class="form-check-input"
-                                               type="checkbox"
-                                               name="remember"
-                                               id="remember"
-                                          {{ old('remember') ? 'checked' : '' }}>
-                                        
-                                        <label class="form-check-label" for="remember">
-                                            {{ __('Remember Me') }}
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mb-0">
-                                <div class="col-md-8 offset-md-4">
-                                    <button type="submit" class="btn btn-primary">
-                                        {{ __('Login') }}
-                                    </button>
-                                    
-                                    @if (Route::has('password.request'))
-                                        <a class="btn btn-link text-light" href="{{ route('password.request') }}">
-                                            {{ __('Forgot Your Password?') }}
-                                        </a>
-                                    @endif
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
+<div class="mx-auto grid min-h-[65vh] max-w-6xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
+    <div class="hidden lg:block"><p class="mb-4 text-sm font-bold uppercase tracking-[.2em] text-dream-600">Welcome back</p><h1 class="max-w-xl text-5xl font-bold leading-tight tracking-tight text-slate-950 dark:text-white">Your next visual world is waiting.</h1><p class="mt-5 max-w-lg text-lg leading-8 text-slate-500 dark:text-slate-400">Return to your prompt library, generated gallery, cover experiments, and illustrated stories.</p><div class="mt-8 flex gap-3"><span class="rounded-full bg-dream-100 px-3 py-1 text-sm font-semibold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">Create</span><span class="rounded-full bg-cyan-100 px-3 py-1 text-sm font-semibold text-cyan-700 dark:bg-cyan-500/20 dark:text-cyan-100">Refine</span><span class="rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-100">Tell stories</span></div></div>
+    <div class="rounded-3xl border border-slate-200 bg-white p-7 shadow-xl shadow-slate-900/5 sm:p-10 dark:border-slate-800 dark:bg-slate-900"><div class="mb-8"><p class="text-sm font-semibold text-dream-600">DreamCover</p><h2 class="mt-2 text-3xl font-bold tracking-tight text-slate-950 dark:text-white">Sign in to your workspace</h2><p class="mt-2 text-sm text-slate-500 dark:text-slate-400">Accounts are created by a DreamCover administrator.</p></div>
+        <form method="POST" action="{{ route('login') }}" class="space-y-5">@csrf
+            <div><label for="email" class="mb-2 block text-sm font-semibold">Email address</label><input id="email" type="email" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus class="w-full rounded-xl border bg-white px-4 py-3 outline-none transition focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:bg-slate-950 {{ $errors->has('email') ? 'border-rose-500' : 'border-slate-300 dark:border-slate-700' }}">@error('email')<p class="mt-2 text-sm text-rose-600">{{ $message }}</p>@enderror</div>
+            <div><div class="mb-2 flex items-center justify-between"><label for="password" class="text-sm font-semibold">Password</label>@if(Route::has('password.request'))<a class="text-sm font-semibold text-dream-600 hover:text-dream-700" href="{{ route('password.request') }}">Forgot password?</a>@endif</div><input id="password" type="password" name="password" required autocomplete="current-password" class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 outline-none transition focus:border-dream-500 focus:ring-4 focus:ring-dream-500/10 dark:border-slate-700 dark:bg-slate-950"></div>
+            <label class="flex items-center gap-3 text-sm text-slate-600 dark:text-slate-300"><input type="checkbox" name="remember" class="size-4 rounded border-slate-300 text-dream-600 focus:ring-dream-500" {{ old('remember') ? 'checked' : '' }}>Keep me signed in</label>
+            <button type="submit" class="w-full rounded-xl bg-dream-600 px-5 py-3 font-semibold text-white shadow-glow transition hover:bg-dream-700">Sign in</button>
+        </form>
     </div>
+</div>
 @endsection

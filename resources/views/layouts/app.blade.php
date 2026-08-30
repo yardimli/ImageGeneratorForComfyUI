@@ -1,193 +1,163 @@
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-	<meta charset="utf-t">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
-	
-	<!-- CSRF Token -->
-	<meta name="csrf-token" content="{{ csrf_token() }}">
-	<link href="{{ asset('css/bootstrap.min.css') }}" rel="stylesheet">
-	<link href="{{ asset('css/style.css') }}" rel="stylesheet">
-	
-	<title>{{ config('app.name', 'Laravel') }}</title>
-	
-	<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
-	<link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
-	<link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
-	<link rel="manifest" href="/images/site.webmanifest">
-	<script>
-		// Set theme on page load to prevent flickering
-		(function () {
-			const theme = localStorage.getItem('theme') || 'light'; // Default to light mode
-			document.documentElement.setAttribute('data-bs-theme', theme);
-		})();
-		
-		document.addEventListener('DOMContentLoaded', () => {
-			const themeSwitcher = document.getElementById('theme-switcher-btn');
-			const themeIcon = document.getElementById('theme-icon');
-			
-			// SVG icons for themes
-			const sunIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-sun-fill" viewBox="0 0 16 16"><path d="M8 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM8 0a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 0zm0 13a.5.5 0 0 1 .5.5v2a.5.5 0 0 1-1 0v-2A.5.5 0 0 1 8 13zm8-5a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2a.5.5 0 0 1 .5.5zM3 8a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1 0-1h2A.5.5 0 0 1 3 8zm10.657-5.657a.5.5 0 0 1 0 .707l-1.414 1.415a.5.5 0 1 1-.707-.708l1.414-1.414a.5.5 0 0 1 .707 0zm-9.193 9.193a.5.5 0 0 1 0 .707L3.05 13.657a.5.5 0 0 1-.707-.707l1.414-1.414a.5.5 0 0 1 .707 0zm9.193 2.121a.5.5 0 0 1-.707 0l-1.414-1.414a.5.5 0 0 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707zM4.464 4.465a.5.5 0 0 1-.707 0L2.343 3.05a.5.5 0 1 1 .707-.707l1.414 1.414a.5.5 0 0 1 0 .707z"/></svg>`;
-			const moonIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-moon-fill" viewBox="0 0 16 16"><path d="M6 .278a.768.768 0 0 1 .08.858 7.208 7.208 0 0 0-.878 3.46c0 4.021 3.278 7.277 7.318 7.277.527 0 1.04-.055 1.533-.16a.787.787 0 0 1 .81.316.733.733 0 0 1-.031.893A8.349 8.349 0 0 1 8.344 16C3.734 16 0 12.286 0 7.71 0 4.266 2.114 1.312 5.124.06A.752.752 0 0 1 6 .278z"/></svg>`;
-			
-			const getPreferredTheme = () => {
-				return localStorage.getItem('theme') || 'light';
-			};
-			
-			const setTheme = (theme) => {
-				document.documentElement.setAttribute('data-bs-theme', theme);
-				localStorage.setItem('theme', theme);
-				updateIcon(theme);
-			};
-			
-			const updateIcon = (theme) => {
-				if (themeIcon) {
-					themeIcon.innerHTML = theme === 'dark' ? sunIcon : moonIcon;
-				}
-			};
-			
-			if (themeSwitcher) {
-				themeSwitcher.addEventListener('click', () => {
-					const currentTheme = document.documentElement.getAttribute('data-bs-theme');
-					const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-					setTheme(newTheme);
-				});
-			}
-			
-			// Set initial icon on page load
-			updateIcon(getPreferredTheme());
-		});
-	</script>
-	@yield('styles')
-
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', config('app.name', 'DreamCover'))</title>
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png">
+    <link rel="manifest" href="/images/site.webmanifest">
+    <script>
+        document.documentElement.classList.toggle('dark', localStorage.getItem('theme') === 'dark');
+    </script>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    @yield('styles')
 </head>
-<body>
-<div id="app">
-	<nav class="navbar navbar-expand-md bg-body-tertiary shadow-sm">
-		<div class="container">
-			<button class="btn btn-outline-secondary me-2" id="theme-switcher-btn" style="width: 40px;">
-				<span id="theme-icon"></span>
-			</button>
-			<a class="navbar-brand" href="{{ route('home') }}">
-				{{ config('app.name', 'Laravel') }}
-			</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent"
-			        aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="{{ __('Toggle navigation') }}">
-				<span class="navbar-toggler-icon"></span>
-			</button>
-			
-			<div class="collapse navbar-collapse" id="navbarSupportedContent">
-				<!-- Left Side Of Navbar -->
-				<ul class="navbar-nav me-auto">
-					<li class="nav-item">
-						<a class="nav-link"
-						   href="{{ route('gallery.index', ['date' => '', 'sort' => 'updated_at']) }}">Gallery</a>
-					</li>
-					<li class="nav-item dropdown">
-						<a class="nav-link dropdown-toggle" href="#" id="promptDropdown" role="button"
-						   data-bs-toggle="dropdown" aria-expanded="false">
-							Image
-						</a>
-						<ul class="dropdown-menu" aria-labelledby="promptDropdown">
-							<li>
-								<a class="dropdown-item" href="{{ route('prompts.index') }}">Prompts</a>
-							</li>
-							<li>
-								<a class="dropdown-item" href="{{ route('prompt-dictionary.index') }}">Prompt Dict</a>
-							</li>
-							<li>
-								<a class="dropdown-item" href="{{ route('image-mix.index') }}">Image Mix</a>
-							</li>
-							{{-- START MODIFICATION --}}
-							<li>
-								<a class="dropdown-item" href="{{ route('image-edit.index') }}">Edit</a>
-							</li>
-							{{-- END MODIFICATION --}}
-							<li>
-								<hr class="dropdown-divider">
-							</li>
-							<li><a class="dropdown-item" href="{{ route('album-covers.index') }}">Kontext (remote API)</a></li>
-							<li><a class="dropdown-item" href="{{ route('kontext-basic.index') }}">Kontext Basic</a></li>
-							<li><a class="dropdown-item" href="{{ route('kontext-lora.index') }}">Kontext Lora</a></li>
-						</ul>
-					</li>
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('stories.index') }}">Story</a>
-					</li>
-					<li class="nav-item dropdown">
-						<a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button"
-						   data-bs-toggle="dropdown" aria-expanded="false">
-							Admin
-						</a>
-						<ul class="dropdown-menu" aria-labelledby="adminDropdown">
-							<li><a class="dropdown-item" href="{{ route('llm-prompts.index') }}">LLM Prompts</a></li>
-							<li><a class="dropdown-item" href="{{ route('upscale-settings.index') }}">Upscale Settings</a></li>
-						</ul>
-					</li>
-				</ul>
-				
-				<!-- Right Side Of Navbar -->
-				<ul class="navbar-nav ms-auto">
-					<!-- Authentication Links -->
-					<li class="nav-item">
-						<a class="nav-link" href="{{ route('prompts.queue') }}">
-							Queue <span class="badge bg-primary"
-							            id="navQueueCount">{{ \App\Models\Prompt::where('user_id', auth()->id())->whereIn('render_status', ['queued', 'pending', null])->count() }}</span>
-						</a>
-					</li>
-					@php
-						$upscaleCount = \App\Models\Prompt::where('user_id', auth()->id())->where('upscale_status', 1)->count();
-					@endphp
-					<li class="nav-item">
-						<a class="nav-link" href="#">
-							Upscaling <span class="badge bg-warning"
-							                id="navUpscaleQueueCount">{{ $upscaleCount }}</span>
-						</a>
-					</li>
-					@guest
-						@if (Route::has('login'))
-							<li class="nav-item">
-								<a class="nav-link" href="{{ route('login') }}">{{ __('Login') }}</a>
-							</li>
-						@endif
-						
-						@if (Route::has('register'))
-							<li class="nav-item">
-								<a class="nav-link" href="{{ route('register') }}">{{ __('Register') }}</a>
-							</li>
-						@endif
-					@else
-						<li class="nav-item dropdown">
-							<a id="navbarDropdown" class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown"
-							   aria-haspopup="true" aria-expanded="false" v-pre>
-								{{ Auth::user()->name }}
-							</a>
-							
-							<div class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdown">
-								<a class="dropdown-item" href="{{ route('logout') }}"
-								   onclick="event.preventDefault();
-                                             document.getElementById('logout-form').submit();">
-									{{ __('Logout') }}
-								</a>
-								
-								<form id="logout-form" action="{{ route('logout') }}" method="POST" class="d-none">
-									@csrf
-								</form>
-							</div>
-						</li>
-					@endguest
-				</ul>
-			</div>
-		</div>
-	</nav>
-	<main class="py-4">
-		@yield('content')
-	</main>
+<body class="flex min-h-screen flex-col">
+<div id="app" class="flex min-h-screen flex-1 flex-col">
+    <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/90">
+        <nav class="mx-auto flex min-h-16 max-w-7xl items-center gap-3 px-4 sm:px-6 lg:px-8" aria-label="Main navigation">
+            <a href="{{ url('/') }}" class="mr-auto flex items-center gap-2.5 font-bold tracking-tight text-slate-950 dark:text-white">
+                <span class="relative flex size-10 rotate-[-3deg] items-center justify-center rounded-xl bg-gradient-to-br from-white via-violet-100 to-violet-300 shadow-[0_7px_14px_-5px_rgba(64,38,138,.8),inset_0_1px_1px_rgba(255,255,255,.9)] ring-1 ring-violet-300/70 dark:from-violet-300 dark:via-violet-500 dark:to-indigo-700"><img src="{{ asset('images/dreamcover-logo-3d.png') }}" onerror="this.src='{{ asset('images/android-chrome-192x192.png') }}'" alt="" class="size-8 object-contain drop-shadow-[0_3px_2px_rgba(24,16,60,.45)]"></span>
+                <span>DreamCover</span>
+            </a>
+
+            <button id="mobile-menu-button" type="button" class="rounded-xl border border-slate-200 p-2 text-slate-600 lg:hidden dark:border-slate-700 dark:text-slate-200" aria-controls="mobile-menu" aria-expanded="false">
+                <span class="sr-only">Open menu</span>
+                <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+
+            <div id="mobile-menu" class="absolute inset-x-4 top-[4.25rem] hidden flex-col gap-1 rounded-2xl border border-slate-200 bg-white p-3 shadow-xl lg:static lg:flex lg:flex-row lg:items-center lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none dark:border-slate-700 dark:bg-slate-900 lg:dark:bg-transparent">
+                @auth
+                    <a href="{{ route('home') }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Overview</a>
+                    <a href="{{ route('gallery.index', ['date' => '', 'sort' => 'updated_at']) }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Gallery</a>
+                    <div class="relative" data-menu>
+                        <button type="button" data-menu-button class="flex w-full items-center justify-between gap-1 rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Create <span aria-hidden="true">⌄</span></button>
+                        <div data-menu-panel class="hidden min-w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-xl lg:absolute lg:left-0 lg:top-full dark:border-slate-700 dark:bg-slate-900">
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('prompts.index') }}">Image prompts</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('prompt-dictionary.index') }}">Prompt dictionary</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('image-edit.index') }}">Image editor</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('stories.index') }}">Story studio</a>
+                        </div>
+                    </div>
+                    <a href="{{ route('prompts.queue') }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">
+                        Queue <span id="navQueueCount" class="ml-1 rounded-full bg-dream-100 px-2 py-0.5 text-xs font-bold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">{{ \App\Models\Prompt::where('generation_type', 'prompt')->whereIn('render_status', [0, 1, 3])->count() }}</span>
+                    </a>
+                    @if(auth()->user()->is_admin)
+                        <div class="relative" data-menu>
+                            <button type="button" data-menu-button class="flex w-full items-center justify-between gap-1 rounded-lg px-3 py-2 text-sm font-medium text-dream-700 hover:bg-dream-50 dark:text-dream-100 dark:hover:bg-slate-800">Admin <span aria-hidden="true">⌄</span></button>
+                            <div data-menu-panel class="hidden min-w-56 rounded-xl border border-slate-200 bg-white p-1 shadow-xl lg:absolute lg:right-0 lg:top-full dark:border-slate-700 dark:bg-slate-900">
+                                <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('admin.users.index') }}">Users & stats</a>
+                                <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('register') }}">Create user</a>
+                                <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('llm-prompts.index') }}">LLM prompts</a>
+                                <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('upscale-settings.index') }}">Upscale settings</a>
+                            </div>
+                        </div>
+                    @endif
+                @else
+                    <a href="{{ url('/#features') }}" class="rounded-lg px-3 py-2 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800">Features</a>
+                    <a href="{{ route('login') }}" class="rounded-xl bg-dream-600 px-4 py-2 text-sm font-semibold text-white hover:bg-dream-700">Sign in</a>
+                @endauth
+            </div>
+
+            <button id="theme-switcher-btn" type="button" class="rounded-xl border border-slate-200 p-2 text-slate-600 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800" aria-label="Toggle color theme">
+                <svg class="size-5 dark:hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1111.2 3 7 7 0 0021 12.8z"/></svg>
+                <svg class="hidden size-5 dark:block" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3l1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3l1.42-1.42"/></svg>
+            </button>
+
+            @auth
+                <div class="relative" data-menu>
+                    <button type="button" data-menu-button class="flex size-9 items-center justify-center rounded-full bg-slate-900 text-sm font-bold text-white dark:bg-dream-600" aria-label="User menu">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</button>
+                    <div data-menu-panel class="absolute right-0 top-full hidden min-w-48 rounded-xl border border-slate-200 bg-white p-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+                        <div class="px-3 py-2 text-xs text-slate-500">Signed in as<br><strong class="text-slate-800 dark:text-white">{{ Auth::user()->name }}</strong></div>
+                        <form action="{{ route('logout') }}" method="POST">@csrf<button class="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-slate-100 dark:hover:bg-slate-800">Sign out</button></form>
+                    </div>
+                </div>
+            @endauth
+        </nav>
+    </header>
+
+    @if(session()->has('impersonator_id'))
+        <div class="bg-amber-300 px-4 py-2 text-center text-sm font-semibold text-slate-950">
+            You are viewing DreamCover as {{ auth()->user()->name }}.
+            <form class="inline" action="{{ route('admin.impersonation.stop') }}" method="POST">@csrf<button class="ml-2 underline">Return to admin account</button></form>
+        </div>
+    @endif
+
+    <main class="flex-1 py-8">@yield('content')</main>
+
+    @auth
+        <aside id="renderQueuePanel" class="hidden fixed bottom-4 right-4 z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-slate-200 bg-white/95 shadow-2xl backdrop-blur-xl transition-all dark:border-slate-700 dark:bg-slate-900/95" aria-label="Global render queue">
+            <div class="flex items-center gap-3 border-b border-slate-200 px-4 py-3 dark:border-slate-700">
+                <span id="renderQueuePulse" class="size-2.5 rounded-full bg-slate-400"></span>
+                <div class="min-w-0 flex-1">
+                    <p class="truncate text-sm font-bold text-slate-950 dark:text-white">Global render queue</p>
+                    <p id="renderQueueSummary" class="truncate text-xs text-slate-500 dark:text-slate-400">Checking queue…</p>
+                </div>
+                <span id="renderQueueBadge" class="rounded-full bg-dream-100 px-2.5 py-1 text-xs font-bold text-dream-700 dark:bg-dream-600/20 dark:text-dream-100">0</span>
+                <button id="renderQueueCollapse" type="button" class="rounded-lg border border-slate-200 p-1.5 text-slate-500 hover:bg-slate-100 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" aria-expanded="true" aria-controls="renderQueueBody">
+                    <span class="sr-only">Collapse render queue</span>
+                    <svg id="renderQueueChevron" class="size-4 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 15 6-6 6 6"/></svg>
+                </button>
+            </div>
+            <div id="renderQueueBody">
+                <div class="grid grid-cols-4 gap-px bg-slate-200 dark:bg-slate-700">
+                    <div class="bg-white px-3 py-2 text-center dark:bg-slate-900"><strong id="renderQueuedCount" class="block text-sm text-slate-950 dark:text-white">0</strong><span class="text-[10px] uppercase tracking-wide text-slate-500">Queued</span></div>
+                    <div class="bg-white px-3 py-2 text-center dark:bg-slate-900"><strong id="renderProcessingCount" class="block text-sm text-slate-950 dark:text-white">0</strong><span class="text-[10px] uppercase tracking-wide text-slate-500">Active</span></div>
+                    <div class="bg-white px-3 py-2 text-center dark:bg-slate-900"><strong id="renderRetryCount" class="block text-sm text-slate-950 dark:text-white">0</strong><span class="text-[10px] uppercase tracking-wide text-slate-500">Retry</span></div>
+                    <div class="bg-white px-3 py-2 text-center dark:bg-slate-900"><strong id="renderFailedCount" class="block text-sm text-slate-950 dark:text-white">0</strong><span class="text-[10px] uppercase tracking-wide text-slate-500">Failed</span></div>
+                </div>
+                <div id="renderQueueJobs" class="max-h-60 space-y-2 overflow-y-auto p-3">
+                    <p class="py-4 text-center text-sm text-slate-500">Loading jobs…</p>
+                </div>
+                <div class="border-t border-slate-200 px-4 py-2 text-xs text-slate-500 dark:border-slate-700 dark:text-slate-400">
+                    Shared across all users. Keep any DreamCover page open while rendering.
+                </div>
+            </div>
+        </aside>
+    @endauth
+
+    <footer class="border-t border-slate-200 bg-white dark:border-slate-800 dark:bg-slate-950">
+        <div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-sm text-slate-500 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8 dark:text-slate-400">
+            <div class="flex items-center gap-2"><img src="{{ asset('images/favicon-32x32.png') }}" alt="" class="size-6"><span>DreamCover — turn ideas into images and illustrated stories.</span></div>
+            <div class="flex gap-5"><a class="hover:text-dream-600" href="{{ url('/') }}">Overview</a>@auth<a class="hover:text-dream-600" href="{{ route('gallery.index') }}">Gallery</a><a class="hover:text-dream-600" href="{{ route('stories.index') }}">Stories</a>@endauth</div>
+        </div>
+    </footer>
 </div>
 
-<script src="{{ asset('vendor/popper.min.js') }}"></script>
-<script src="{{ asset('vendor/bootstrap.min.js') }}"></script>
-
+<script>
+    document.getElementById('theme-switcher-btn')?.addEventListener('click', () => {
+        const dark = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('theme', dark ? 'dark' : 'light');
+    });
+    const mobileButton = document.getElementById('mobile-menu-button');
+    const mobileMenu = document.getElementById('mobile-menu');
+    mobileButton?.addEventListener('click', () => {
+        const open = mobileMenu.classList.toggle('hidden');
+        mobileMenu.classList.toggle('flex', !open);
+        mobileButton.setAttribute('aria-expanded', String(!open));
+    });
+    document.querySelectorAll('[data-menu-button]').forEach((button) => button.addEventListener('click', (event) => {
+        event.stopPropagation();
+        const panel = button.parentElement.querySelector('[data-menu-panel]');
+        document.querySelectorAll('[data-menu-panel]').forEach((item) => { if (item !== panel) item.classList.add('hidden'); });
+        panel.classList.toggle('hidden');
+    }));
+    document.addEventListener('click', () => document.querySelectorAll('[data-menu-panel]').forEach((item) => item.classList.add('hidden')));
+</script>
+@auth
+    <script>
+        window.dreamCoverRenderQueue = {
+            statusUrl: @json(route('render-queue.status')),
+            processUrl: @json(route('render-queue.process')),
+            cancelUrl: @json(url('/render-queue')),
+            csrfToken: @json(csrf_token()),
+        };
+    </script>
+    <script src="{{ asset('js/render-queue.js') }}"></script>
+@endauth
 @yield('scripts')
 </body>
 </html>

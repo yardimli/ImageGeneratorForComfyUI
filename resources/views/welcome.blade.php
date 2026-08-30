@@ -1,29 +1,23 @@
 @extends('layouts.app')
-
+@section('title', 'DreamCover — Create images, covers and illustrated stories')
 @section('content')
-	<div class="container">
-		<div class="row justify-content-center">
-			<div class="col-md-8">
-				<div class="card">
-					<div class="card-header">{{ __('Dashboard') }}</div>
-					
-					<div class="card-body">
-						@auth
-							{{-- The user is authenticated (logged in) --}}
-							<p>Welcome to your dashboard!</p>
-							{{-- You can add more authenticated user content here --}}
-							<div class="mt-3">
-								<a href="{{ route('prompts.index') }}" class="btn btn-primary me-2">Prompts</a>
-								<a href="{{ route('image-mix.index') }}" class="btn btn-secondary me-2">Image Mix Tool</a>
-								<a href="{{ route('gallery.index', ['date' => $date ?? '', 'sort' => $sort ?? 'updated_at']) }}" class="btn btn-primary me-2">Gallery</a>
-							</div>
-						@else
-							{{-- The user is not authenticated (not logged in) --}}
-							<p>Please login to view the dashboard.</p>
-						@endauth
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
+<section class="relative -mt-8 overflow-hidden bg-[#171330] text-white">
+    <img src="{{ asset('images/dreamcover-hero.png') }}" alt="Dreamlike cover art and an illustrated book emerging from a creative workspace" class="absolute inset-0 h-full w-full object-cover object-center opacity-80 lg:object-right">
+    <div class="absolute inset-0 bg-gradient-to-r from-[#171330] via-[#171330]/95 to-[#171330]/15"></div>
+    <div class="relative mx-auto flex min-h-[720px] max-w-7xl items-center px-4 py-24 sm:px-6 lg:px-8">
+        <div class="max-w-2xl"><span class="inline-flex rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-semibold text-violet-100 backdrop-blur">One creative workspace, from first idea to finished story</span><h1 class="mt-7 text-5xl font-bold leading-[1.04] tracking-tight sm:text-6xl lg:text-7xl">Turn imagination into something you can see.</h1><p class="mt-7 max-w-xl text-lg leading-8 text-violet-100/80">DreamCover brings prompt creation, image mixing, editing, galleries, cover workflows, and complete illustrated-story tools into one focused studio.</p><div class="mt-9 flex flex-wrap gap-3">@auth<a href="{{ route('home') }}" class="rounded-xl bg-white px-6 py-3 font-bold text-[#241c4b] shadow-xl hover:bg-violet-50">Open your workspace</a>@else<a href="{{ route('login') }}" class="rounded-xl bg-white px-6 py-3 font-bold text-[#241c4b] shadow-xl hover:bg-violet-50">Sign in to create</a>@endauth<a href="#features" class="rounded-xl border border-white/25 bg-white/10 px-6 py-3 font-bold backdrop-blur hover:bg-white/15">Explore the tools</a></div></div>
+    </div>
+</section>
+
+<section id="features" class="mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-3xl text-center"><p class="text-sm font-bold uppercase tracking-[.2em] text-dream-600">The whole creative loop</p><h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl dark:text-white">More than an image generator</h2><p class="mt-5 text-lg leading-8 text-slate-500 dark:text-slate-400">The existing DreamCover workflow spans ideation, production, organization, enhancement, and storytelling. Every tool stays connected to your account and your work.</p></div>
+    <div class="mt-16 grid gap-6 lg:grid-cols-3">
+        <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-2 dark:border-slate-800 dark:bg-slate-900"><div class="grid h-full md:grid-cols-2"><div class="p-8 sm:p-10"><span class="text-sm font-bold text-dream-600">01 · Generate & transform</span><h3 class="mt-3 text-3xl font-bold tracking-tight">Build better source images</h3><p class="mt-4 leading-7 text-slate-500 dark:text-slate-400">Create reusable prompt settings across supported models, maintain a visual prompt dictionary, upload source images, and guide transformations with Kontext workflows and LoRAs.</p><ul class="mt-6 space-y-3 text-sm font-medium"><li>✓ Multi-model prompt studio</li><li>✓ Source-image uploads</li><li>✓ Prompt dictionary with generated previews</li><li>✓ Kontext basic and LoRA variations</li></ul></div><img src="{{ asset('images/feature-image-tools.png') }}" alt="Visual ingredients combining into finished cover artwork" class="h-full min-h-80 w-full object-cover"></div></article>
+        <article class="rounded-3xl border border-slate-200 bg-slate-950 p-8 text-white shadow-sm dark:border-slate-800"><span class="text-sm font-bold text-cyan-300">02 · Curate & refine</span><h3 class="mt-3 text-3xl font-bold tracking-tight">Keep the good work close</h3><p class="mt-4 leading-7 text-slate-300">Filter your gallery, compare source images, add notes, track render queues, favorite cover directions, crop and edit, then upscale the results worth keeping.</p><div class="mt-8 grid grid-cols-2 gap-3 text-center text-xs font-bold"><span class="rounded-xl bg-white/10 p-3">Gallery</span><span class="rounded-xl bg-white/10 p-3">Queue</span><span class="rounded-xl bg-white/10 p-3">Image editor</span><span class="rounded-xl bg-white/10 p-3">Upscaling</span></div></article>
+    </div>
+</section>
+
+<section class="bg-dream-50 py-24 dark:bg-slate-900/50"><div class="mx-auto grid max-w-7xl items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8"><img src="{{ asset('images/feature-story-studio.png') }}" alt="An illustrated story world rising from an open book" class="rounded-[2rem] shadow-2xl shadow-dream-600/15"><div><p class="text-sm font-bold uppercase tracking-[.2em] text-dream-600">Illustrated story studio</p><h2 class="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl dark:text-white">Carry one idea all the way to a book.</h2><p class="mt-6 text-lg leading-8 text-slate-600 dark:text-slate-300">Draft a story manually or with the guided AI flow. Build consistent characters and places, design every page, attach a visual dictionary and quiz, then prepare the result for PDF.</p><div class="mt-8 grid gap-4 sm:grid-cols-2">@foreach([['Characters & places','Develop reusable story assets and visual references.'],['Page illustration','Generate and revise art in the context of each page.'],['Dictionary & quiz','Turn a story into a richer learning experience.'],['PDF output','Choose wallpaper, logos, stickers, and final print setup.']] as [$title, $copy])<div class="rounded-2xl border border-dream-100 bg-white p-5 dark:border-slate-700 dark:bg-slate-900"><h3 class="font-bold">{{ $title }}</h3><p class="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">{{ $copy }}</p></div>@endforeach</div>@auth<a href="{{ route('stories.index') }}" class="mt-8 inline-flex rounded-xl bg-dream-600 px-6 py-3 font-semibold text-white hover:bg-dream-700">Open story studio</a>@endauth</div></div></section>
+
+<section class="mx-auto max-w-5xl px-4 py-24 text-center sm:px-6 lg:px-8"><div class="rounded-[2rem] bg-gradient-to-br from-dream-600 to-indigo-700 px-6 py-16 text-white shadow-glow sm:px-12"><h2 class="text-4xl font-bold tracking-tight">Your ideas already have a visual language.</h2><p class="mx-auto mt-4 max-w-2xl text-lg text-violet-100">DreamCover gives you the tools to discover it, refine it, and keep it consistent from a single image to an entire story.</p>@auth<a href="{{ route('home') }}" class="mt-8 inline-flex rounded-xl bg-white px-6 py-3 font-bold text-dream-700">Go to overview</a>@else<a href="{{ route('login') }}" class="mt-8 inline-flex rounded-xl bg-white px-6 py-3 font-bold text-dream-700">Sign in</a>@endauth</div></section>
 @endsection

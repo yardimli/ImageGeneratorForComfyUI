@@ -113,13 +113,13 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="promptQueuedModalLabel">Success</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					Your job has been queued for generation!
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Close</button>
 				</div>
 			</div>
 		</div>
@@ -133,7 +133,6 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 	{{-- START MODIFICATION: Remove Cropper.js script as it's no longer used on this page. --}}
 	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/kontext-lora-script.js') }}"></script>

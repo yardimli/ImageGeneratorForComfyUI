@@ -1,20 +1,22 @@
 <?php
 
 	use App\Http\Controllers\AlbumCoverController;
+	use App\Http\Controllers\Admin\UserController as AdminUserController;
+	use App\Http\Controllers\Auth\RegisterController;
 	use App\Http\Controllers\CreateStoryController;
 	use App\Http\Controllers\GalleryController;
 	use App\Http\Controllers\HomeController;
 	use App\Http\Controllers\ImageEditorController;
 	use App\Http\Controllers\ImageEditController; // MODIFICATION: Import new controller
-	use App\Http\Controllers\ImageMixController;
+	use App\Http\Controllers\ImageUploadController;
 	use App\Http\Controllers\KontextBasicController;
 	use App\Http\Controllers\KontextLoraController;
 	use App\Http\Controllers\LlmPromptController;
-	use App\Http\Controllers\PexelsController;
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\PromptDictionaryController;
 	use App\Http\Controllers\PromptDictionaryImageController;
 	use App\Http\Controllers\QuizController;
+	use App\Http\Controllers\RenderQueueController;
 	use App\Http\Controllers\StoryController;
 	use App\Http\Controllers\StoryImageController;
 	use App\Http\Controllers\StoryPdfController;
@@ -40,7 +42,19 @@
 	Auth::routes(['register' => false]);
 
 	Route::middleware('auth')->group(function () {
+		Route::post('/admin/impersonation/stop', [AdminUserController::class, 'stopImpersonating'])->name('admin.impersonation.stop');
+
+		Route::middleware('admin')->group(function () {
+			Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+			Route::post('/register', [RegisterController::class, 'register']);
+			Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+			Route::post('/admin/users/{user}/impersonate', [AdminUserController::class, 'impersonate'])->name('admin.users.impersonate');
+		});
+
 		Route::get('/home', [HomeController::class, 'index'])->name('home');
+		Route::get('/render-queue/status', [RenderQueueController::class, 'status'])->name('render-queue.status');
+		Route::post('/render-queue/process', [RenderQueueController::class, 'process'])->name('render-queue.process');
+		Route::post('/render-queue/{prompt}/cancel', [RenderQueueController::class, 'cancel'])->name('render-queue.cancel');
 
 		// LLM Prompt Management
 		Route::prefix('llm-prompts')->name('llm-prompts.')->group(function () {
@@ -63,6 +77,8 @@
 		// --- Prompt Generation & Management ---
 		Route::prefix('prompts')->name('prompts.')->group(function () {
 			Route::get('/', [PromptController::class, 'index'])->name('index');
+			Route::post('/models/refresh', [PromptController::class, 'refreshModels'])->name('models.refresh');
+			Route::get('/models/pricing', [PromptController::class, 'modelPricing'])->name('models.pricing');
 			Route::post('/generate', [PromptController::class, 'generate'])->name('generate');
 			Route::post('/store-generated', [PromptController::class, 'storeGeneratedPrompts'])->name('store-generated');
 			Route::post('/bulk-delete', [PromptController::class, 'bulkDelete'])->name('bulk-delete');
@@ -100,17 +116,16 @@
 			Route::get('/upscale-status/{prediction_id}', [UpscaleAndNotesController::class, 'checkUpscaleStatus'])->name('upscale.status');
 		});
 
-		// --- Image Mix ---
-		Route::prefix('image-mix')->name('image-mix.')->group(function () {
-			Route::get('/', [ImageMixController::class, 'index'])->name('index');
-			Route::post('/store', [ImageMixController::class, 'store'])->name('store');
-			Route::post('/upload', [ImageMixController::class, 'uploadImage'])->name('upload');
-			Route::get('/uploads', [ImageMixController::class, 'getUploadedImages'])->name('uploads');
+		Route::prefix('image-uploads')->name('image-uploads.')->group(function () {
+			Route::post('/', [ImageUploadController::class, 'store'])->name('store');
+			Route::get('/', [ImageUploadController::class, 'index'])->name('index');
 		});
 
 		// START MODIFICATION: Add routes for the new Image Edit feature
 		Route::prefix('image-edit')->name('image-edit.')->group(function () {
 			Route::get('/', [ImageEditController::class, 'index'])->name('index');
+			Route::post('/models/refresh', [ImageEditController::class, 'refreshModels'])->name('models.refresh');
+			Route::get('/models/pricing', [ImageEditController::class, 'modelPricing'])->name('models.pricing');
 			Route::post('/generate', [ImageEditController::class, 'generate'])->name('generate');
 			Route::get('/status/{prompt}', [ImageEditController::class, 'checkStatus'])->name('status');
 		});
@@ -136,17 +151,12 @@
 			Route::post('/proxy-image', [ImageEditorController::class, 'proxyImage'])->name('proxy');
 		});
 
-		// --- Pexels Integration ---
-		Route::prefix('pexels')->name('pexels.')->group(function () {
-			Route::get('/search', [PexelsController::class, 'search'])->name('search');
-			Route::post('/download', [PexelsController::class, 'download'])->name('download');
-		});
-
 		// --- Queue Management ---
 		Route::get('/queue', [PromptController::class, 'queue'])->name('prompts.queue');
 
 		Route::prefix('queue')->name('prompts.queue.')->group(function () {
 			Route::delete('/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('delete-all');
+			Route::delete('/failed/delete-all', [PromptController::class, 'deleteAllFailedPrompts'])->name('failed.delete-all');
 			Route::delete('/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('delete');
 			Route::post('/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('requeue');
 		});
@@ -257,7 +267,7 @@
 		Route::get('/assets/logos/{filename}', [StoryPdfController::class, 'serveLogo'])->name('assets.logo');
 		Route::get('/assets/stickers/{filename}', [StoryPdfController::class, 'serveSticker'])->name('assets.sticker');
 
-		Route::prefix('admin/upscale-settings')->name('upscale-settings.')->group(function () {
+		Route::prefix('admin/upscale-settings')->middleware('admin')->name('upscale-settings.')->group(function () {
 			Route::get('/', [UpscaleSettingController::class, 'index'])->name('index');
 			Route::post('/update', [UpscaleSettingController::class, 'update'])->name('update');
 		});

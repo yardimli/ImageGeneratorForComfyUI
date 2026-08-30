@@ -8,7 +8,7 @@
 				<p class="text-muted">A visual grid of your reusable prompt components.</p>
 			</div>
 			<div>
-				<button type="button" class="btn btn-info me-2" data-bs-toggle="modal" data-bs-target="#generateEntriesModal">Auto-Generate Entries</button>
+				<button type="button" class="btn btn-info me-2" data-ui-toggle="modal" data-ui-target="#generateEntriesModal">Auto-Generate Entries</button>
 				<a href="{{ route('prompt-dictionary.edit') }}" class="btn btn-primary">Add New Entry</a>
 			</div>
 		</div>
@@ -52,7 +52,7 @@
 				@foreach($entries as $entry)
 					<div class="col">
 						<a href="{{ route('prompt-dictionary.edit', ['entry_id' => $entry->id]) }}" class="card h-100 text-decoration-none entry-grid-card">
-							<img src="{{ $entry->image_path ?: 'https://via.placeholder.com/200?text=No+Image' }}" class="card-img-top" alt="{{ $entry->name }}">
+							<img src="{{ $entry->image_path ? \App\Support\ImageUrl::preview($entry->image_path) : 'https://via.placeholder.com/200?text=No+Image' }}" class="card-img-top" alt="{{ $entry->name }}">
 							<div class="card-body">
 								<p class="card-title text-center fw-bold mb-1">{{ $entry->name }}</p>
 								{{-- START MODIFICATION: Display word category if it exists --}}
@@ -74,7 +74,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="generateEntriesModalLabel">Auto-Generate Dictionary Entries with AI</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -136,7 +136,7 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					{{-- START MODIFICATION: Changed button text --}}
 					<button type="button" class="btn btn-success d-none" id="add-generated-entries-btn">Save Entries & Refresh</button>
 					{{-- END MODIFICATION --}}

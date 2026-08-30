@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	// --- AI Auto-Generate Entries Modal ---
 	const generateEntriesModalEl = document.getElementById('generateEntriesModal');
 	if (generateEntriesModalEl) {
-		const generateEntriesModal = new bootstrap.Modal(generateEntriesModalEl);
+		const generateEntriesModal = new DreamModal(generateEntriesModalEl);
 		const createBtn = document.getElementById('generate-entries-create-btn');
 		const addBtn = document.getElementById('add-generated-entries-btn');
 		const previewArea = document.getElementById('generate-entries-preview-area');
@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 		
 		
-		generateEntriesModalEl.addEventListener('shown.bs.modal', () => {
+		generateEntriesModalEl.addEventListener('shown.dream.modal', () => {
 			updateFullGenerateEntriesPrompt();
 			const savedModel = localStorage.getItem(llmModelKey);
 			if (savedModel) modelSelect.value = savedModel;
 		});
 		
-		generateEntriesModalEl.addEventListener('hidden.bs.modal', () => {
+		generateEntriesModalEl.addEventListener('hidden.dream.modal', () => {
 			previewArea.innerHTML = '<p class="text-muted">Click "Generate Preview" to create new entries and see a preview here.</p>';
 			addBtn.classList.add('d-none');
 			createBtn.disabled = false;

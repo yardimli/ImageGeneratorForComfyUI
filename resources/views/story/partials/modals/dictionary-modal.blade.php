@@ -7,7 +7,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="dictionaryModalLabel">Generate Dictionary Entries with AI</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				{{-- The JS will populate this with an initial request --}}
@@ -36,7 +36,7 @@
 				<div id="dictionary-result-container" class="mt-4"></div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="generate-dictionary-btn">
 					<span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
 					Generate & Add to Page

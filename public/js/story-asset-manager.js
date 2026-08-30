@@ -28,10 +28,10 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	// --- Image Handling Logic (shared with story-editor.js) ---
 	const cropperModalEl = document.getElementById('cropperModal');
-	const cropperModal = new bootstrap.Modal(cropperModalEl);
+	const cropperModal = new DreamModal(cropperModalEl);
 	const imageToCrop = document.getElementById('imageToCrop');
 	const historyModalEl = document.getElementById('historyModal');
-	const historyModal = new bootstrap.Modal(historyModalEl);
+	const historyModal = new DreamModal(historyModalEl);
 	const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 	let cropper;
 	let activeImageUploadContainer = null;
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		cropperModal.show();
 	}
 	
-	cropperModalEl.addEventListener('shown.bs.modal', function () {
+	cropperModalEl.addEventListener('shown.dream.modal', function () {
 		if (cropper) cropper.destroy();
 		cropper = new Cropper(imageToCrop, {
 			aspectRatio: 1,
@@ -50,7 +50,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	});
 	
-	cropperModalEl.addEventListener('hidden.bs.modal', function () {
+	cropperModalEl.addEventListener('hidden.dream.modal', function () {
 		if (cropper) {
 			cropper.destroy();
 			cropper = null;
@@ -93,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
 				formData.append('image', blob, 'full-image.png'); // Filename can be anything.
 				formData.append('_token', csrfToken);
 				
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -132,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function () {
 			formData.append('_token', csrfToken);
 			
 			try {
-				const response = await fetch('/image-mix/upload', {
+				const response = await fetch('/image-uploads', {
 					method: 'POST',
 					body: formData,
 					headers: { 'Accept': 'application/json' },
@@ -162,7 +162,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const historyContainer = document.getElementById('historyImagesContainer');
 		historyContainer.innerHTML = '<div class="d-flex justify-content-center p-5"><div class="spinner-border" role="status"><span class="visually-hidden">Loading...</span></div></div>';
 		
-		const endpoint = source === 'uploads' ? `/image-mix/uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
+		const endpoint = source === 'uploads' ? `/image-uploads?page=${page}&sort=${sort}&perPage=${perPage}` : `/kontext-basic/render-history?page=${page}&sort=${sort}&perPage=${perPage}`;
 		const response = await fetch(endpoint);
 		const data = await response.json();
 		
@@ -319,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	const rewriteModalEl = document.getElementById('rewriteAssetDescriptionModal');
 	if (rewriteModalEl) {
-		const rewriteModal = new bootstrap.Modal(rewriteModalEl);
+		const rewriteModal = new DreamModal(rewriteModalEl);
 		const rewriteStyleSelect = document.getElementById('rewrite-asset-style');
 		const rewriteFullPromptTextarea = document.getElementById('rewrite-asset-full-prompt');
 		const rewriteModelSelect = document.getElementById('rewrite-asset-model');
@@ -376,7 +376,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		// Logic for when the modal is shown.
-		rewriteModalEl.addEventListener('shown.bs.modal', () => {
+		rewriteModalEl.addEventListener('shown.dream.modal', () => {
 			if (!activeDescriptionTextarea) {
 				alert('Could not find the description text. Please close this and try again.');
 				rewriteModal.hide();
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 		
 		// Reset the modal to its initial state when hidden.
-		rewriteModalEl.addEventListener('hidden.bs.modal', () => {
+		rewriteModalEl.addEventListener('hidden.dream.modal', () => {
 			activeDescriptionTextarea = null;
 			originalDescription = '';
 			rewriteResultArea.classList.add('d-none');
@@ -506,7 +506,7 @@ document.addEventListener('DOMContentLoaded', function () {
 	// -- AI Prompt Generation Modal Logic --
 	const generatePromptModalEl = document.getElementById('generatePromptModal');
 	if (generatePromptModalEl) {
-		const generatePromptModal = new bootstrap.Modal(generatePromptModalEl);
+		const generatePromptModal = new DreamModal(generatePromptModalEl);
 		const writePromptBtn = document.getElementById('write-prompt-btn');
 		const updatePromptBtn = document.getElementById('update-prompt-btn');
 		const promptResultArea = document.getElementById('prompt-result-area');
@@ -529,7 +529,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		}
 		
 		
-		generatePromptModalEl.addEventListener('shown.bs.modal', () => {
+		generatePromptModalEl.addEventListener('shown.dream.modal', () => {
 			const savedModel = localStorage.getItem(promptModelKey);
 			if (savedModel) document.getElementById('prompt-model').value = savedModel;
 			const savedInstructions = localStorage.getItem(promptInstructionsKey);
@@ -550,7 +550,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		
 		document.getElementById('prompt-model').addEventListener('change', (e) => localStorage.setItem(promptModelKey, e.target.value));
 		
-		generatePromptModalEl.addEventListener('hidden.bs.modal', () => {
+		generatePromptModalEl.addEventListener('hidden.dream.modal', () => {
 			activeImagePromptTextarea = null;
 			promptResultArea.classList.add('d-none');
 			updatePromptBtn.classList.add('d-none');
@@ -614,23 +614,86 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
+	function setupFalTextToImagePricing() {
+		const select = document.getElementById('draw-model');
+		const price = document.getElementById('draw-model-price');
+		const config = window.storyFalModels || {};
+		const modelsByEndpoint = Object.fromEntries(
+			(config.textToImage || []).map(model => [model.endpoint_id, model])
+		);
+		let latestRequest = 0;
+
+		if (!select || !price || !config.pricingUrl) {
+			return () => {};
+		}
+
+		const loadPrice = async () => {
+			const endpointId = select.value;
+			const requestNumber = ++latestRequest;
+
+			if (!endpointId) {
+				price.textContent = 'Select a model to load its current price.';
+				return;
+			}
+
+			console.log('Selected fal.ai text-to-image model metadata:', modelsByEndpoint[endpointId]);
+			price.textContent = 'Loading current price…';
+
+			try {
+				const url = new URL(config.pricingUrl, window.location.origin);
+				url.searchParams.set('endpoint_id', endpointId);
+				const response = await fetch(url, { headers: { Accept: 'application/json' } });
+				const data = await response.json();
+
+				if (requestNumber !== latestRequest) return;
+				if (!response.ok || !data.success) {
+					throw new Error(data.message || 'Could not load pricing.');
+				}
+				if (!data.price) {
+					price.textContent = 'No fixed price is available for this model.';
+					return;
+				}
+
+				const amount = new Intl.NumberFormat(undefined, {
+					style: 'currency',
+					currency: data.price.currency || 'USD',
+					minimumFractionDigits: 0,
+					maximumFractionDigits: 6,
+				}).format(Number(data.price.unit_price));
+				price.textContent = `${amount} per ${data.price.unit}`;
+			} catch (error) {
+				if (requestNumber !== latestRequest) return;
+				console.error('Failed to load fal.ai text-to-image pricing:', error);
+				price.textContent = error.message;
+			}
+		};
+
+		select.addEventListener('change', loadPrice);
+		return loadPrice;
+	}
+
 	// -- "Draw with AI" Modal Logic --
 	const drawWithAiModalEl = document.getElementById('drawWithAiModal');
 	if (drawWithAiModalEl) {
-		const drawWithAiModal = new bootstrap.Modal(drawWithAiModalEl);
+		const drawWithAiModal = new DreamModal(drawWithAiModalEl);
 		const generateImageBtn = document.getElementById('generate-image-btn');
 		const drawAssetIdInput = document.getElementById('draw-asset-id');
 		const drawImagePromptText = document.getElementById('draw-image-prompt-text');
 		const drawAspectRatioSelect = document.getElementById('draw-aspect-ratio');
 		const drawWidthInput = document.getElementById('draw-width');
 		const drawHeightInput = document.getElementById('draw-height');
+		const drawModelSelect = document.getElementById('draw-model');
+		const loadDrawModelPrice = setupFalTextToImagePricing();
 		
 		const drawModelKey = 'storyAsset_drawModel';
-		drawWithAiModalEl.addEventListener('shown.bs.modal', () => {
+		drawWithAiModalEl.addEventListener('shown.dream.modal', () => {
 			const savedModel = localStorage.getItem(drawModelKey);
-			if (savedModel) document.getElementById('draw-model').value = savedModel;
+			if (savedModel && Array.from(drawModelSelect.options).some(option => option.value === savedModel)) {
+				drawModelSelect.value = savedModel;
+				loadDrawModelPrice();
+			}
 		});
-		document.getElementById('draw-model').addEventListener('change', (e) => localStorage.setItem(drawModelKey, e.target.value));
+		drawModelSelect.addEventListener('change', (e) => localStorage.setItem(drawModelKey, e.target.value));
 		
 		function setDrawDimensions(width, height) {
 			drawWidthInput.value = width;
@@ -676,12 +739,16 @@ document.addEventListener('DOMContentLoaded', function () {
 		generateImageBtn.addEventListener('click', async () => {
 			const assetId = drawAssetIdInput.value;
 			if (!assetId) return;
+			if (!drawModelSelect.value) {
+				alert('Please select a text-to-image model.');
+				return;
+			}
 			
 			generateImageBtn.disabled = true;
 			generateImageBtn.querySelector('.spinner-border').classList.remove('d-none');
 			
 			const body = {
-				model: document.getElementById('draw-model').value,
+				model: drawModelSelect.value,
 				width: drawWidthInput.value,
 				height: drawHeightInput.value,
 				upload_to_s3: document.getElementById('draw-upload-to-s3').checked,
@@ -739,7 +806,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						clearInterval(pollInterval);
 						spinner.classList.add('d-none');
 						
-						imagePreview.src = statusData.filename;
+						imagePreview.src = statusData.preview_url || statusData.filename;
 						imagePathInput.value = statusData.filename;
 						
 						const promptTextarea = card.querySelector('.image-prompt-textarea');
@@ -748,7 +815,7 @@ document.addEventListener('DOMContentLoaded', function () {
 						imagePreview.style.cursor = 'pointer';
 						imagePreview.dataset.bsToggle = 'modal';
 						imagePreview.dataset.bsTarget = '#imageDetailModal';
-						imagePreview.dataset.imageUrl = statusData.filename;
+						imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
 						imagePreview.dataset.promptId = statusData.prompt_id;
 						imagePreview.dataset.upscaleStatus = statusData.upscale_status;
 						imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
@@ -769,7 +836,7 @@ document.addEventListener('DOMContentLoaded', function () {
 		const upscaleStatusContainer = document.getElementById('upscale-status-container');
 		let activeImageTrigger = null;
 		
-		imageDetailModalEl.addEventListener('show.bs.modal', function (event) {
+		imageDetailModalEl.addEventListener('show.dream.modal', function (event) {
 			const trigger = event.relatedTarget;
 			if (!trigger || !trigger.dataset.imageUrl) {
 				event.preventDefault();

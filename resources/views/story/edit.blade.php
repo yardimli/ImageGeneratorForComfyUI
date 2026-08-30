@@ -114,7 +114,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="generatePromptModalLabel">Generate Image Prompt with AI</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div id="prompt-generator-form">
@@ -153,7 +153,7 @@
 					</div>
 				</div>
 				<div class="modal-footer">
-					<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+					<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 					<button type="button" class="btn btn-success d-none" id="update-prompt-btn">Update Prompt</button>
 				</div>
 			</div>
@@ -165,7 +165,7 @@
 	@include('story.partials.modals.rewrite-text-modal', ['models' => $models])
 	{{-- END MODIFICATION --}}
 	
-	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $imageModels])
+	@include('story.partials.modals.draw-with-ai-modal', ['imageModels' => $textToImageModels, 'showFalPricing' => true])
 	
 	@include('story.partials.modals.image-detail-modal')
 	
@@ -174,7 +174,7 @@
 	{{-- END MODIFICATION --}}
 	
 	{{-- START MODIFICATION: Include the new Draw with AI v2 modal --}}
-	@include('story.partials.modals.draw-with-ai-v2-modal')
+	@include('story.partials.modals.draw-with-ai-v2-modal', ['imageModels' => $imageToImageModels])
 	{{-- END MODIFICATION --}}
 	
 	{{-- Template for new pages --}}
@@ -212,12 +212,16 @@
 @endsection
 
 @section('scripts')
-	<script src="{{ asset('js/queue.js') }}"></script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
 	{{-- START MODIFICATION: Pass prompt templates and story level to JS --}}
 	<script>
 		window.promptTemplates = @json($promptTemplates ?? []);
 		window.storyLevel = @json($story->level ?? 'B1');
+		window.storyFalModels = {
+			pricingUrl: @json(route('prompts.models.pricing')),
+			textToImage: {{ Illuminate\Support\Js::from($textToImageModels) }},
+			imageToImage: {{ Illuminate\Support\Js::from($imageToImageModels) }},
+		};
 	</script>
 	{{-- END MODIFICATION --}}
 	<script src="{{ asset('js/story-editor.js') }}"></script>

@@ -3,7 +3,7 @@
 		<div class="modal-content">
 			<div class="modal-header">
 				<h5 class="modal-title" id="cropperModalLabel">Crop Image</h5>
-				<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+				<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 			</div>
 			<div class="modal-body">
 				<div>
@@ -11,7 +11,7 @@
 				</div>
 			</div>
 			<div class="modal-footer">
-				<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				{{-- START MODIFICATION: Add button to use the full image without cropping --}}
 				<button type="button" class="btn btn-info" id="useFullImageBtn">Use Full Image (No Crop)</button>
 				{{-- END MODIFICATION --}}

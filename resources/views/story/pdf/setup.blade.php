@@ -116,7 +116,7 @@
 										<div class="col-md-6">
 											<label class="form-label">Background Image</label>
 											<div>
-												<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#titleWallpaperModal">
+												<button type="button" class="btn btn-outline-secondary btn-sm" data-ui-toggle="modal" data-ui-target="#titleWallpaperModal">
 													Select Background...
 												</button>
 												<span id="selectedTitleWallpaperName" class="ms-2 fst-italic text-muted">{{ old('title_wallpaper') ?: 'None' }}</span>
@@ -126,7 +126,7 @@
 										<div class="col-md-6">
 											<label class="form-label">Logo</label>
 											<div>
-												<button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#logoModal">
+												<button type="button" class="btn btn-outline-secondary btn-sm" data-ui-toggle="modal" data-ui-target="#logoModal">
 													Select Logo...
 												</button>
 												<span id="selectedLogoName" class="ms-2 fst-italic text-muted">{{ old('title_logo') ?: 'None' }}</span>
@@ -137,7 +137,7 @@
 										<div class="col-md-12">
 											<label class="form-label">Stickers (up to 3)</label>
 											<div>
-												<button type="button" class="btn btn-outline-success btn-sm" data-bs-toggle="modal" data-bs-target="#stickerModal">
+												<button type="button" class="btn btn-outline-success btn-sm" data-ui-toggle="modal" data-ui-target="#stickerModal">
 													Select Stickers...
 												</button>
 												<span id="selectedStickersName" class="ms-2 fst-italic text-muted">None</span>
@@ -288,7 +288,7 @@
 									<div class="col-md-12 mt-3">
 										<label class="form-label">Wallpaper (for text pages)</label>
 										<div>
-											<button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#wallpaperModal">
+											<button type="button" class="btn btn-outline-secondary" data-ui-toggle="modal" data-ui-target="#wallpaperModal">
 												Select Wallpaper
 											</button>
 											<span id="selectedWallpaperName" class="ms-2 fst-italic text-muted">{{ old('wallpaper') ?: 'No wallpaper selected' }}</span>
@@ -347,7 +347,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="titleWallpaperModalLabel">Select a Title Page Background</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -372,7 +372,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="logoModalLabel">Select a Logo</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -398,7 +398,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="stickerModalLabel">Select Stickers (up to 3)</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -424,7 +424,7 @@
 			<div class="modal-content">
 				<div class="modal-header">
 					<h5 class="modal-title" id="wallpaperModalLabel">Select a Wallpaper (for Text Pages)</h5>
-					<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+					<button type="button" class="btn-close" data-ui-dismiss="modal" aria-label="Close"></button>
 				</div>
 				<div class="modal-body">
 					<div class="row">
@@ -550,9 +550,9 @@
 			
 			// --- Asset Modal Logic (Unified for all asset types) ---
 			const modals = {
-				'title-wallpaper': new bootstrap.Modal(document.getElementById('titleWallpaperModal')),
-				'logo': new bootstrap.Modal(document.getElementById('logoModal')),
-				'wallpaper': new bootstrap.Modal(document.getElementById('wallpaperModal')),
+				'title-wallpaper': new DreamModal(document.getElementById('titleWallpaperModal')),
+				'logo': new DreamModal(document.getElementById('logoModal')),
+				'wallpaper': new DreamModal(document.getElementById('wallpaperModal')),
 			};
 			
 			const inputs = {
@@ -616,7 +616,7 @@
 			});
 			
 			// --- Multi-select sticker modal logic ---
-			const stickerModal = new bootstrap.Modal(document.getElementById('stickerModal'));
+			const stickerModal = new DreamModal(document.getElementById('stickerModal'));
 			const stickerPreviews = document.querySelectorAll('.asset-preview[data-asset-type="sticker"]');
 			const stickerInputsContainer = document.getElementById('stickerInputs');
 			const selectedStickersNameSpan = document.getElementById('selectedStickersName');
