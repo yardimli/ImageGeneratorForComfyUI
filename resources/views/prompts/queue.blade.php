@@ -33,7 +33,8 @@
 									<td>{{ $prompt->width }}x{{ $prompt->height }}</td>
 									<td>
 										<button class="btn btn-sm btn-danger delete-prompt-btn"
-										        data-prompt-id="{{ $prompt->id }}">
+										        data-prompt-id="{{ $prompt->id }}"
+										        data-delete-url="{{ route('prompts.queue.delete', ['promptId' => $prompt->id]) }}">
 											Delete
 										</button>
 									</td>
@@ -83,7 +84,8 @@
 											Requeue
 										</button>
 										<button class="btn btn-sm btn-danger delete-prompt-btn" data-action-type="failed"
-										        data-prompt-id="{{ $prompt->id }}">
+										        data-prompt-id="{{ $prompt->id }}"
+										        data-delete-url="{{ route('prompts.queue.delete', ['promptId' => $prompt->id]) }}">
 											Delete
 										</button>
 									</td>
@@ -162,11 +164,13 @@
 			const deleteAllFailedModal = new DreamModal(document.getElementById('confirmDeleteAllFailedModal'));
 			
 			let promptIdToDelete = null;
+			let promptDeleteUrl = null;
 			
 			// Handle delete button clicks
 			document.querySelectorAll('.delete-prompt-btn').forEach(button => {
 				button.addEventListener('click', function () {
 					promptIdToDelete = this.dataset.promptId;
+					promptDeleteUrl = this.dataset.deleteUrl;
 					deleteModal.show();
 				});
 			});
@@ -185,19 +189,20 @@
 			
 			// Handle confirm delete
 			document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
-				if (!promptIdToDelete) return;
+				if (!promptIdToDelete || !promptDeleteUrl) return;
 				
 				try {
-					const response = await fetch(`/queue/${promptIdToDelete}`, {
+					const response = await fetch(promptDeleteUrl, {
 						method: 'DELETE',
 						headers: {
+							'Accept': 'application/json',
 							'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
 						}
 					});
 					
-					const data = await response.json();
+					const data = await response.json().catch(() => ({}));
 					
-					if (data.success) {
+					if (response.ok && data.success) {
 						// Remove row from table
 						const row = document.querySelector(`.delete-prompt-btn[data-prompt-id="${promptIdToDelete}"]`).closest('tr');
 						row.remove();

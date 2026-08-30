@@ -13,25 +13,25 @@
         <p class="mt-1 text-slate-500 dark:text-slate-400">Interactive editing — Seedream 5.0 Pro now live on fal.</p>
     </div>
 
-    <div class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]">
-        <section class="card">
+    <div id="proEditorGrid" class="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(22rem,.65fr)]">
+        <section id="proImageSection" class="card">
             <div class="card-header">1. Choose one image and mark edit areas</div>
             <div class="card-body space-y-4">
                 @include('partials.single-image-picker')
                 <div id="proCanvasPanel" class="hidden space-y-3">
                     <p class="text-sm text-slate-500">Click “Add area”, then drag a rectangle over the image. Each area receives its own color prompt.</p>
-                    <div class="overflow-auto rounded-2xl bg-slate-950/90 p-3">
-                        <canvas id="proEditCanvas" class="mx-auto max-h-[65vh] max-w-full cursor-crosshair"></canvas>
-                    </div>
                     <div class="flex flex-wrap gap-2">
                         <button type="button" id="addAreaButton" class="btn btn-primary">Add area</button>
                         <button type="button" id="clearAreasButton" class="btn btn-outline-danger">Clear areas</button>
+                    </div>
+                    <div class="overflow-auto rounded-2xl bg-slate-950/90 p-3">
+                        <canvas id="proEditCanvas" class="mx-auto max-h-[65vh] max-w-full cursor-crosshair"></canvas>
                     </div>
                 </div>
             </div>
         </section>
 
-        <section class="card self-start">
+        <section id="proPromptSection" class="card self-start">
             <div class="card-header">2. Describe the edits</div>
             <div class="card-body space-y-5">
                 <div>

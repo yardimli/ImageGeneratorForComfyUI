@@ -631,7 +631,7 @@ class RenderJobService
 
         }
 
-        Log::channel('fal_ajax')->error('fal.ai completed but its result payload never became available.', [
+        Log::error('fal.ai completed but its result payload never became available.', [
             'prompt_id' => $prompt->id,
             'request_id' => $requestId,
             'attempts' => $diagnostics,
@@ -796,20 +796,13 @@ class RenderJobService
 
     private function touchProcessingHeartbeat(Prompt $prompt): bool
     {
-        $updated = Prompt::query()
+        Prompt::query()
             ->whereKey($prompt->id)
             ->where('render_status', 1)
             ->update(['updated_at' => now()]);
         $prompt->refresh();
 
         $isStillProcessing = (int) $prompt->render_status === 1;
-
-        Log::channel('fal_ajax')->debug('Render job heartbeat.', [
-            'prompt_id' => $prompt->id,
-            'affected_rows' => $updated,
-            'render_status' => (int) $prompt->render_status,
-            'still_processing' => $isStillProcessing,
-        ]);
 
         // MySQL reports zero affected rows when updated_at already has the same
         // second-level value. That is not a cancellation; the persisted status

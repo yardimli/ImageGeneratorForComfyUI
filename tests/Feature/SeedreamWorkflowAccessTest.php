@@ -17,6 +17,7 @@ class SeedreamWorkflowAccessTest extends TestCase
         $this->get('/layers')->assertRedirect('/login');
         $this->post('/layers')->assertRedirect('/login');
         $this->get('/layers/1')->assertRedirect('/login');
+        $this->get('/layers/1/download-all')->assertRedirect('/login');
         $this->get('/layers/1/download/0')->assertRedirect('/login');
     }
 }

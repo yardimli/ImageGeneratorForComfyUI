@@ -458,15 +458,24 @@
 		}
 
 
-		public function deleteQueuedPrompt(Prompt $prompt)
+		public function deleteQueuedPrompt(int $promptId)
 		{
-			// Check authorization
-			if ($prompt->user_id !== auth()->id()) {
-				return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+			$prompt = Prompt::query()
+				->whereKey($promptId)
+				->where('user_id', auth()->id())
+				->first();
+
+			// Deleting queue records is idempotent. If another request already
+			// removed the record, the requested end state has still been reached.
+			if ($prompt) {
+				$prompt->delete();
 			}
 
-			$prompt->delete();
-			return response()->json(['success' => true, 'message' => 'Prompt deleted successfully']);
+			return response()->json([
+				'success' => true,
+				'message' => $prompt ? 'Prompt deleted successfully' : 'Prompt was already removed',
+				'prompt_id' => $promptId,
+			]);
 		}
 
 		public function deleteAllQueuedPrompts()
@@ -475,7 +484,7 @@
 
 			// Delete all queued prompts for the current user
 			$deleted = Prompt::where('user_id', $userId)
-				->whereIn('render_status', ['queued', 'pending', null])
+				->where('render_status', 0)
 				->delete();
 
 			return response()->json([

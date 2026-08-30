@@ -1,5 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
     const config = window.seedreamProConfig;
+    const editorGrid = document.getElementById('proEditorGrid');
+    const imageSection = document.getElementById('proImageSection');
+    const promptSection = document.getElementById('proPromptSection');
     const canvas = document.getElementById('proEditCanvas');
     const context = canvas.getContext('2d');
     const canvasPanel = document.getElementById('proCanvasPanel');
@@ -23,6 +26,23 @@ document.addEventListener('DOMContentLoaded', () => {
     let start = null;
     let draft = null;
 
+    function setSelectedLayout(hasSelection) {
+        if (hasSelection) {
+            editorGrid.style.gridTemplateColumns = 'minmax(0, 1fr)';
+            promptSection.style.order = '1';
+            promptSection.style.gridColumn = '1 / -1';
+            imageSection.style.order = '2';
+            imageSection.style.gridColumn = '1 / -1';
+            return;
+        }
+
+        editorGrid.style.removeProperty('grid-template-columns');
+        promptSection.style.removeProperty('order');
+        promptSection.style.removeProperty('grid-column');
+        imageSection.style.removeProperty('order');
+        imageSection.style.removeProperty('grid-column');
+    }
+
     async function canvasSafeUrl(path) {
         const url = new URL(path, window.location.origin);
         if (url.origin === window.location.origin) return url.href;
@@ -41,10 +61,12 @@ document.addEventListener('DOMContentLoaded', () => {
         areas = [];
         renderAreaInputs();
         if (!path) {
+            setSelectedLayout(false);
             canvasPanel.classList.add('hidden');
             generateButton.disabled = true;
             return;
         }
+        setSelectedLayout(true);
         status.textContent = 'Preparing image…';
         try {
             sourceImage.src = await canvasSafeUrl(path);
@@ -56,6 +78,7 @@ document.addEventListener('DOMContentLoaded', () => {
             generateButton.disabled = false;
             redraw();
             status.textContent = '';
+            requestAnimationFrame(() => promptSection.scrollIntoView({ behavior: 'smooth', block: 'start' }));
         } catch (error) {
             status.textContent = error.message;
         }

@@ -164,6 +164,7 @@
 			Route::post('/', [LayerController::class, 'store'])->name('store');
 			Route::get('/{layer}', [LayerController::class, 'show'])->name('show');
 			Route::get('/{layer}/status', [LayerController::class, 'status'])->name('status');
+			Route::get('/{layer}/download-all', [LayerController::class, 'downloadAll'])->name('download-all');
 			Route::get('/{layer}/download/{index}', [LayerController::class, 'download'])
 				->whereNumber('index')
 				->name('download');
@@ -175,7 +176,9 @@
 		Route::prefix('queue')->name('prompts.queue.')->group(function () {
 			Route::delete('/delete-all', [PromptController::class, 'deleteAllQueuedPrompts'])->name('delete-all');
 			Route::delete('/failed/delete-all', [PromptController::class, 'deleteAllFailedPrompts'])->name('failed.delete-all');
-			Route::delete('/{prompt}', [PromptController::class, 'deleteQueuedPrompt'])->name('delete');
+			Route::delete('/{promptId}', [PromptController::class, 'deleteQueuedPrompt'])
+				->whereNumber('promptId')
+				->name('delete');
 			Route::post('/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('requeue');
 		});
 

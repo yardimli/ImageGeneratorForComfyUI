@@ -20,6 +20,11 @@
     </div>
 
     <section id="layerResults" class="{{ $layer->status === 2 ? '' : 'hidden' }}">
+        <div class="mb-5 flex flex-wrap items-center gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900">
+            <a href="{{ route('layers.download-all', $layer) }}" class="btn btn-primary">Download all as ZIP</a>
+            <button id="downloadLayerPsd" type="button" class="btn btn-outline-primary">Download as PSD</button>
+            <p id="layerExportStatus" class="text-sm text-slate-500" aria-live="polite"></p>
+        </div>
         <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             @foreach($layer->layers ?? [] as $index => $item)
                 @php($image = data_get($item, 'image', []))
@@ -48,6 +53,15 @@
 @endsection
 
 @section('scripts')
+@if($layer->status === 2)
+<script>
+window.layerExportConfig = {
+    jobId: {{ $layer->id }},
+    layers: @json($exportLayers),
+};
+</script>
+@vite('resources/js/layerize-export.js')
+@endif
 @if(in_array($layer->status, [0, 1], true))
 <script>
 window.layerShowConfig = {
