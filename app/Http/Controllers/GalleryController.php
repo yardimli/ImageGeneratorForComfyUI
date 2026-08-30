@@ -5,10 +5,6 @@
 	use App\Models\Prompt;
 	use Illuminate\Http\Request;
 	use Rolandstarke\Thumbnail\Facades\Thumbnail;
-	use Carbon\Carbon;
-	use Illuminate\Support\Facades\DB;
-	use Illuminate\Support\Facades\Log;
-	use Exception;
 
 	class GalleryController extends Controller
 	{
@@ -16,10 +12,13 @@
 		public function index(Request $request)
 		{
 			$sort = $request->query('sort', 'updated_at');
-			$search = $request->query('search');
+			if (!in_array($sort, ['created_at', 'updated_at'], true)) {
+				$sort = 'updated_at';
+			}
 
-			$groupByDay = $request->query('group') !== 'false';
-			$date = $request->query('date');
+			$search = $request->query('search');
+			$perPage = (int) $request->query('perPage', 40);
+			$perPage = in_array($perPage, [10, 40, 80, 160, 240], true) ? $perPage : 40;
 
 			$query = Prompt::where('user_id', auth()->id())
 				->whereNotNull('filename');
@@ -32,84 +31,24 @@
 				});
 			}
 
-			// Apply date filter if viewing a specific day
-			if ($date) {
-				$selectedDate = Carbon::parse($date);
-				$query->whereDate('created_at', $selectedDate);
-				$groupByDay = false; // Disable grouping when viewing a specific day
-			}
+			$images = $query->orderByDesc($sort)->paginate($perPage)->withQueryString();
 
-			// Apply sorting
-			$query->orderBy($sort, 'desc');
+			$this->addThumbnails($images);
 
-			if ($groupByDay && !$date) {
-				// Get distinct days first - now showing 14 days instead of 5
-				$days = $query->clone()
-					->select(DB::raw('DATE(created_at) as date'))
-					->groupBy('date')
-					->orderBy('date', 'desc')
-					->paginate(14, ['*'], 'day_page');
-
-				$groupedImages = [];
-				foreach ($days as $day) {
-					$totalCount = $query->clone()
-						->whereDate('created_at', $day->date)
-						->count();
-
-					$dayImages = $query->clone()
-						->whereDate('created_at', $day->date)
-						->limit(8)
-						->get();
-
-					$dayImages->transform(function ($prompt) {
-						if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
-							$prompt->thumbnail = Thumbnail::src($prompt->filename)
-								->preset('thumbnail_450_jpg')
-								->url();
-						}
-						return $prompt;
-					});
-
-					$dayImages->totalCount = $totalCount;
-					$groupedImages[$day->date] = $dayImages;
-				}
-
-				return view('gallery.index', [
-					'groupedImages' => $groupedImages,
-					'days' => $days,
-					'sort' => $sort,
-					'groupByDay' => $groupByDay,
-					'date' => $date,
-					'search' => $search,
-				]);
-			} else {
-				// Regular pagination for specific day view
-				$images = $query->paginate(60);
-
-				$images->getCollection()->transform(function ($prompt) {
-					if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
-						$prompt->thumbnail = Thumbnail::src($prompt->filename)
-							->preset('thumbnail_450_jpg')
-							->url();
-					}
-					return $prompt;
-				});
-
-				return view('gallery.index', [
-					'images' => $images,
-					'sort' => $sort,
-					'groupByDay' => $groupByDay,
-					'date' => $date,
-					'search' => $search,
-				]);
-			}
+			return view('gallery.index', compact('images', 'sort', 'search', 'perPage'));
 		}
 
 		public function filter(Request $request)
 		{
 			$sourceImage = $request->query('source_image');
 			$sort = $request->query('sort', 'updated_at');
+			if (!in_array($sort, ['created_at', 'updated_at'], true)) {
+				$sort = 'updated_at';
+			}
+
 			$search = $request->query('search');
+			$perPage = (int) $request->query('perPage', 40);
+			$perPage = in_array($perPage, [10, 40, 80, 160, 240], true) ? $perPage : 40;
 
 			$query = Prompt::where('user_id', auth()->id())
 				->whereNotNull('filename');
@@ -122,17 +61,9 @@
 				});
 			}
 
-			$images = $query->orderBy($sort, 'desc')
-				->paginate(60);
+			$images = $query->orderByDesc($sort)->paginate($perPage)->withQueryString();
 
-			$images->getCollection()->transform(function ($prompt) {
-				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
-					$prompt->thumbnail = Thumbnail::src($prompt->filename)
-						->preset('thumbnail_450_jpg')
-						->url();
-				}
-				return $prompt;
-			});
+			$this->addThumbnails($images);
 
 			$filterActive = !empty($sourceImage);
 			$filterDescription = "";
@@ -141,6 +72,26 @@
 				$filterDescription = "Images generated using source: " . basename($sourceImage);
 			}
 
-			return view('gallery.index', compact('images', 'filterActive', 'filterDescription', 'sort'));
+			return view('gallery.index', compact(
+				'images',
+				'filterActive',
+				'filterDescription',
+				'sort',
+				'search',
+				'perPage'
+			));
+		}
+
+		private function addThumbnails($images): void
+		{
+			$images->getCollection()->transform(function ($prompt) {
+				if ($prompt->filename && stripos($prompt->filename, 'https') !== false) {
+					$prompt->thumbnail = Thumbnail::src($prompt->filename)
+						->preset('thumbnail_450_jpg')
+						->url();
+				}
+
+				return $prompt;
+			});
 		}
 	}

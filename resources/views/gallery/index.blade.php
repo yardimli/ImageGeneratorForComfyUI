@@ -8,16 +8,13 @@
 					<div class="d-flex me-2">
 						<form action="{{ route('gallery.index') }}" method="GET" class="d-flex me-3">
 							<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
-							<input type="hidden" name="group" value="{{ $groupByDay ?? true }}">
-							@if($date)
-								<input type="hidden" name="date" value="{{ $date }}">
-							@endif
+							<input type="hidden" name="perPage" value="{{ $perPage ?? 40 }}">
 							<input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search prompts & notes"
 							       class="form-control form-control-sm me-2">
 							<button type="submit" class="btn btn-primary btn-sm">Search</button>
 							@if(isset($search) && !empty($search))
 								<a
-									href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'group' => $groupByDay ?? true]) }}"
+									href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'perPage' => $perPage ?? 40]) }}"
 									class="btn btn-outline-secondary btn-sm ms-2">Clear</a>
 							@endif
 						</form>
@@ -25,14 +22,26 @@
 					<div>
 						<div class="btn-group me-2">
 							<a
-								href="{{ route('gallery.index', ['sort' => 'updated_at', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+								href="{{ route('gallery.index', ['sort' => 'updated_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
 								class="btn btn-sm {{ ($sort ?? 'updated_at') == 'updated_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
 								by Last Updated</a>
 							<a
-								href="{{ route('gallery.index', ['sort' => 'created_at', 'group' => $groupByDay ?? true, 'date' => $date ?? null]) }}"
+								href="{{ route('gallery.index', ['sort' => 'created_at', 'perPage' => $perPage ?? 40, 'search' => $search ?? null]) }}"
 								class="btn btn-sm {{ ($sort ?? '') == 'created_at' ? 'btn-primary' : 'btn-outline-primary' }}">Sort
 								by Creation Date</a>
 						</div>
+						<form action="{{ route('gallery.index') }}" method="GET" class="d-flex align-items-center gap-2">
+							<input type="hidden" name="sort" value="{{ $sort ?? 'updated_at' }}">
+							@if(!empty($search))
+								<input type="hidden" name="search" value="{{ $search }}">
+							@endif
+							<label for="galleryPerPage" class="text-nowrap">Images per page</label>
+							<select id="galleryPerPage" name="perPage" class="form-select form-select-sm" onchange="this.form.submit()">
+								@foreach([10, 40, 80, 160, 240] as $size)
+									<option value="{{ $size }}" @selected(($perPage ?? 40) === $size)>{{ $size }}</option>
+								@endforeach
+							</select>
+						</form>
 					</div>
 					
 				</div>
@@ -50,102 +59,9 @@
 					</div>
 				@endif
 				
-				@if(isset($date) && $date)
-					<div class="alert alert-info mb-0 p-2 mt-2">
-						Viewing images from: {{ \Carbon\Carbon::parse($date)->format('F j, Y') }}
-						<a
-							href="{{ route('gallery.index', ['sort' => $sort ?? 'updated_at', 'group' => true]) }}"
-							class="ms-2 btn btn-sm btn-outline-primary">Back to Groups</a>
-					</div>
-				@endif
 			</div>
 			
 			<div class="card-body">
-				@if(isset($groupedImages) && $groupByDay)
-					@foreach($groupedImages as $groupDate => $dayImages)
-						<div class="mb-4">
-							<h4 class="border-bottom pb-2">
-								<a href="{{ route('gallery.index', ['date' => $groupDate ?? '', 'sort' => $sort ?? 'updated_at']) }}" class="text-decoration-none">
-									{{ \Carbon\Carbon::parse($groupDate)->format('F j, Y') }}
-								</a>
-								<span class="badge bg-secondary">{{ $dayImages->totalCount ?? $dayImages->count() }} images</span>
-								@if($dayImages->count() > 8)
-									<a href="{{ route('gallery.index', ['date' => $groupDate, 'sort' => $sort ?? 'updated_at']) }}" class="btn btn-sm btn-outline-primary ms-2">View All</a>
-								@endif
-							</h4>
-							
-							<div class="row">
-								@foreach($dayImages as $image)
-									<div class="col-md-3 mb-4">
-										<div class="card">
-											<div class="position-absolute top-0 start-0 m-2">
-												<input type="checkbox" class="form-check-input image-checkbox"
-												       data-prompt-id="{{ $image->id }}" style="transform: scale(1.3);">
-											</div>
-											<img src="{{ $image->preview_thumbnail_url }}" class="card-img-top cursor-pointer"
-											     onclick="openImageModal({{ Js::from($image->preview_url) }})" alt="Generated Image">
-											<div class="card-body">
-												<div class="mb-3">
-													<small class="text-muted">({{ $image->generation_type }}: {{ $image->model }})</small>
-													<div class="prompt-text" style="font-size: 0.9em; max-height: 100px; overflow-y: auto;">
-														{{ $image->generated_prompt }}
-													</div>
-												</div>
-												<div class="mb-2">
-													<small class="text-muted">{{ $image->created_at->format('Y-m-d H:i') }}</small>
-												</div>
-												<div class="mb-2">
-															<textarea class="form-control notes-input" placeholder="Add notes..."
-															          data-prompt-id="{{ $image->id }}">{{ $image->notes }}</textarea>
-												</div>
-												<button class="btn btn-primary btn-sm update-notes-btn mb-2"
-												        data-prompt-id="{{ $image->id }}">
-													Update
-												</button>
-												<button class="btn btn-danger btn-sm delete-image-btn mb-2"
-												        data-prompt-id="{{ $image->id }}">
-													Del
-												</button>
-												@if($image->generation_type === 'mix' || $image->generation_type === 'mix-one')
-													<button class="btn btn-info btn-sm view-source-btn mb-2"
-													        data-input-image1="{{ $image->input_image_1 }}"
-													        data-input-image2="{{ $image->input_image_2 }}"
-													        data-strength1="{{ $image->input_image_1_strength }}"
-													        data-strength2="{{ $image->input_image_2_strength }}">
-														Src
-													</button>
-												@endif
-												@if($image->upscale_status === 0)
-													<button class="btn btn-success btn-sm upscale-btn mb-2" data-prompt-id="{{ $image->id }}"
-															        data-filename="{{ $image->preview_url }}">
-														Upscale
-													</button>
-												@elseif($image->upscale_status === 1)
-													<div class="text-warning">Upscale in progress...</div>
-												@elseif($image->upscale_status === 2)
-													<a href="/storage/upscaled/{{ $image->upscale_url }}" class="btn btn-info btn-sm mb-2"
-													   target="_blank">
-														View Upscaled
-													</a>
-												@endif
-												<div id="upscale-status-{{ $image->id }}" class="mt-2"></div>
-											</div>
-										</div>
-									</div>
-								@endforeach
-							</div>
-						</div>
-					@endforeach
-					
-					<div class="mt-4">
-						{{ $days->appends([
-									'sort' => $sort ?? 'updated_at',
-									'group' => $groupByDay ?? true,
-									'date' => $date ?? null,
-									'search' => $search ?? null
-							])->links() }}
-					</div>
-				@else
 					<div class="row">
 						@foreach($images as $image)
 							<div class="col-md-3 mb-4">
@@ -206,14 +122,8 @@
 					</div>
 					
 					<div class="mt-4">
-						{{ $images->appends([
-									'sort' => $sort ?? 'updated_at',
-									'group' => $groupByDay ?? true,
-									'date' => $date ?? null,
-									'search' => $search ?? null
-							])->links() }}
+						{{ $images->links() }}
 					</div>
-				@endif
 			</div>
 		</div>
 	</div>
@@ -341,11 +251,6 @@
 						e.preventDefault(); // Prevent default label behavior to avoid double toggle
 					}
 				});
-			});
-			
-			// Prevent the dropdown from closing when clicking inside it
-			document.querySelector('.dropdown-menu').addEventListener('click', function (e) {
-				e.stopPropagation();
 			});
 			
 			document.querySelectorAll('.view-source-btn').forEach(button => {
