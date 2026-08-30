@@ -81,7 +81,7 @@
         </nav>
     </header>
 
-    @if(session()->has('impersonator_id'))
+    @if(session()->has('impersonator_id') && auth()->check())
         <div class="bg-amber-300 px-4 py-2 text-center text-sm font-semibold text-slate-950">
             You are viewing DreamCover as {{ auth()->user()->name }}.
             <form class="inline" action="{{ route('admin.impersonation.stop') }}" method="POST">@csrf<button class="ml-2 underline">Return to admin account</button></form>

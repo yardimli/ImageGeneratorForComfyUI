@@ -16,4 +16,12 @@ class ExampleTest extends TestCase
 
         $response->assertStatus(200);
     }
+
+    public function test_public_index_ignores_stale_impersonation_session_without_a_user(): void
+    {
+        $this->withSession(['impersonator_id' => 1])
+            ->get('/')
+            ->assertOk()
+            ->assertDontSee('You are viewing DreamCover as');
+    }
 }
