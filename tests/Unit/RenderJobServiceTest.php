@@ -22,6 +22,10 @@ class RenderJobServiceTest extends TestCase
         $this->assertSame($output, $normalize->invoke($service, ['data' => $output]));
         $this->assertSame($output, $normalize->invoke($service, ['response' => ['result' => $output]]));
         $this->assertSame($output, $normalize->invoke($service, json_encode(['output' => $output])));
+        $this->assertSame($output, $normalize->invoke($service, [
+            'request_id' => 'request-id',
+            'unexpected_gateway_wrapper' => ['payload' => $output],
+        ]));
     }
 
     public function test_it_rejects_queue_metadata_without_model_output(): void

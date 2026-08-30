@@ -373,7 +373,10 @@ class RenderJobService
         }
 
         $statusUrl = $data['status_url'] ?? "{$submitUrl}/requests/{$requestId}/status";
-        $resultUrl = $data['response_url'] ?? "{$submitUrl}/requests/{$requestId}/response";
+        // Always use fal.ai's canonical result endpoint. Some responses provide a
+        // response_url without the final /response segment, which only returns
+        // queue metadata even after the job has completed.
+        $resultUrl = "{$submitUrl}/requests/{$requestId}/response";
         $methodNotAllowedCount = 0;
 
         while (microtime(true) < $overallDeadline) {
@@ -426,45 +429,19 @@ class RenderJobService
 
             $jobStatus = $statusResponse->json('status', 'UNKNOWN');
             if ($jobStatus === 'COMPLETED') {
-                $resultResponse = Http::withHeaders($headers)->timeout(30)->get($resultUrl);
-                if ($resultResponse->failed()) {
-                    Log::warning('fal.ai result request failed.', [
-                        'prompt_id' => $prompt->id,
-                        'request_id' => $requestId,
-                        'status' => $resultResponse->status(),
-                        'body' => Str::limit($resultResponse->body(), 1000),
-                    ]);
-                    throw new \RuntimeException("fal.ai result retrieval failed with HTTP {$resultResponse->status()}.");
-                }
-
-                $rawResultPayload = $resultResponse->json();
-                $resultPayload = $this->normalizeFalResultPayload($rawResultPayload);
-                $topLevelKeys = is_array($rawResultPayload) ? array_keys($rawResultPayload) : [];
-
+                $resultPayload = $this->retrieveFalResult(
+                    $resultUrl,
+                    $headers,
+                    $prompt,
+                    $requestId,
+                    $overallDeadline
+                );
                 if ($prompt->generation_type === 'layerize') {
-                    if ($resultPayload === []) {
-                        Log::warning('fal.ai Layerize result used an unsupported response shape.', [
-                            'prompt_id' => $prompt->id,
-                            'request_id' => $requestId,
-                            'top_level_keys' => $topLevelKeys,
-                            'body' => Str::limit($resultResponse->body(), 4000),
-                        ]);
-                    }
-
                     return $resultPayload;
                 }
 
                 $imageUrl = data_get($resultPayload, 'images.0.url')
                     ?? data_get($resultPayload, 'image.url');
-                if (! is_string($imageUrl) || $imageUrl === '') {
-                    Log::warning('fal.ai completed without an image URL.', [
-                        'prompt_id' => $prompt->id,
-                        'request_id' => $requestId,
-                        'top_level_keys' => $topLevelKeys,
-                        'body' => Str::limit($resultResponse->body(), 2000),
-                    ]);
-                    throw new \RuntimeException('fal.ai completed but its result did not contain a supported image URL.');
-                }
 
                 return $imageUrl;
             }
@@ -485,6 +462,84 @@ class RenderJobService
     }
 
     /**
+     * fal.ai can report COMPLETED briefly before its model output is readable.
+     *
+     * @param  array<string, string>  $headers
+     * @return array<string, mixed>
+     */
+    private function retrieveFalResult(
+        string $resultUrl,
+        array $headers,
+        Prompt $prompt,
+        string $requestId,
+        float $overallDeadline
+    ): array {
+        $resultDeadline = min($overallDeadline, microtime(true) + self::NO_RESPONSE_TIMEOUT_SECONDS);
+        $lastBody = '';
+        $lastStatus = null;
+        $lastTopLevelKeys = [];
+
+        do {
+            if ($this->jobWasCancelledOrFailed($prompt)) {
+                return [];
+            }
+
+            try {
+                $resultResponse = Http::withHeaders($headers)
+                    ->timeout(max(1, min(30, (int) ceil($resultDeadline - microtime(true)))))
+                    ->get($resultUrl);
+                $lastStatus = $resultResponse->status();
+                $lastBody = $resultResponse->body();
+
+                if ($resultResponse->successful()) {
+                    $rawPayload = $resultResponse->json();
+                    $lastTopLevelKeys = is_array($rawPayload) ? array_keys($rawPayload) : [];
+                    $payload = $this->normalizeFalResultPayload($rawPayload);
+                    $hasExpectedOutput = $prompt->generation_type === 'layerize'
+                        ? ! empty($payload['layers'])
+                        : is_string(data_get($payload, 'images.0.url'))
+                            || is_string(data_get($payload, 'image.url'));
+
+                    if ($hasExpectedOutput) {
+                        return $payload;
+                    }
+
+                    $remoteError = data_get($rawPayload, 'error')
+                        ?? data_get($rawPayload, 'data.error')
+                        ?? data_get($rawPayload, 'response.error');
+                    if ($remoteError) {
+                        throw new \RuntimeException('fal.ai result reported an error: '.$remoteError);
+                    }
+                }
+
+                $this->touchProcessingHeartbeat($prompt);
+            } catch (ConnectionException $exception) {
+                $lastBody = $exception->getMessage();
+            }
+
+            $remaining = $resultDeadline - microtime(true);
+            if ($remaining > 0) {
+                usleep((int) (min(2, $remaining) * 1_000_000));
+            }
+        } while (microtime(true) < $resultDeadline);
+
+        Log::error('fal.ai completed but its result payload never became available.', [
+            'prompt_id' => $prompt->id,
+            'request_id' => $requestId,
+            'result_url' => $resultUrl,
+            'status' => $lastStatus,
+            'top_level_keys' => $lastTopLevelKeys,
+            'body' => Str::limit($lastBody, 10000),
+        ]);
+
+        throw new \RuntimeException(
+            $prompt->generation_type === 'layerize'
+                ? 'fal.ai completed without returning layer data.'
+                : 'fal.ai completed without returning an image URL.'
+        );
+    }
+
+    /**
      * fal.ai REST responses contain model output directly, while some gateways
      * and clients wrap the same output in data/response/result/output.
      *
@@ -502,16 +557,24 @@ class RenderJobService
 
         if (array_key_exists('images', $payload)
             || array_key_exists('layers', $payload)
-            || array_key_exists('image', $payload)) {
+            || is_string(data_get($payload, 'image.url'))) {
             return $payload;
         }
 
-        foreach (['data', 'response', 'result', 'output'] as $wrapper) {
-            if (! array_key_exists($wrapper, $payload)) {
-                continue;
+        $prioritizedValues = [];
+        foreach (['data', 'response', 'result', 'output', 'payload'] as $wrapper) {
+            if (array_key_exists($wrapper, $payload)) {
+                $prioritizedValues[] = $payload[$wrapper];
             }
+        }
+        foreach ($payload as $key => $value) {
+            if (! in_array($key, ['data', 'response', 'result', 'output', 'payload'], true)) {
+                $prioritizedValues[] = $value;
+            }
+        }
 
-            $result = $this->normalizeFalResultPayload($payload[$wrapper], $depth + 1);
+        foreach ($prioritizedValues as $value) {
+            $result = $this->normalizeFalResultPayload($value, $depth + 1);
             if ($result !== []) {
                 return $result;
             }
