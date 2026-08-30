@@ -1,4 +1,5 @@
 (() => {
+    const POLL_DELAY_MS = 5000;
     const config = window.dreamCoverRenderQueue;
     const panel = document.getElementById('renderQueuePanel');
 
@@ -184,7 +185,7 @@
         clearTimeout(pollTimer);
 
         if (queueCheckInFlight) {
-            pollTimer = setTimeout(tick, 3000);
+            pollTimer = setTimeout(tick, POLL_DELAY_MS);
             return;
         }
 
@@ -203,7 +204,7 @@
             elements.pulse.className = 'size-2.5 rounded-full bg-red-500';
         } finally {
             queueCheckInFlight = false;
-            pollTimer = setTimeout(tick, 3000);
+            pollTimer = setTimeout(tick, POLL_DELAY_MS);
         }
     }
 

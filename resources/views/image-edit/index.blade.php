@@ -247,5 +247,5 @@
 		});
 	</script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
-	<script src="{{ asset('js/image-edit.js') }}"></script>
+	<script src="{{ asset('js/image-edit.js') }}?v={{ filemtime(public_path('js/image-edit.js')) }}"></script>
 @endsection

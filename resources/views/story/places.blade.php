@@ -253,5 +253,5 @@
 		};
 	</script>
 	{{-- END MODIFICATION --}}
-	<script src="{{ asset('js/story-asset-manager.js') }}"></script>
+	<script src="{{ asset('js/story-asset-manager.js') }}?v={{ filemtime(public_path('js/story-asset-manager.js')) }}"></script>
 @endsection

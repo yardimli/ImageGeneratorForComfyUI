@@ -339,10 +339,10 @@
 			const statusDiv = document.getElementById(`upscale-status-${coverId}`);
 			
 			if (upscalePollingIntervals[coverId]) {
-				clearInterval(upscalePollingIntervals[coverId]);
+				clearTimeout(upscalePollingIntervals[coverId]);
 			}
 			
-			upscalePollingIntervals[coverId] = setInterval(async () => {
+			const poll = async () => {
 				let urlTemplate = '{{ route("album-covers.upscale.status", ["cover" => ":id", "prediction_id" => ":pid"]) }}';
 				let url = urlTemplate.replace(':id', coverId).replace(':pid', predictionId);
 				try {
@@ -359,7 +359,6 @@
 					}
 					
 					if (data.status === 'completed') {
-						clearInterval(upscalePollingIntervals[coverId]);
 						delete upscalePollingIntervals[coverId];
 						controlsDiv.innerHTML = `<a href="${data.image_url}" class="btn btn-info btn-sm" target="_blank">View/Download Upscaled</a><button type="button" class="btn btn-warning btn-sm upscale-btn ms-1" data-cover-id="${coverId}">Redo Upscale</button>`;
 						statusDiv.innerHTML = `<span class="text-success">Completed!</span>`;
@@ -369,13 +368,18 @@
 						throw new Error(data.message || 'An error occurred during processing.');
 					}
 				} catch (error) {
-					clearInterval(upscalePollingIntervals[coverId]);
 					delete upscalePollingIntervals[coverId];
 					console.error('Error polling upscale status:', error);
 					controlsDiv.innerHTML = `<div class="text-danger">Upscale failed.</div><button type="button" class="btn btn-success btn-sm upscale-btn mt-1" data-cover-id="${coverId}">Retry Upscale</button>`;
 					statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
+					return;
 				}
-			}, 5000); // Poll every 5 seconds
+
+				if (upscalePollingIntervals[coverId] !== undefined) {
+					upscalePollingIntervals[coverId] = setTimeout(poll, 5000);
+				}
+			};
+			upscalePollingIntervals[coverId] = setTimeout(poll, 5000);
 		}
 		
 		
@@ -576,10 +580,10 @@
 				const placeholderWrapper = document.getElementById(`cover-wrapper-${newCoverId}`);
 				
 				if (pollingIntervals[newCoverId]) {
-					clearInterval(pollingIntervals[newCoverId]);
+					clearTimeout(pollingIntervals[newCoverId]);
 				}
 				
-				pollingIntervals[newCoverId] = setInterval(async () => {
+				const poll = async () => {
 					try {
 						const response = await fetch('{{ route("album-covers.kontext.status") }}', {
 							method: 'POST',
@@ -600,7 +604,6 @@
 						}
 						
 						if (data.status === 'completed') {
-							clearInterval(pollingIntervals[newCoverId]);
 							delete pollingIntervals[newCoverId];
 							statusDiv.innerHTML = `<span class="text-success">Generation complete!</span>`;
 							setTimeout(() => statusDiv.innerHTML = '', 3000);
@@ -644,6 +647,7 @@
 									if (btn.title !== "No mix prompt available") btn.disabled = false;
 								});
 							}
+							return;
 							
 						} else if (data.status === 'processing') {
 							statusDiv.textContent = 'Processing...';
@@ -651,18 +655,23 @@
 							throw new Error(data.message || 'An error occurred during processing.');
 						}
 					} catch (error) {
-						clearInterval(pollingIntervals[newCoverId]);
 						delete pollingIntervals[newCoverId];
 						console.error('Error polling status:', error);
 						statusDiv.innerHTML = `<span class="text-danger">Error: ${error.message}</span>`;
 						placeholderWrapper.remove();
 						if (sourceControls) {
-							sourceControls.querySelectorAll('.kontext-btn').forEach(btn => {
-								if (btn.title !== "No mix prompt available") btn.disabled = false;
-							});
+								sourceControls.querySelectorAll('.kontext-btn').forEach(btn => {
+									if (btn.title !== "No mix prompt available") btn.disabled = false;
+								});
+							}
+							return;
 						}
+
+					if (pollingIntervals[newCoverId] !== undefined) {
+						pollingIntervals[newCoverId] = setTimeout(poll, 5000);
 					}
-				}, 3000);
+				};
+				pollingIntervals[newCoverId] = setTimeout(poll, 5000);
 			}
 			
 			// --- New Script for Edit Prompt Modal ---

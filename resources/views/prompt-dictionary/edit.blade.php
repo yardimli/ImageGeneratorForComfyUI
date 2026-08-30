@@ -226,6 +226,6 @@
 		// Pass prompt templates from PHP to JavaScript
 		window.promptTemplates = @json($promptTemplates ?? []);
 	</script>
-	<script src="{{ asset('js/prompt-dictionary-edit.js') }}"></script>
+	<script src="{{ asset('js/prompt-dictionary-edit.js') }}?v={{ filemtime(public_path('js/prompt-dictionary-edit.js')) }}"></script>
 	{{-- END MODIFICATION --}}
 @endsection

@@ -604,9 +604,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			const imagePathInput = card.querySelector('.image-path-input');
 			spinner.classList.remove('d-none');
 			let pollAttempts = 0;
-			const pollInterval = setInterval(async () => {
+			const poll = async () => {
 				if (++pollAttempts > 180) {
-					clearInterval(pollInterval);
 					spinner.classList.add('d-none');
 					alert('Image generation is taking longer than expected.');
 					return;
@@ -616,7 +615,6 @@ document.addEventListener('DOMContentLoaded', function () {
 					const statusResponse = await fetch(statusEndpoint);
 					const statusData = await statusResponse.json();
 					if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
-						clearInterval(pollInterval);
 						spinner.classList.add('d-none');
 						imagePreview.src = statusData.preview_url || statusData.filename;
 						imagePathInput.value = statusData.filename;
@@ -627,12 +625,16 @@ document.addEventListener('DOMContentLoaded', function () {
 						imagePreview.dataset.bsTarget = '#imageDetailModal';
 						imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
 						imagePreview.dataset.promptId = statusData.prompt_id;
+						return;
 					}
 				} catch (pollError) {
-					clearInterval(pollInterval);
 					spinner.classList.add('d-none');
+					return;
 				}
-			}, 5000);
+
+				setTimeout(poll, 5000);
+			};
+			setTimeout(poll, 5000);
 		}
 	}
 });

@@ -789,9 +789,8 @@ document.addEventListener('DOMContentLoaded', function () {
 			spinner.classList.remove('d-none');
 			
 			let pollAttempts = 0;
-			const pollInterval = setInterval(async () => {
+			const poll = async () => {
 				if (++pollAttempts > 180) {
-					clearInterval(pollInterval);
 					spinner.classList.add('d-none');
 					alert('Image generation is taking longer than expected.');
 					return;
@@ -803,7 +802,6 @@ document.addEventListener('DOMContentLoaded', function () {
 					const statusData = await statusResponse.json();
 					
 					if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
-						clearInterval(pollInterval);
 						spinner.classList.add('d-none');
 						
 						imagePreview.src = statusData.preview_url || statusData.filename;
@@ -819,12 +817,16 @@ document.addEventListener('DOMContentLoaded', function () {
 						imagePreview.dataset.promptId = statusData.prompt_id;
 						imagePreview.dataset.upscaleStatus = statusData.upscale_status;
 						imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+						return;
 					}
 				} catch (pollError) {
-					clearInterval(pollInterval);
 					spinner.classList.add('d-none');
+					return;
 				}
-			}, 5000);
+
+				setTimeout(poll, 5000);
+			};
+			setTimeout(poll, 5000);
 		}
 	}
 	

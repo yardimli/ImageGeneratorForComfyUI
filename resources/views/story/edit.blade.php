@@ -224,5 +224,5 @@
 		};
 	</script>
 	{{-- END MODIFICATION --}}
-	<script src="{{ asset('js/story-editor.js') }}"></script>
+	<script src="{{ asset('js/story-editor.js') }}?v={{ filemtime(public_path('js/story-editor.js')) }}"></script>
 @endsection

@@ -308,9 +308,8 @@ document.addEventListener('DOMContentLoaded', function () {
 	
 	function startPolling(promptId) {
 		let pollAttempts = 0;
-		const pollInterval = setInterval(async () => {
+		const poll = async () => {
 			if (++pollAttempts > 180) { // 15 minutes timeout
-				clearInterval(pollInterval);
 				spinnerContainer.classList.remove('d-flex');
 				spinnerContainer.classList.add('d-none');
 				alert('Image generation is taking longer than expected.');
@@ -324,20 +323,23 @@ document.addEventListener('DOMContentLoaded', function () {
 				const statusData = await statusResponse.json();
 				
 				if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
-					clearInterval(pollInterval);
 					spinnerContainer.classList.remove('d-flex');
 					spinnerContainer.classList.add('d-none');
 					resultImage.src = statusData.preview_url || statusData.filename;
 					generateBtn.disabled = false;
 					generateBtn.querySelector('.spinner-border').classList.add('d-none');
+					return;
 				}
 			} catch (pollError) {
-				clearInterval(pollInterval);
 				spinnerContainer.classList.remove('d-flex');
 				spinnerContainer.classList.add('d-none');
 				generateBtn.disabled = false;
 				generateBtn.querySelector('.spinner-border').classList.add('d-none');
+				return;
 			}
-		}, 5000);
+
+			setTimeout(poll, 5000);
+		};
+		setTimeout(poll, 5000);
 	};
 });

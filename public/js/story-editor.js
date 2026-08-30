@@ -1041,10 +1041,9 @@ document.addEventListener('DOMContentLoaded', function () {
 					let pollAttempts = 0;
 					const maxPollAttempts = 180; // 15 minutes
 					
-					const pollInterval = setInterval(async () => {
+					const poll = async () => {
 						pollAttempts++;
 						if (pollAttempts > maxPollAttempts) {
-							clearInterval(pollInterval);
 							spinner.classList.add('d-none');
 							alert('Image generation is taking longer than expected. The page will be updated when you reload it later.');
 							return;
@@ -1055,7 +1054,6 @@ document.addEventListener('DOMContentLoaded', function () {
 							const statusData = await statusResponse.json();
 							
 							if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
-								clearInterval(pollInterval);
 								spinner.classList.add('d-none');
 								
 								// Update image and inputs
@@ -1074,13 +1072,17 @@ document.addEventListener('DOMContentLoaded', function () {
 								imagePreview.dataset.promptId = statusData.prompt_id;
 								imagePreview.dataset.upscaleStatus = statusData.upscale_status;
 								imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+								return;
 							}
 						} catch (pollError) {
 							console.error('Polling error:', pollError);
-							clearInterval(pollInterval);
 							spinner.classList.add('d-none');
+							return;
 						}
-					}, 5000); // Poll every 5 seconds
+
+						setTimeout(poll, 5000);
+					};
+					setTimeout(poll, 5000);
 					
 				} else {
 					alert('An error occurred: ' + (data.message || 'Unknown error'));
@@ -1238,30 +1240,38 @@ document.addEventListener('DOMContentLoaded', function () {
 					spinner.classList.remove('d-none');
 					
 					let pollAttempts = 0;
-					const pollInterval = setInterval(async () => {
+					const poll = async () => {
 						if (++pollAttempts > 180) {
-							clearInterval(pollInterval);
 							spinner.classList.add('d-none');
 							return;
 						}
-						const statusResponse = await fetch(`/stories/pages/${storyPageId}/image-status`);
-						const statusData = await statusResponse.json();
-						if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
-							clearInterval(pollInterval);
+						try {
+							const statusResponse = await fetch(`/stories/pages/${storyPageId}/image-status`);
+							const statusData = await statusResponse.json();
+							if (statusResponse.ok && statusData.success && statusData.status === 'ready') {
+								spinner.classList.add('d-none');
+								const imagePreview = imageContainer.querySelector('.page-image-preview');
+								const imagePathInput = pageCard.querySelector('.image-path-input');
+								imagePreview.src = statusData.preview_url || statusData.filename;
+								imagePathInput.value = statusData.filename;
+								imagePreview.style.cursor = 'pointer';
+								imagePreview.dataset.bsToggle = 'modal';
+								imagePreview.dataset.bsTarget = '#imageDetailModal';
+								imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
+								imagePreview.dataset.promptId = statusData.prompt_id;
+								imagePreview.dataset.upscaleStatus = statusData.upscale_status;
+								imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+								return;
+							}
+						} catch (pollError) {
+							console.error('Polling error:', pollError);
 							spinner.classList.add('d-none');
-							const imagePreview = imageContainer.querySelector('.page-image-preview');
-							const imagePathInput = pageCard.querySelector('.image-path-input');
-							imagePreview.src = statusData.preview_url || statusData.filename;
-							imagePathInput.value = statusData.filename;
-							imagePreview.style.cursor = 'pointer';
-							imagePreview.dataset.bsToggle = 'modal';
-							imagePreview.dataset.bsTarget = '#imageDetailModal';
-							imagePreview.dataset.imageUrl = statusData.preview_url || statusData.filename;
-							imagePreview.dataset.promptId = statusData.prompt_id;
-							imagePreview.dataset.upscaleStatus = statusData.upscale_status;
-							imagePreview.dataset.upscaleUrl = statusData.upscale_url ? `/storage/upscaled/${statusData.upscale_url}` : '';
+							return;
 						}
-					}, 5000);
+
+						setTimeout(poll, 5000);
+					};
+					setTimeout(poll, 5000);
 				} else {
 					alert('An error occurred: ' + (data.message || 'Unknown error'));
 				}
