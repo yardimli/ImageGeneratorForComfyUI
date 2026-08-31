@@ -76,7 +76,6 @@
 		Route::post('/templates/save', [PromptController::class, 'saveTemplate'])->name('templates.save');
 		Route::delete('/prompt-settings/{id}', [PromptController::class, 'deleteSettingWithImages'])->name('prompt-settings.delete');
 
-
 		// --- Prompt Generation & Management ---
 		Route::prefix('prompts')->name('prompts.')->group(function () {
 			Route::get('/', [PromptController::class, 'index'])->name('index');
@@ -162,13 +161,7 @@
 
 		Route::prefix('photoshop')->name('photoshop.')->group(function () {
 			Route::get('/', [PhotoshopController::class, 'index'])->name('index');
-			Route::get('/projects', [PhotoshopController::class, 'projects'])->name('projects');
-			Route::post('/projects', [PhotoshopController::class, 'storeProject'])->name('projects.store');
-			Route::get('/projects/{project}', [PhotoshopController::class, 'show'])->name('projects.show');
-			Route::patch('/projects/{project}', [PhotoshopController::class, 'updateProject'])->name('projects.update');
-			Route::post('/projects/{project}/save', [PhotoshopController::class, 'saveProject'])->name('projects.save');
-			Route::post('/projects/{project}/layers', [PhotoshopController::class, 'storeLayer'])->name('layers.store');
-			Route::patch('/layers/{layer}', [PhotoshopController::class, 'updateLayer'])->name('layers.update');
+
 		});
 
 		Route::prefix('layers')->name('layers.')->group(function () {

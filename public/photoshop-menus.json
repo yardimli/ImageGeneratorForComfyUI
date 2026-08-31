@@ -1,11 +1,9 @@
 [
   {"id":"file","label":"File","visible":true,"items":[
     {"label":"New…","action":"newProject","shortcut":"Ctrl+N","visible":true},
-    {"label":"Open…","action":"openProject","shortcut":"Ctrl+O","visible":true},
-    {"label":"Open from local…","action":"openLocal","shortcut":"Alt+Ctrl+O","visible":true},
-    {"label":"Open Recent","visible":true,"children":[{"label":"No recent projects","enabled":false,"visible":true}]},
+    {"label":"Open PSD or Image…","action":"openLocal","shortcut":"Ctrl+O","visible":true},
     {"separator":true,"visible":true},{"label":"Close","action":"closeProject","shortcut":"Ctrl+W","visible":true},
-    {"label":"Save","action":"saveProject","shortcut":"Ctrl+S","visible":true},
+    {"label":"Save as PSD…","action":"saveProject","shortcut":"Ctrl+S","visible":true},
     {"label":"Save As…","visible":false},{"label":"Export","visible":false,"children":[{"label":"Quick Export as PNG","visible":false},{"label":"Export As…","visible":false}]},
     {"separator":true,"visible":true},{"label":"Exit","action":"exit","visible":true}
   ]},
@@ -21,19 +19,19 @@
     {"label":"Image Size…","visible":false},{"label":"Canvas Size…","visible":false},{"label":"Image Rotation","visible":false,"children":[{"label":"90° Clockwise","visible":false},{"label":"180°","visible":false}]},{"label":"Crop","visible":false}
   ]},
   {"id":"layer","label":"Layer","visible":true,"items":[
-    {"label":"New","visible":true,"children":[{"label":"Layer…","action":"newBlankLayer","visible":true},{"label":"Group…","visible":false},{"label":"Background from Layer","visible":false}]},
+    {"label":"New","visible":true,"children":[{"label":"Layer…","action":"newBlankLayer","visible":true},{"label":"Text Layer…","action":"addTextLayer","visible":true},{"label":"Group…","visible":false},{"label":"Background from Layer","visible":false}]},
     {"label":"Duplicate Layer…","action":"duplicateLayer","visible":true},{"label":"Rename Layer…","action":"renameLayer","visible":true},{"label":"Delete","enabled":false,"visible":true},
     {"separator":true,"visible":true},{"label":"Layer Style","visible":false,"children":[{"label":"Blending Options…","visible":false},{"label":"Drop Shadow…","visible":false}]},
     {"label":"Arrange","visible":false,"children":[{"label":"Bring to Front","visible":false},{"label":"Send to Back","visible":false}]},{"label":"Align","visible":false,"children":[{"label":"Left Edges","visible":false},{"label":"Horizontal Centers","visible":false}]},{"label":"Merge Layers","visible":false}
   ]},
-  {"id":"type","label":"Type","visible":false,"items":[{"label":"Panels","visible":false,"children":[{"label":"Character","visible":false},{"label":"Paragraph","visible":false}]},{"label":"Anti-Alias","visible":false},{"label":"Warp Text…","visible":false}]},
+  {"id":"type","label":"Type","visible":true,"items":[{"label":"Add Text Layer…","action":"addTextLayer","visible":true},{"label":"Panels","visible":false,"children":[{"label":"Character","visible":false},{"label":"Paragraph","visible":false}]},{"label":"Anti-Alias","visible":false},{"label":"Warp Text…","visible":false}]},
   {"id":"select","label":"Select","visible":true,"items":[
     {"label":"All","action":"selectAll","shortcut":"Ctrl+A","visible":true},{"label":"Deselect","action":"deselect","shortcut":"Ctrl+D","visible":true},{"label":"Reselect","enabled":false,"visible":true},{"label":"Inverse","enabled":false,"visible":true},
     {"separator":true,"visible":true},{"label":"All Layers","visible":false},{"label":"Color Range…","visible":false},{"label":"Subject","visible":false},{"label":"Modify","visible":false,"children":[{"label":"Border…","visible":false},{"label":"Expand…","visible":false},{"label":"Contract…","visible":false}]}
   ]},
   {"id":"filter","label":"Filter","visible":false,"items":[{"label":"Neural Filters…","visible":false},{"label":"Blur","visible":false,"children":[{"label":"Gaussian Blur…","visible":false},{"label":"Motion Blur…","visible":false}]},{"label":"Noise","visible":false,"children":[{"label":"Add Noise…","visible":false},{"label":"Reduce Noise…","visible":false}]}]},
   {"id":"view","label":"View","visible":true,"items":[
-    {"label":"Zoom In","action":"zoomIn","shortcut":"Ctrl++","visible":true},{"label":"Zoom Out","action":"zoomOut","shortcut":"Ctrl+-","visible":true},{"label":"Fit on Screen","action":"fitScreen","shortcut":"Ctrl+0","visible":true},{"label":"100%","action":"actualPixels","shortcut":"Ctrl+1","visible":true},
+    {"label":"Zoom In","action":"zoomIn","shortcut":"Ctrl++","visible":true},{"label":"Zoom Out","action":"zoomOut","shortcut":"Ctrl+-","visible":true},{"label":"Zoom to Fit","action":"fitScreen","shortcut":"Ctrl+0","visible":true},{"label":"100%","action":"actualPixels","shortcut":"Ctrl+1","visible":true},
     {"separator":true,"visible":true},{"label":"Extras","visible":false},{"label":"Rulers","visible":true,"enabled":false},{"label":"Snap","visible":true,"enabled":false},{"label":"Snap To","visible":true,"children":[{"label":"Document Bounds","visible":true,"enabled":false},{"label":"Layers","visible":true,"enabled":false},{"label":"Center","visible":true,"enabled":false}]}
   ]},
   {"id":"plugins","label":"Plugins","visible":false,"items":[{"label":"Browse Plugins…","visible":false}]},
