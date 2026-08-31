@@ -40,6 +40,7 @@
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('prompt-dictionary.index') }}">Prompt dictionary</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('image-edit.index') }}">Image editor</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('image-editor-pro.index') }}">Image editor pro</a>
+                            <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('photoshop.index') }}" target="_blank" rel="noopener">Photoshop <span class="float-right text-xs text-slate-400">↗</span></a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('layers.index') }}">Layerize</a>
                             <a class="block rounded-lg px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800" href="{{ route('stories.index') }}">Story studio</a>
                         </div>

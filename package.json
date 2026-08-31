@@ -13,6 +13,7 @@
         "vite": "^5.0.0"
     },
     "dependencies": {
-        "ag-psd": "^31.0.2"
+        "ag-psd": "^31.0.2",
+        "moveable": "^0.53.0"
     }
 }

@@ -17,6 +17,7 @@
 	use App\Http\Controllers\PromptController;
 	use App\Http\Controllers\PromptDictionaryController;
 	use App\Http\Controllers\PromptDictionaryImageController;
+	use App\Http\Controllers\PhotoshopController;
 	use App\Http\Controllers\QuizController;
 	use App\Http\Controllers\RenderQueueController;
 	use App\Http\Controllers\StoryController;
@@ -157,6 +158,16 @@
 			Route::get('/', [ImageEditorProController::class, 'index'])->name('index');
 			Route::post('/generate', [ImageEditorProController::class, 'generate'])->name('generate');
 			Route::get('/status/{prompt}', [ImageEditorProController::class, 'status'])->name('status');
+		});
+
+		Route::prefix('photoshop')->name('photoshop.')->group(function () {
+			Route::get('/', [PhotoshopController::class, 'index'])->name('index');
+			Route::get('/projects', [PhotoshopController::class, 'projects'])->name('projects');
+			Route::post('/projects', [PhotoshopController::class, 'storeProject'])->name('projects.store');
+			Route::get('/projects/{project}', [PhotoshopController::class, 'show'])->name('projects.show');
+			Route::patch('/projects/{project}', [PhotoshopController::class, 'updateProject'])->name('projects.update');
+			Route::post('/projects/{project}/layers', [PhotoshopController::class, 'storeLayer'])->name('layers.store');
+			Route::patch('/layers/{layer}', [PhotoshopController::class, 'updateLayer'])->name('layers.update');
 		});
 
 		Route::prefix('layers')->name('layers.')->group(function () {

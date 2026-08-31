@@ -69,4 +69,9 @@
 		{
 			return $this->hasMany(Layer::class);
 		}
+
+		public function photoshopProjects()
+		{
+			return $this->hasMany(PhotoshopProject::class);
+		}
 	}

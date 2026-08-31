@@ -10,6 +10,7 @@ export default defineConfig({
                 'resources/css/app.css',
                 'resources/js/app.js',
                 'resources/js/layerize-export.js',
+                'resources/js/photoshop.js',
             ],
             refresh: true,
         }),
