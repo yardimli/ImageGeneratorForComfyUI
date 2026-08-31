@@ -10,7 +10,7 @@
     {"separator":true,"visible":true},{"label":"Exit","action":"exit","visible":true}
   ]},
   {"id":"edit","label":"Edit","visible":true,"items":[
-    {"label":"Undo","action":"undo","shortcut":"Ctrl+Z","enabled":false,"visible":true},{"label":"Redo","action":"redo","shortcut":"Shift+Ctrl+Z","enabled":false,"visible":true},
+    {"label":"Undo","action":"undo","shortcut":"Ctrl+Z","visible":true},{"label":"Redo","action":"redo","shortcut":"Shift+Ctrl+Z","visible":true},
     {"separator":true,"visible":true},{"label":"Cut","action":"cut","shortcut":"Ctrl+X","enabled":false,"visible":true},{"label":"Copy","action":"copy","shortcut":"Ctrl+C","visible":true},{"label":"Paste","action":"paste","shortcut":"Ctrl+V","visible":true},
     {"label":"Paste Special","visible":true,"children":[{"label":"Paste in Place","action":"pasteInPlace","visible":true},{"label":"Paste Into","visible":false},{"label":"Paste Outside","visible":false}]},
     {"separator":true,"visible":true},{"label":"Free Transform","visible":false,"shortcut":"Ctrl+T"},{"label":"Transform","visible":false,"children":[{"label":"Scale","visible":false},{"label":"Rotate","visible":false},{"label":"Flip Horizontal","visible":false}]},

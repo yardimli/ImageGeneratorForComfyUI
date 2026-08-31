@@ -13,5 +13,5 @@ class PhotoshopProject extends Model
     protected $casts = ['width' => 'integer', 'height' => 'integer'];
 
     public function user() { return $this->belongsTo(User::class); }
-    public function layers() { return $this->hasMany(PhotoshopLayer::class)->orderBy('z_index')->orderBy('id'); }
+    public function layers() { return $this->hasMany(PhotoshopLayer::class)->where('is_committed', true)->orderBy('z_index')->orderBy('id'); }
 }

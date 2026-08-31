@@ -12,8 +12,8 @@
 <div id="photoshopApp" class="ps-app" data-projects-url="{{ route('photoshop.projects') }}" data-project-store-url="{{ route('photoshop.projects.store') }}" data-project-base-url="{{ url('/photoshop/projects') }}" data-layer-base-url="{{ url('/photoshop/layers') }}">
     <header class="ps-menubar">
         <a class="ps-brand" href="{{ route('home') }}" title="Back to DreamCover"><img src="{{ asset('images/favicon-32x32.png') }}" alt="DreamCover"></a>
+        <div class="ps-save-control"><span id="saveStatus" class="ps-save-status">Saved</span><button id="saveButton" type="button" data-action="saveProject" hidden>Save</button></div>
         <nav id="menuBar" aria-label="Application menus"></nav>
-        <span id="saveStatus" class="ps-save-status">All changes saved</span>
     </header>
 
     <section class="ps-options" aria-label="Tool options">
@@ -52,16 +52,28 @@
     <input id="localFileInput" type="file" accept="image/*" hidden>
     <div id="toast" class="ps-toast" role="status" hidden></div>
 
-    <dialog id="newProjectDialog" class="ps-dialog">
+    <dialog id="newProjectDialog" class="ps-dialog ps-new-dialog">
         <form method="dialog" id="newProjectForm">
             <header><h2>New document</h2><button value="cancel" aria-label="Close">×</button></header>
-            <div class="ps-dialog-body">
-                <label>Name<input id="newProjectName" value="Untitled-1" maxlength="120" required></label>
-                <label>Preset<select id="sizePreset"></select></label>
-                <div class="ps-size-grid"><label>Width<input id="projectWidth" type="number" min="1" max="8192" value="1024" required></label><label>Height<input id="projectHeight" type="number" min="1" max="8192" value="1024" required></label></div>
-                <p class="ps-dialog-note">Pixels · RGB color · transparent background</p>
+            <div class="ps-new-layout">
+                <section class="ps-template-browser" aria-label="Document templates">
+                    <nav id="templateCategories" class="ps-template-categories" aria-label="Template categories"></nav>
+                    <div id="templateGrid" class="ps-template-grid"></div>
+                </section>
+                <aside class="ps-document-settings">
+                    <label>Name<input id="newProjectName" value="New Project" maxlength="120" required></label>
+                    <div class="ps-dimension-grid">
+                        <label>Width<input id="projectWidth" type="number" min="0.01" step="any" value="1280" required></label>
+                        <button id="swapDimensions" type="button" title="Swap width and height" aria-label="Swap width and height">↔</button>
+                        <label>Height<input id="projectHeight" type="number" min="0.01" step="any" value="720" required></label>
+                        <label class="ps-unit-label"><span class="sr-only">Units</span><select id="documentUnit" aria-label="Document units"><option value="px">Pixels</option><option value="in">Inches</option><option value="mm">Millimeters</option></select></label>
+                    </div>
+                    <div class="ps-dpi-grid"><label>DPI<input id="documentDpi" type="number" min="1" max="2400" value="72" required></label><label><span class="sr-only">DPI units</span><select aria-label="DPI units"><option>Pixels / Inch</option></select></label></div>
+                    <label>Background<select id="documentBackground"><option value="transparent">Transparent</option></select></label>
+                    <div class="ps-color-grid"><label>Mode<select><option>RGB</option></select></label><label><span class="sr-only">Bit depth</span><select aria-label="Bit depth"><option>8 bit</option></select></label><label>Profile<select><option>sRGB</option></select></label></div>
+                    <button id="createProjectButton" type="submit" value="default" class="ps-create-document">Create</button>
+                </aside>
             </div>
-            <footer><button value="cancel" class="secondary">Cancel</button><button id="createProjectButton" value="default">Create</button></footer>
         </form>
     </dialog>
 

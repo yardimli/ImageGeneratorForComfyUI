@@ -1,0 +1,108 @@
+{
+  "categories": [
+    {
+      "id": "social",
+      "label": "Social",
+      "templates": [
+        { "id": "fb-page-cover", "title": "FB Page Cover", "width": 1640, "height": 664, "unit": "px", "dpi": 72, "display": "1640 x 664 px" },
+        { "id": "fb-event-image", "title": "FB Event Image", "width": 1920, "height": 1080, "unit": "px", "dpi": 72, "display": "1920 x 1080 px" },
+        { "id": "fb-group-header", "title": "FB Group Header", "width": 1640, "height": 856, "unit": "px", "dpi": 72, "display": "1640 x 856 px" },
+        { "id": "instagram", "title": "Instagram", "width": 1080, "height": 1080, "unit": "px", "dpi": 72, "display": "1080 x 1080 px" },
+        { "id": "insta-story", "title": "Insta Story", "width": 1080, "height": 1920, "unit": "px", "dpi": 72, "display": "1080 x 1920 px" },
+        { "id": "insta-portrait", "title": "Insta Portrait", "width": 1080, "height": 1350, "unit": "px", "dpi": 72, "display": "1080 x 1350 px" },
+        { "id": "youtube-thumbnail", "title": "Youtube Thumbnail", "width": 1280, "height": 720, "unit": "px", "dpi": 72, "display": "1280 x 720 px" },
+        { "id": "youtube-profile", "title": "Youtube Profile", "width": 800, "height": 800, "unit": "px", "dpi": 72, "display": "800 x 800 px" },
+        { "id": "youtube-cover", "title": "Youtube Cover", "width": 2560, "height": 1440, "unit": "px", "dpi": 72, "display": "2560 x 1440 px" },
+        { "id": "twitter-profile", "title": "Twitter Profile", "width": 400, "height": 400, "unit": "px", "dpi": 72, "display": "400 x 400 px" },
+        { "id": "twitter-header", "title": "Twitter Header", "width": 1500, "height": 500, "unit": "px", "dpi": 72, "display": "1500 x 500 px" }
+      ]
+    },
+    {
+      "id": "print",
+      "label": "Print",
+      "templates": [
+        { "id": "a3", "title": "A3", "width": 297, "height": 420, "unit": "mm", "dpi": 300, "display": "297 x 420 mm" },
+        { "id": "a4", "title": "A4", "width": 210, "height": 297, "unit": "mm", "dpi": 300, "display": "210 x 297 mm" },
+        { "id": "a5", "title": "A5", "width": 148, "height": 210, "unit": "mm", "dpi": 300, "display": "148 x 210 mm" },
+        { "id": "a6", "title": "A6", "width": 105, "height": 148, "unit": "mm", "dpi": 300, "display": "105 x 148 mm" },
+        { "id": "b3", "title": "B3", "width": 353, "height": 500, "unit": "mm", "dpi": 300, "display": "353 x 500 mm" },
+        { "id": "b4", "title": "B4", "width": 250, "height": 353, "unit": "mm", "dpi": 300, "display": "250 x 353 mm" },
+        { "id": "b5", "title": "B5", "width": 176, "height": 250, "unit": "mm", "dpi": 300, "display": "176 x 250 mm" },
+        { "id": "letter", "title": "Letter", "width": 8.5, "height": 11, "unit": "in", "dpi": 300, "display": "8.5 x 11 in" },
+        { "id": "ledger", "title": "Ledger", "width": 11, "height": 17, "unit": "in", "dpi": 300, "display": "11 x 17 in" },
+        { "id": "business-card", "title": "Business Card", "width": 3.5, "height": 2, "unit": "in", "dpi": 300, "display": "3.5 x 2 in" }
+      ]
+    },
+    {
+      "id": "photo",
+      "label": "Photo",
+      "templates": [
+        { "id": "wallet", "title": "Wallet", "width": 2, "height": 3, "unit": "in", "dpi": 300, "display": "2 x 3 in" },
+        { "id": "enprint", "title": "Enprint", "width": 3.5, "height": 5, "unit": "in", "dpi": 300, "display": "3.5 x 5 in" },
+        { "id": "photo-5x7", "title": "", "width": 5, "height": 7, "unit": "in", "dpi": 300, "display": "5 x 7 in" },
+        { "id": "photo-8x12", "title": "", "width": 8, "height": 12, "unit": "in", "dpi": 300, "display": "8 x 12 in" },
+        { "id": "photo-12x18", "title": "", "width": 12, "height": 18, "unit": "in", "dpi": 300, "display": "12 x 18 in" },
+        { "id": "photo-16x24", "title": "", "width": 16, "height": 24, "unit": "in", "dpi": 300, "display": "16 x 24 in" },
+        { "id": "photo-20x30", "title": "", "width": 20, "height": 30, "unit": "in", "dpi": 300, "display": "20 x 30 in" },
+        { "id": "photo-24x36", "title": "", "width": 24, "height": 36, "unit": "in", "dpi": 300, "display": "24 x 36 in" }
+      ]
+    },
+    {
+      "id": "screen",
+      "label": "Screen",
+      "templates": [
+        { "id": "vga", "title": "VGA", "width": 640, "height": 480, "unit": "px", "dpi": 72, "display": "640 x 480 px" },
+        { "id": "xga", "title": "XGA", "width": 1024, "height": 768, "unit": "px", "dpi": 72, "display": "1024 x 768 px" },
+        { "id": "hd", "title": "HD", "width": 1280, "height": 720, "unit": "px", "dpi": 72, "display": "1280 x 720 px" },
+        { "id": "screen-1366", "title": "", "width": 1366, "height": 768, "unit": "px", "dpi": 72, "display": "1366 x 768 px" },
+        { "id": "screen-1600", "title": "", "width": 1600, "height": 900, "unit": "px", "dpi": 72, "display": "1600 x 900 px" },
+        { "id": "full-hd", "title": "Full HD", "width": 1920, "height": 1080, "unit": "px", "dpi": 72, "display": "1920 x 1080 px" },
+        { "id": "2k", "title": "2K", "width": 2048, "height": 1080, "unit": "px", "dpi": 72, "display": "2048 x 1080 px" },
+        { "id": "uhd", "title": "UHD", "width": 3840, "height": 2160, "unit": "px", "dpi": 72, "display": "3840 x 2160 px" },
+        { "id": "4k", "title": "4K", "width": 4096, "height": 2160, "unit": "px", "dpi": 72, "display": "4096 x 2160 px" }
+      ]
+    },
+    {
+      "id": "mobile",
+      "label": "Mobile",
+      "templates": [
+        { "id": "iphone-4", "title": "iPhone 4", "width": 640, "height": 900, "unit": "px", "dpi": 72, "display": "640 x 900 px" },
+        { "id": "iphone-5", "title": "iPhone 5", "width": 640, "height": 1136, "unit": "px", "dpi": 72, "display": "640 x 1136 px" },
+        { "id": "iphone-6-7-8", "title": "iPhone 6 7 8", "width": 750, "height": 1334, "unit": "px", "dpi": 72, "display": "750 x 1334 px" },
+        { "id": "iphone-plus", "title": "iPhone 6+ 7+ 8+", "width": 1080, "height": 1920, "unit": "px", "dpi": 72, "display": "1080 x 1920 px" },
+        { "id": "iphone-x", "title": "iPhone X", "width": 1125, "height": 2436, "unit": "px", "dpi": 72, "display": "1125 x 2436 px" },
+        { "id": "samsung-a5", "title": "Samsung A5", "width": 720, "height": 1280, "unit": "px", "dpi": 72, "display": "720 x 1280 px" },
+        { "id": "samsung-s5", "title": "Samsung S5", "width": 1080, "height": 1920, "unit": "px", "dpi": 72, "display": "1080 x 1920 px" },
+        { "id": "samsung-s6", "title": "Samsung S6", "width": 1440, "height": 2560, "unit": "px", "dpi": 72, "display": "1440 x 2560 px" },
+        { "id": "samsung-s8-plus", "title": "Samsung S8+", "width": 1440, "height": 2560, "unit": "px", "dpi": 72, "display": "1440 x 2560 px" },
+        { "id": "google-pixel", "title": "Google Pixel", "width": 1080, "height": 1920, "unit": "px", "dpi": 72, "display": "1080 x 1920 px" },
+        { "id": "ipad-mini-4", "title": "iPad Mini 4", "width": 1536, "height": 2048, "unit": "px", "dpi": 72, "display": "1536 x 2048 px" },
+        { "id": "ipad-air-2", "title": "iPad Air 2", "width": 1536, "height": 2048, "unit": "px", "dpi": 72, "display": "1536 x 2048 px" },
+        { "id": "ipad-pro-9-7", "title": "iPad Pro 9.7\"", "width": 1536, "height": 2048, "unit": "px", "dpi": 72, "display": "1536 x 2048 px" },
+        { "id": "ipad-pro-10-5", "title": "iPad Pro 10.5\"", "width": 1668, "height": 2224, "unit": "px", "dpi": 72, "display": "1668 x 2224 px" },
+        { "id": "ipad-pro-12-9", "title": "iPad Pro 12.9\"", "width": 2048, "height": 2732, "unit": "px", "dpi": 72, "display": "2048 x 2732 px" }
+      ]
+    },
+    {
+      "id": "ads",
+      "label": "Ads",
+      "templates": [
+        { "id": "small-square", "title": "Small Square", "width": 200, "height": 200, "unit": "px", "dpi": 72, "display": "200 x 200 px" },
+        { "id": "square", "title": "Square", "width": 250, "height": 250, "unit": "px", "dpi": 72, "display": "250 x 250 px" },
+        { "id": "medium-rect", "title": "Medium Rect", "width": 300, "height": 250, "unit": "px", "dpi": 72, "display": "300 x 250 px" },
+        { "id": "large-rect", "title": "Large Rect", "width": 336, "height": 280, "unit": "px", "dpi": 72, "display": "336 x 280 px" },
+        { "id": "mobile-leaderboard", "title": "Mobile Leaderboard", "width": 320, "height": 50, "unit": "px", "dpi": 72, "display": "320 x 50 px" },
+        { "id": "large-mobile", "title": "Large Mobile", "width": 320, "height": 100, "unit": "px", "dpi": 72, "display": "320 x 100 px" },
+        { "id": "banner", "title": "Banner", "width": 468, "height": 60, "unit": "px", "dpi": 72, "display": "468 x 60 px" },
+        { "id": "leaderboard", "title": "Leaderboard", "width": 728, "height": 90, "unit": "px", "dpi": 72, "display": "728 x 90 px" },
+        { "id": "large-leaderboard", "title": "Large Leaderboard", "width": 970, "height": 90, "unit": "px", "dpi": 72, "display": "970 x 90 px" },
+        { "id": "billboard", "title": "Billboard", "width": 970, "height": 250, "unit": "px", "dpi": 72, "display": "970 x 250 px" },
+        { "id": "vertical-rect", "title": "Vertical Rect", "width": 240, "height": 400, "unit": "px", "dpi": 72, "display": "240 x 400 px" },
+        { "id": "skyscraper", "title": "Skyscraper", "width": 120, "height": 600, "unit": "px", "dpi": 72, "display": "120 x 600 px" },
+        { "id": "wide-skyscraper", "title": "Wide Skyscraper", "width": 160, "height": 600, "unit": "px", "dpi": 72, "display": "160 x 600 px" },
+        { "id": "half-page", "title": "Half Page", "width": 300, "height": 600, "unit": "px", "dpi": 72, "display": "300 x 600 px" },
+        { "id": "portrait", "title": "Portrait", "width": 300, "height": 1050, "unit": "px", "dpi": 72, "display": "300 x 1050 px" }
+      ]
+    }
+  ]
+}

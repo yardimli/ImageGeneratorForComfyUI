@@ -6,6 +6,7 @@ use App\Models\PhotoshopLayer;
 use App\Models\PhotoshopProject;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -43,7 +44,7 @@ class PhotoshopController extends Controller
 
         if ($request->boolean('blank_layer', true)) {
             $path = "photoshop/{$request->user()->id}/{$project->id}/" . Str::uuid() . '.png';
-            Storage::disk('public')->put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL6WQAAAABJRU5ErkJggg=='));
+            Storage::disk('public')->put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABpfZFQAAAAABJRU5ErkJggg=='));
             $project->layers()->create(['name' => 'Layer 1', 'file_path' => $path, 'width' => $project->width, 'height' => $project->height, 'visible' => true, 'opacity' => 100]);
         }
 
@@ -77,13 +78,50 @@ class PhotoshopController extends Controller
             'name' => $validated['name'], 'file_path' => $path,
             'x' => $validated['x'] ?? 0, 'y' => $validated['y'] ?? 0,
             'width' => $validated['width'], 'height' => $validated['height'],
-            'rotation' => 0, 'opacity' => 100, 'visible' => true,
+            'rotation' => 0, 'opacity' => 100, 'visible' => true, 'is_committed' => false,
             'z_index' => ((int) $project->layers()->max('z_index')) + 1,
         ]);
         $project->touch();
         return response()->json(['layer' => $layer->refresh()], 201);
     }
 
+    public function saveProject(Request $request, PhotoshopProject $project): JsonResponse
+    {
+        $this->ensureOwner($request, $project);
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:120'],
+            'layers' => ['present', 'array', 'max:500'],
+            'layers.*.id' => ['required', 'integer'],
+            'layers.*.name' => ['required', 'string', 'max:120'],
+            'layers.*.x' => ['required', 'numeric'], 'layers.*.y' => ['required', 'numeric'],
+            'layers.*.width' => ['required', 'numeric', 'min:1', 'max:8192'],
+            'layers.*.height' => ['required', 'numeric', 'min:1', 'max:8192'],
+            'layers.*.rotation' => ['required', 'numeric', 'between:-3600,3600'],
+            'layers.*.opacity' => ['required', 'integer', 'between:0,100'],
+            'layers.*.visible' => ['required', 'boolean'],
+            'layers.*.z_index' => ['required', 'integer'],
+        ]);
+
+        $submitted = collect($validated['layers'])->keyBy(fn (array $layer) => (int) $layer['id']);
+        $owned = PhotoshopLayer::withTrashed()->where('photoshop_project_id', $project->id)->get()->keyBy('id');
+        abort_if($submitted->keys()->diff($owned->keys())->isNotEmpty(), 422, 'One or more layers do not belong to this project.');
+
+        DB::transaction(function () use ($project, $validated, $submitted, $owned) {
+            $project->update(['name' => $validated['name']]);
+            foreach ($submitted as $id => $attributes) {
+                unset($attributes['id']);
+                $attributes['is_committed'] = true;
+                $owned[$id]->restore();
+                $owned[$id]->update($attributes);
+            }
+            foreach ($owned->except($submitted->keys())->whereNull('deleted_at') as $layer) {
+                $layer->delete();
+            }
+            $project->touch();
+        });
+
+        return response()->json(['project' => $project->fresh('layers')]);
+    }
     public function updateLayer(Request $request, PhotoshopLayer $layer): JsonResponse
     {
         $this->ensureOwner($request, $layer->project);

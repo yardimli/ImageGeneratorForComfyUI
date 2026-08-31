@@ -20,7 +20,10 @@ button { color: inherit; cursor: pointer; }
 .ps-menu-shortcut { padding-left: 28px; }
 .ps-submenu { position: absolute; top: -5px; left: calc(100% - 2px); display: none; min-width: 225px; padding: 4px 0; background: #f3f3f3; border: 1px solid #777; box-shadow: 3px 6px 18px #0008; }
 .ps-menu-item:hover > .ps-submenu, .ps-menu-item:focus-within > .ps-submenu { display: block; }
-.ps-save-status { margin-left: auto; padding: 0 12px; color: #c8c8c8; font-size: 11px; }
+.ps-save-control { display: flex; align-items: center; gap: 5px; height: 100%; padding: 0 6px; border-right: 1px solid #3b3b3b; }
+.ps-save-status { color: #d8d8d8; font-size: 10px; white-space: nowrap; }
+.ps-save-control button { height: 22px; padding: 0 8px; border: 1px solid #8abce7; border-radius: 2px; color: #fff; background: #2f77b6; font-size: 11px; }
+.ps-save-control button:disabled { cursor: wait; opacity: .65; }
 .ps-options { display: flex; align-items: center; gap: 9px; padding: 0 10px; background: #454545; border-bottom: 1px solid #242424; }
 .ps-options button, .ps-options select { height: 26px; color: #e5e5e5; background: #515151; border: 1px solid #2c2c2c; }
 .ps-options button { min-width: 27px; border: 0; background: transparent; }
@@ -106,6 +109,43 @@ button { color: inherit; cursor: pointer; }
 .ps-dialog input, .ps-dialog select { width: 100%; padding: 8px; color: white; background: #2d2d2d; border: 1px solid #777; }
 .ps-size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ps-dialog-note { margin: 0; color: #aaa; }
+
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+.ps-new-dialog { width: min(1240px, calc(100vw - 30px)); max-width: none; height: min(900px, calc(100vh - 30px)); max-height: none; overflow: hidden; border-color: #555; background: #464646; }
+.ps-new-dialog form { display: grid; grid-template-rows: 42px minmax(0, 1fr); height: 100%; }
+.ps-new-dialog header { padding: 0 14px; background: linear-gradient(#373737, #2f2f2f); }
+.ps-new-dialog header h2 { font-size: 14px; font-weight: 500; }
+.ps-new-layout { display: grid; grid-template-columns: minmax(560px, 1.35fr) minmax(390px, .9fr); min-height: 0; }
+.ps-template-browser { display: grid; grid-template-rows: 54px minmax(0, 1fr); min-width: 0; background: #303030; border-right: 1px solid #242424; }
+.ps-template-categories { display: flex; align-items: center; gap: 4px; padding: 8px 14px; background: #444; }
+.ps-template-categories button { padding: 7px 10px; color: #dedede; background: transparent; border: 1px solid transparent; border-radius: 4px; font-size: 17px; }
+.ps-template-categories button:hover { background: #383838; }
+.ps-template-categories button.active { color: white; background: #242424; border-color: #777; box-shadow: inset 0 0 0 1px #eee; }
+.ps-template-grid { display: grid; grid-template-columns: repeat(3, minmax(150px, 1fr)); grid-auto-rows: 190px; gap: 12px 8px; align-content: start; padding: 18px 16px 30px; overflow-y: auto; scrollbar-color: #111 #3c3c3c; }
+.ps-template-card { display: grid; grid-template-rows: 112px minmax(24px, auto) 22px; place-items: center; align-content: center; min-width: 0; padding: 6px; color: #ccc; background: transparent; border: 1px solid transparent; border-radius: 3px; }
+.ps-template-card:hover, .ps-template-card.selected { background: #3a3a3a; border-color: #707070; }
+.ps-template-card.selected { box-shadow: inset 0 0 0 1px #9ecaf0; }
+.ps-template-preview { display: block; max-width: 166px; max-height: 106px; border: 1px solid #aaa; background: #333; }
+.ps-template-card strong { align-self: end; max-width: 100%; overflow: hidden; color: #cecece; font-size: 16px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
+.ps-template-dimensions { align-self: start; color: #bbb; font-size: 14px; }
+.ps-document-settings { display: flex; flex-direction: column; gap: 14px; padding: 24px 28px; overflow-y: auto; background: #494949; }
+.ps-document-settings label { display: grid; gap: 6px; color: #e6e6e6; font-size: 16px; }
+.ps-document-settings input, .ps-document-settings select { height: 42px; padding: 7px 10px; border-color: #505050; border-radius: 4px; background: #252525; font-size: 17px; }
+.ps-dimension-grid { display: grid; grid-template-columns: minmax(80px, 1fr) 34px minmax(80px, 1fr) minmax(120px, 1.25fr); gap: 8px; align-items: end; }
+.ps-dimension-grid > button { width: 34px; height: 42px; padding: 0; color: #ddd; background: #686868; border: 0; border-radius: 4px; font-size: 18px; }
+.ps-unit-label { align-self: end; }
+.ps-dpi-grid { display: grid; grid-template-columns: 94px minmax(150px, 1fr); gap: 9px; align-items: end; max-width: 275px; }
+.ps-color-grid { display: grid; grid-template-columns: 1fr 1fr 1.5fr; gap: 9px; align-items: end; }
+.ps-create-document { width: 100%; min-height: 40px; margin-top: 2px; color: #eee; background: #686868; border: 1px solid #858585; border-radius: 4px; font-size: 16px; }
+.ps-create-document:hover { background: #757575; }
+
+@media (max-width: 900px) {
+    .ps-new-dialog { overflow: auto; }
+    .ps-new-dialog form { height: auto; min-height: 100%; }
+    .ps-new-layout { grid-template-columns: 1fr; }
+    .ps-template-browser { min-height: 560px; border-right: 0; }
+    .ps-document-settings { overflow: visible; }
+}
 .ps-project-library { max-height: 440px; padding: 10px; overflow-y: auto; }
 .ps-project-card { display: grid; grid-template-columns: 1fr auto; gap: 4px 20px; width: 100%; padding: 13px; border: 0; border-bottom: 1px solid #555; color: #eee; background: transparent; text-align: left; }
 .ps-project-card:hover { background: #505050; }

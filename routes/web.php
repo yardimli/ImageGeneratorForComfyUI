@@ -166,6 +166,7 @@
 			Route::post('/projects', [PhotoshopController::class, 'storeProject'])->name('projects.store');
 			Route::get('/projects/{project}', [PhotoshopController::class, 'show'])->name('projects.show');
 			Route::patch('/projects/{project}', [PhotoshopController::class, 'updateProject'])->name('projects.update');
+			Route::post('/projects/{project}/save', [PhotoshopController::class, 'saveProject'])->name('projects.save');
 			Route::post('/projects/{project}/layers', [PhotoshopController::class, 'storeLayer'])->name('layers.store');
 			Route::patch('/layers/{layer}', [PhotoshopController::class, 'updateLayer'])->name('layers.update');
 		});
