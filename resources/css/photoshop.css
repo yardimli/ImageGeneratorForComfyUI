@@ -71,6 +71,11 @@ button { color: inherit; cursor: pointer; }
 .ps-layer-eye { border: 0; background: transparent; }
 .ps-layer-thumb { width: 31px; height: 31px; object-fit: contain; background: repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 50%/8px 8px; border: 1px solid #777; }
 .ps-layer-name { padding-left: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ps-layer-name strong, .ps-layer-name small { display: block; overflow: hidden; text-overflow: ellipsis; }
+.ps-layer-name small { margin-top: 2px; color: #c8c8c8; font-size: 10px; }
+.ps-layer-uploading { background: #555; }
+.ps-layer-spinner { width: 23px; height: 23px; margin: auto; border: 2px solid #777; border-top-color: #eee; border-radius: 50%; animation: ps-spin .7s linear infinite; }
+@keyframes ps-spin { to { transform: rotate(360deg); } }
 .ps-panel-footer { display: flex; justify-content: flex-end; align-items: center; gap: 4px; padding: 0 8px; border-top: 1px solid #2b2b2b; }
 .ps-panel-footer button { min-width: 27px; height: 26px; border: 0; background: transparent; }
 .ps-property-identity { display: grid; grid-template-columns: 40px minmax(0,1fr); align-items: center; gap: 9px; padding: 12px; border-bottom: 1px solid #333; }
