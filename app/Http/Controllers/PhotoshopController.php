@@ -44,7 +44,7 @@ class PhotoshopController extends Controller
         if ($request->boolean('blank_layer', true)) {
             $path = "photoshop/{$request->user()->id}/{$project->id}/" . Str::uuid() . '.png';
             Storage::disk('public')->put($path, base64_decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQIHWP4z8DwHwAFgAI/ScL6WQAAAABJRU5ErkJggg=='));
-            $project->layers()->create(['name' => 'Layer 1', 'file_path' => $path, 'width' => $project->width, 'height' => $project->height]);
+            $project->layers()->create(['name' => 'Layer 1', 'file_path' => $path, 'width' => $project->width, 'height' => $project->height, 'visible' => true, 'opacity' => 100]);
         }
 
         return response()->json(['project' => $project->load('layers')], 201);
@@ -77,10 +77,11 @@ class PhotoshopController extends Controller
             'name' => $validated['name'], 'file_path' => $path,
             'x' => $validated['x'] ?? 0, 'y' => $validated['y'] ?? 0,
             'width' => $validated['width'], 'height' => $validated['height'],
+            'rotation' => 0, 'opacity' => 100, 'visible' => true,
             'z_index' => ((int) $project->layers()->max('z_index')) + 1,
         ]);
         $project->touch();
-        return response()->json(['layer' => $layer], 201);
+        return response()->json(['layer' => $layer->refresh()], 201);
     }
 
     public function updateLayer(Request $request, PhotoshopLayer $layer): JsonResponse
