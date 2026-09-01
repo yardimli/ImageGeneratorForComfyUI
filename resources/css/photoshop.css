@@ -132,6 +132,9 @@ button { color: inherit; cursor: pointer; }
 .ps-dialog footer { justify-content: flex-end; gap: 8px; }
 .ps-dialog footer button, .ps-dialog-body button { min-width: 82px; padding: 7px 14px; border: 1px solid #8abce7; border-radius: 3px; color: white; background: #2f77b6; }
 .ps-dialog footer .secondary { border-color: #777; background: #555; }
+.ps-dialog footer .danger { border-color: #d48a8a; background: #a43f3f; }
+.ps-confirm-dialog { width: min(430px, calc(100vw - 40px)); }
+.ps-confirm-dialog form { display: grid; grid-template-rows: auto auto auto; }
 .ps-dialog-body { display: grid; gap: 14px; padding: 20px; }
 .ps-dialog-body label { display: grid; gap: 6px; }
 .ps-dialog input, .ps-dialog select { width: 100%; padding: 8px; color: white; background: #2d2d2d; border: 1px solid #777; }

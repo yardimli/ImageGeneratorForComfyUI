@@ -19,7 +19,9 @@ class PhotoshopAccessTest extends TestCase
             ->assertOk()
             ->assertSee('localFileInput')
             ->assertSee('newLayerFolder')
-            ->assertSee('lrs-folder.png');
+            ->assertSee('lrs-folder.png')
+            ->assertSee('deleteLayersDialog')
+            ->assertSee('lrs-bin.png');
     }
 
     public function test_cloud_project_api_is_not_available(): void

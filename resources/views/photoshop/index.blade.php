@@ -52,7 +52,7 @@
                 </div>
                 <div class="ps-lock-row">Lock: <img class="ps-icon" src="{{ asset('ps-icons/lrs-lock.png') }}" alt="Lock layer"></div>
                 <div id="layersPanel" class="ps-layer-list"></div>
-                <div class="ps-panel-footer"><button type="button" title="Layer effects"><img class="ps-icon" src="{{ asset('ps-icons/lrs-fx.png') }}" alt=""></button><button type="button" title="Add mask"><img class="ps-icon" src="{{ asset('ps-icons/lrs-mask.png') }}" alt=""></button><button type="button" data-action="newLayerFolder" title="New layer group"><img class="ps-icon" src="{{ asset('ps-icons/lrs-folder.png') }}" alt=""></button><button type="button" data-action="newBlankLayer" title="New layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-newlayer.png') }}" alt=""></button></div>
+                <div class="ps-panel-footer"><button type="button" title="Layer effects"><img class="ps-icon" src="{{ asset('ps-icons/lrs-fx.png') }}" alt=""></button><button type="button" title="Add mask"><img class="ps-icon" src="{{ asset('ps-icons/lrs-mask.png') }}" alt=""></button><button type="button" data-action="newLayerFolder" title="New layer group"><img class="ps-icon" src="{{ asset('ps-icons/lrs-folder.png') }}" alt=""></button><button type="button" data-action="newBlankLayer" title="New layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-newlayer.png') }}" alt=""></button><button type="button" data-action="deleteLayers" title="Delete selected layers"><img class="ps-icon" src="{{ asset('ps-icons/lrs-bin.png') }}" alt=""></button></div>
             </section>
             <section class="ps-panel-view" data-panel-view="properties"><div id="propertiesPanel" class="ps-properties-panel"></div></section>
             <section class="ps-panel-view" data-panel-view="history"><div id="historyPanel" class="ps-history-panel"></div></section>
@@ -65,6 +65,13 @@
     <dialog id="layerizeHistoryDialog" class="ps-dialog ps-layerize-dialog">
         <header><h2>Layerize history</h2><button type="button" data-close-layerize-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
         <div id="layerizeHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading Layerize history…</div></div>
+    </dialog>
+    <dialog id="deleteLayersDialog" class="ps-dialog ps-confirm-dialog">
+        <form method="dialog" id="deleteLayersForm">
+            <header><h2>Delete layers?</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+            <div class="ps-dialog-body"><p id="deleteLayersMessage" class="ps-dialog-note">Delete the selected layers?</p></div>
+            <footer><button value="cancel" class="secondary">Cancel</button><button value="delete" class="danger">Delete</button></footer>
+        </form>
     </dialog>
     <dialog id="newProjectDialog" class="ps-dialog ps-new-dialog">
         <form method="dialog" id="newProjectForm">
