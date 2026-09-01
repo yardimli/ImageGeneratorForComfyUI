@@ -135,6 +135,33 @@ button { color: inherit; cursor: pointer; }
 .ps-dialog footer .danger { border-color: #d48a8a; background: #a43f3f; }
 .ps-confirm-dialog { width: min(430px, calc(100vw - 40px)); }
 .ps-confirm-dialog form { display: grid; grid-template-rows: auto auto auto; }
+.ps-size-dialog { width: min(790px, calc(100vw - 40px)); max-width: none; }
+.ps-size-dialog form, .ps-canvas-size-dialog form { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
+.ps-size-dialog-layout { display: grid; grid-template-columns: minmax(250px, .8fr) minmax(380px, 1.2fr); gap: 28px; padding: 28px; }
+.ps-size-preview { display: grid; place-items: center; align-content: center; gap: 9px; min-height: 310px; background: #3a3a3a; }
+.ps-size-preview img { display: block; max-width: 230px; max-height: 290px; object-fit: contain; background: repeating-conic-gradient(#777 0 25%,#999 0 50%) 50%/12px 12px; box-shadow: 0 3px 16px #0008; }
+.ps-size-preview strong { font-size: 11px; }
+.ps-size-fields { display: grid; grid-template-columns: 1fr; align-content: start; gap: 12px; }
+.ps-size-summary { margin: 0; padding-bottom: 10px; border-bottom: 1px solid #666; font-size: 14px; }
+.ps-size-dimensions { display: flex; justify-content: space-between; gap: 12px; }
+.ps-size-fields > label { display: grid; grid-template-columns: 92px minmax(0, 1fr); align-items: center; gap: 10px; }
+.ps-size-fields > label > span { display: grid; grid-template-columns: minmax(85px, 1fr) minmax(120px, 1fr); gap: 10px; }
+.ps-size-fields input, .ps-size-fields select { height: 36px; }
+.ps-size-fields .ps-aspect-lock { display: flex; width: max-content; margin-left: 92px; color: #ccc; }
+.ps-size-fields .ps-aspect-lock input, .ps-size-fields .ps-resample input { width: auto; }
+.ps-size-fields .ps-aspect-lock .ps-icon { width: 16px; height: 16px; }
+.ps-size-fields .ps-resample { display: flex; margin-top: 3px; }
+.ps-canvas-size-dialog { width: min(580px, calc(100vw - 40px)); }
+.ps-current-size, .ps-new-canvas-size { display: grid; grid-template-columns: 1fr; gap: 10px; padding-bottom: 14px; border-bottom: 1px solid #666; }
+.ps-current-size span { display: grid; grid-template-columns: 70px auto auto; justify-content: start; gap: 8px; }
+.ps-new-canvas-size > label { display: grid; grid-template-columns: 58px minmax(0, 1fr); align-items: center; gap: 10px; }
+.ps-new-canvas-size > label > span { display: grid; grid-template-columns: minmax(90px, .9fr) minmax(120px, 1.1fr); gap: 10px; }
+.ps-new-canvas-size .ps-relative-size { display: flex; margin-left: 68px; }
+.ps-new-canvas-size .ps-relative-size input { width: auto; }
+.ps-anchor-section { display: grid; grid-template-columns: 58px 111px; align-items: start; gap: 10px; }
+.ps-anchor-grid { display: grid; grid-template-columns: repeat(3, 37px); grid-template-rows: repeat(3, 37px); }
+.ps-anchor-grid button { min-width: 0; width: 37px; height: 37px; padding: 0; color: #ddd; background: #4b4b4b; border: 1px solid #707070; border-radius: 0; font-size: 18px; }
+.ps-anchor-grid button:hover, .ps-anchor-grid button.active { color: white; background: #2878d0; }
 .ps-dialog-body { display: grid; gap: 14px; padding: 20px; }
 .ps-dialog-body label { display: grid; gap: 6px; }
 .ps-dialog input, .ps-dialog select { width: 100%; padding: 8px; color: white; background: #2d2d2d; border: 1px solid #777; }

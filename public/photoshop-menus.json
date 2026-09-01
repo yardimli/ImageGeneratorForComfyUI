@@ -2,6 +2,7 @@
   {"id":"file","label":"File","visible":true,"items":[
     {"label":"New…","action":"newProject","shortcut":"Ctrl+N","visible":true},
     {"label":"Open PSD or Image…","action":"openLocal","shortcut":"Ctrl+O","visible":true},
+    {"label":"Place Image…","action":"placeImage","visible":true},
     {"separator":true,"visible":true},{"label":"Close","action":"closeProject","shortcut":"Ctrl+W","visible":true},
     {"label":"Save as PSD…","action":"saveProject","shortcut":"Ctrl+S","visible":true},
     {"label":"Save As…","visible":false},{"label":"Export","visible":false,"children":[{"label":"Quick Export as PNG","visible":false},{"label":"Export As…","visible":false}]},
@@ -16,7 +17,7 @@
   ]},
   {"id":"image","label":"Image","visible":true,"items":[
     {"label":"Mode","visible":false,"children":[{"label":"RGB Color","visible":false},{"label":"Grayscale","visible":false}]},{"label":"Adjustments","visible":false,"children":[{"label":"Brightness/Contrast…","visible":false},{"label":"Hue/Saturation…","visible":false}]},
-    {"label":"Image Size…","visible":false},{"label":"Canvas Size…","visible":false},{"label":"Image Rotation","visible":false,"children":[{"label":"90° Clockwise","visible":false},{"label":"180°","visible":false}]},{"label":"Crop","visible":false}
+    {"label":"Image Size…","action":"imageSize","visible":true},{"label":"Canvas Size…","action":"canvasSize","visible":true},{"label":"Image Rotation","visible":false,"children":[{"label":"90° Clockwise","visible":false},{"label":"180°","visible":false}]},{"label":"Crop","visible":false}
   ]},
   {"id":"layer","label":"Layer","visible":true,"items":[
     {"label":"New","visible":true,"children":[{"label":"Layer…","action":"newBlankLayer","visible":true},{"label":"Text Layer…","action":"addTextLayer","visible":true},{"label":"Group from Layers…","action":"newLayerFolder","visible":true},{"label":"Background from Layer","visible":false}]},

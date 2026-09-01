@@ -60,6 +60,7 @@
     </main>
 
     <input id="localFileInput" type="file" accept=".psd,image/*" hidden>
+    <input id="placeImageInput" type="file" accept="image/*" hidden>
     <div id="toast" class="ps-toast" role="status" hidden></div>
 
     <dialog id="layerizeHistoryDialog" class="ps-dialog ps-layerize-dialog">
@@ -71,6 +72,36 @@
             <header><h2>Delete layers?</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
             <div class="ps-dialog-body"><p id="deleteLayersMessage" class="ps-dialog-note">Delete the selected layers?</p></div>
             <footer><button value="cancel" class="secondary">Cancel</button><button value="delete" class="danger">Delete</button></footer>
+        </form>
+    </dialog>
+    <dialog id="imageSizeDialog" class="ps-dialog ps-size-dialog">
+        <form method="dialog" id="imageSizeForm">
+            <header><h2>Image Size</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+            <div class="ps-size-dialog-layout">
+                <section class="ps-size-preview"><img id="imageSizePreview" alt="Document preview"><strong id="imageSizePercent">Preview</strong></section>
+                <section class="ps-size-fields">
+                    <p id="imageSizeSummary" class="ps-size-summary"></p>
+                    <div class="ps-size-dimensions"><span>Dimensions:</span><strong id="imageSizeDimensions"></strong></div>
+                    <label>Width <span><input id="imageSizeWidth" type="number" min="1" max="8192" required><select aria-label="Width unit"><option>Pixels</option></select></span></label>
+                    <label class="ps-aspect-lock"><input id="imageSizeLock" type="checkbox" checked><img class="ps-icon" src="{{ asset('ps-icons/lrs-chain.png') }}" alt=""><span>Constrain proportions</span></label>
+                    <label>Height <span><input id="imageSizeHeight" type="number" min="1" max="8192" required><select aria-label="Height unit"><option>Pixels</option></select></span></label>
+                    <label>Resolution <span><input type="number" value="72" disabled><select aria-label="Resolution unit"><option>Pixels/Inch</option></select></span></label>
+                    <label class="ps-resample"><input type="checkbox" checked disabled> Resample: Automatic</label>
+                </section>
+            </div>
+            <footer><button value="confirm">OK</button><button value="cancel" class="secondary">Cancel</button></footer>
+        </form>
+    </dialog>
+
+    <dialog id="canvasSizeDialog" class="ps-dialog ps-canvas-size-dialog">
+        <form method="dialog" id="canvasSizeForm">
+            <header><h2>Canvas Size</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+            <div class="ps-dialog-body">
+                <section class="ps-current-size"><strong>Current Size</strong><span>Width <b id="canvasCurrentWidth"></b> px</span><span>Height <b id="canvasCurrentHeight"></b> px</span></section>
+                <section class="ps-new-canvas-size"><strong>New Size</strong><label>Width <span><input id="canvasSizeWidth" type="number" required><select aria-label="Canvas width unit"><option>Pixels</option></select></span></label><label>Height <span><input id="canvasSizeHeight" type="number" required><select aria-label="Canvas height unit"><option>Pixels</option></select></span></label><label class="ps-relative-size"><input id="canvasSizeRelative" type="checkbox"> Relative to current dimensions</label></section>
+                <section class="ps-anchor-section"><span>Anchor</span><div id="canvasAnchorGrid" class="ps-anchor-grid" role="radiogroup" aria-label="Canvas anchor"><button type="button" data-canvas-anchor="top-left" title="Top left">↖</button><button type="button" data-canvas-anchor="top" title="Top">↑</button><button type="button" data-canvas-anchor="top-right" title="Top right">↗</button><button type="button" data-canvas-anchor="left" title="Left">←</button><button type="button" data-canvas-anchor="center" title="Center" class="active">●</button><button type="button" data-canvas-anchor="right" title="Right">→</button><button type="button" data-canvas-anchor="bottom-left" title="Bottom left">↙</button><button type="button" data-canvas-anchor="bottom" title="Bottom">↓</button><button type="button" data-canvas-anchor="bottom-right" title="Bottom right">↘</button></div></section>
+            </div>
+            <footer><button value="confirm">OK</button><button value="cancel" class="secondary">Cancel</button></footer>
         </form>
     </dialog>
     <dialog id="newProjectDialog" class="ps-dialog ps-new-dialog">
