@@ -167,6 +167,7 @@
 		Route::prefix('layers')->name('layers.')->group(function () {
 			Route::get('/', [LayerController::class, 'index'])->name('index');
 			Route::post('/', [LayerController::class, 'store'])->name('store');
+			Route::get('/history', [LayerController::class, 'history'])->name('history');
 			Route::get('/{layer}', [LayerController::class, 'show'])->name('show');
 			Route::get('/{layer}/status', [LayerController::class, 'status'])->name('status');
 			Route::get('/{layer}/download-all', [LayerController::class, 'downloadAll'])->name('download-all');

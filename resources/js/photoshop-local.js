@@ -7,13 +7,15 @@ const state = {
     tool: 'move', zoom: 1, zooms: new Map(), selection: null, clipboard: null,
     moveable: null, panel: 'layers', histories: new Map(), imageElements: new Map(),
     dirtyProjects: new Set(), savedSignatures: new Map(), loadingFile: null,
-    busy: false, nextProjectId: 1, nextLayerId: 1,
+    busy: false, layerizeRunning: 0, nextProjectId: 1, nextLayerId: 1,
 };
 
 let documentTemplateCategories = [];
 let activeTemplateCategory = 'social';
 let selectedDocumentTemplateId = null;
 const iconBase = '/ps-icons/';
+const photoshopApp=document.getElementById('photoshopApp');
+const layerizeConfig={storeUrl:photoshopApp.dataset.layerizeStoreUrl,historyUrl:photoshopApp.dataset.layerizeHistoryUrl,csrfToken:document.querySelector('meta[name="csrf-token"]')?.content||''};
 
 const toolGroups = [
     {id:'move',key:'V',tools:[{id:'move',name:'Move Tool',icon:'tools-move'},{id:'artboard',name:'Artboard Tool',icon:'tools-artb'}]},
@@ -48,6 +50,7 @@ const actions = {
     deselect: clearSelection, copy: copySelection, paste: () => pasteClipboard(false),
     pasteInPlace: () => pasteClipboard(true), newBlankLayer: createBlankLayer,
     addTextLayer: () => addTextLayerAtCenter(), duplicateLayer, renameLayer,
+    layerize: startLayerize, layerizeHistory: showLayerizeHistory,
     restoreAspectRatio: restoreActiveLayerAspectRatio,
     zoomIn: () => setZoom(state.zoom*1.2), zoomOut: () => setZoom(state.zoom/1.2),
     fitScreen, actualPixels: () => setZoom(1),
@@ -74,7 +77,8 @@ function projectSignature(project){return JSON.stringify({name:project.name,laye
 function historyFor(project){if(!state.histories.has(project.id))state.histories.set(project.id,{entries:[],index:-1});return state.histories.get(project.id);}
 function historyIcon(label){if(/move|align/i.test(label))return 'tools-move';if(/rotate/i.test(label))return 'rotate';if(/transform|resize|opacity|aspect/i.test(label))return 'tools-transform';if(/paste|layer|new|text/i.test(label))return 'lrs-newlayer';if(/open/i.test(label))return 'pix_layer';return 'panels-history';}
 function initializeHistory(project,label,clean=false){state.histories.set(project.id,{entries:[{label,icon:historyIcon(label),snapshot:projectSnapshot(project)}],index:0});state.savedSignatures.set(project.id,clean?projectSignature(project):null);refreshDirty(project);}
-function recordHistory(label){const project=activeProject();if(!project)return;const history=historyFor(project);if(history.index<history.entries.length-1)history.entries.splice(history.index+1);history.entries.push({label,icon:historyIcon(label),snapshot:projectSnapshot(project)});if(history.entries.length>100)history.entries.shift();history.index=history.entries.length-1;refreshDirty(project);renderHistory();}
+function recordProjectHistory(project,label){const history=historyFor(project);if(history.index<history.entries.length-1)history.entries.splice(history.index+1);history.entries.push({label,icon:historyIcon(label),snapshot:projectSnapshot(project)});if(history.entries.length>100)history.entries.shift();history.index=history.entries.length-1;refreshDirty(project);if(project.id===state.activeProjectId)renderHistory();}
+function recordHistory(label){const project=activeProject();if(project)recordProjectHistory(project,label);}
 function restoreHistoryTo(index){const project=activeProject();if(!project)return;const history=historyFor(project);if(index<0||index>=history.entries.length||index===history.index)return;history.index=index;const snapshot=history.entries[index].snapshot;project.name=snapshot.name;project.layers=snapshot.layers.map(layer=>({...layer,textData:clonePlain(layer.textData)}));state.selectedLayerIds=new Set([...state.selectedLayerIds].filter(id=>project.layers.some(layer=>layer.id===id)));if(!project.layers.some(layer=>layer.id===state.activeLayerId))selectOnlyLayer(topLayer(project)?.id||null);refreshDirty(project);render();}
 function restoreHistory(direction){const project=activeProject();if(project)restoreHistoryTo(historyFor(project).index+direction);}
 function refreshDirty(project){const dirty=projectSignature(project)!==state.savedSignatures.get(project.id);state.dirtyProjects[dirty?'add':'delete'](project.id);updateSaveUi();}
@@ -135,7 +139,36 @@ async function layerCanvasForExport(layer){
     return {canvas,left:Math.round(layer.x-(boxWidth-width)/2),top:Math.round(layer.y-(boxHeight-height)/2)};
 }
 function exportTextData(layer){const text=clonePlain(layer.textData)||{text:layer.text||'Text',style:{font:{name:'ArialMT'},fontSize:36,fillColor:{r:0,g:0,b:0}}};text.text=layer.text||text.text||'Text';const transform=Array.isArray(text.transform)&&text.transform.length>=6?[...text.transform]:[1,0,0,1,layer.x,layer.y+(Number(text.style?.fontSize)||36)];transform[4]+=layer.x-(layer.text_origin_x??layer.x);transform[5]+=layer.y-(layer.text_origin_y??layer.y);text.transform=transform;return text;}
-async function renderComposite(project){const canvas=transparentCanvas(project.width,project.height),ctx=canvas.getContext('2d');for(const layer of [...project.layers].sort((a,b)=>a.z_index-b.z_index)){if(!layer.visible)continue;const image=await loadImage(layer.image_url);ctx.save();ctx.globalAlpha=layer.opacity/100;ctx.globalCompositeOperation=canvasBlendMode(layer.blendMode);ctx.translate(layer.x+layer.width/2,layer.y+layer.height/2);ctx.rotate(layer.rotation*Math.PI/180);ctx.drawImage(image,-layer.width/2,-layer.height/2,layer.width,layer.height);ctx.restore();}return canvas;}
+async function renderComposite(project,layers=project.layers){const canvas=transparentCanvas(project.width,project.height),ctx=canvas.getContext('2d');for(const layer of [...layers].sort((a,b)=>a.z_index-b.z_index)){if(!layer.visible)continue;const image=await loadImage(layer.image_url);ctx.save();ctx.globalAlpha=layer.opacity/100;ctx.globalCompositeOperation=canvasBlendMode(layer.blendMode);ctx.translate(layer.x+layer.width/2,layer.y+layer.height/2);ctx.rotate(layer.rotation*Math.PI/180);ctx.drawImage(image,-layer.width/2,-layer.height/2,layer.width,layer.height);ctx.restore();}return canvas;}
+function canvasToBlob(canvas){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not prepare the selected layers.')),'image/png'));}
+function updateLayerizeProgress(){document.getElementById('layerizeProgress').hidden=state.layerizeRunning===0;}
+function wait(milliseconds){return new Promise(resolve=>setTimeout(resolve,milliseconds));}
+async function responseJson(response){const data=await response.json().catch(()=>({}));if(!response.ok||data.success===false)throw new Error(data.message||data.error||`Layerize request failed (HTTP ${response.status}).`);return data;}
+async function startLayerize(){
+    const project=activeProject(),layers=selectedLayers();if(!project||!layers.length){toast('Select one or more layers first.');return;}
+    const context={projectId:project.id,layerIds:layers.map(layer=>layer.id)};state.layerizeRunning+=1;updateLayerizeProgress();
+    try{
+        const canvas=await renderComposite(project,layers),blob=await canvasToBlob(canvas),form=new FormData();form.append('image',blob,`${project.name||'document'}-selection.png`);
+        const queued=await responseJson(await fetch(layerizeConfig.storeUrl,{method:'POST',headers:{Accept:'application/json','X-CSRF-TOKEN':layerizeConfig.csrfToken},body:form}));
+        toast(`Layerize job #${queued.id} queued.`);await pollLayerizeJob(queued.statusUrl,context);
+    }catch(error){toast(error.message||'Layerize failed.');}
+    finally{state.layerizeRunning=Math.max(0,state.layerizeRunning-1);updateLayerizeProgress();}
+}
+async function pollLayerizeJob(statusUrl,context){
+    for(let attempt=0;attempt<400;attempt+=1){const job=await responseJson(await fetch(statusUrl,{headers:{Accept:'application/json'},cache:'no-store'}));if(job.status==='ready'){const project=state.projects.get(context.projectId);if(project){await importLayerizeResult(project,job,context.layerIds);toast(`Layerize job #${job.id} added ${job.layers.length} layers.`);}else toast(`Layerize job #${job.id} is ready in Layerize History.`);return;}if(job.status==='failed')throw new Error(job.error||'Layerize failed.');await wait(3000);}throw new Error('Layerize is still processing. Open Layerize History to check it later.');
+}
+function validLayerizeBounds(bounds){return Array.isArray(bounds)&&bounds.length===4&&bounds.map(Number).every(Number.isFinite)&&Number(bounds[2])>Number(bounds[0])&&Number(bounds[3])>Number(bounds[1]);}
+async function loadLayerizeImage(item){const response=await fetch(item.url,{headers:{Accept:'image/*'}});if(!response.ok)throw new Error(`Could not download ${item.name||'a generated layer'}.`);return {...item,png:await imageFileToPng(await response.blob())};}
+async function importLayerizeResult(project,job,anchorIds=[]){
+    if(!Array.isArray(job.layers)||!job.layers.length)throw new Error('This Layerize job has no layers to import.');
+    const loaded=[];for(const item of [...job.layers].sort((a,b)=>Number(a.zIndex)-Number(b.zIndex)))loaded.push(await loadLayerizeImage(item));
+    const base=loaded.find(item=>Number(item.zIndex)===0)||loaded[0],sourceWidth=Number(base.width)||base.png.width,sourceHeight=Number(base.height)||base.png.height,scaleX=project.width/sourceWidth,scaleY=project.height/sourceHeight;
+    const anchored=project.layers.filter(layer=>anchorIds.includes(layer.id)),anchorZ=anchored.length?Math.max(...anchored.map(layer=>layer.z_index)):Math.max(-1,...project.layers.map(layer=>layer.z_index));project.layers.filter(layer=>layer.z_index>anchorZ).forEach(layer=>layer.z_index+=loaded.length);
+    const imported=[];loaded.forEach((item,index)=>{const bounds=validLayerizeBounds(item.bounds)?item.bounds.map(Number):null,isFullDocument=item.png.width===sourceWidth&&item.png.height===sourceHeight;let x=0,y=0,width=project.width,height=project.height;if(bounds&&!isFullDocument&&Number(item.zIndex)!==0){x=bounds[0]*scaleX;y=bounds[1]*scaleY;width=(bounds[2]-bounds[0])*scaleX;height=(bounds[3]-bounds[1])*scaleY;}const layer=newLayer(project,{name:`Layerize · ${item.name||`Layer ${index+1}`}`,dataUrl:item.png.dataUrl,x,y,width,height,z_index:anchorZ+index+1});project.layers.push(layer);imported.push(layer);});
+    recordProjectHistory(project,`Import Layerize #${job.id}`);if(project.id===state.activeProjectId){state.selectedLayerIds=new Set(imported.map(layer=>layer.id));state.activeLayerId=imported.at(-1)?.id||null;render();}else renderTabs();
+}
+async function showLayerizeHistory(){const dialog=document.getElementById('layerizeHistoryDialog'),list=document.getElementById('layerizeHistoryList');list.innerHTML='<div class="ps-panel-empty">Loading Layerize history…</div>';dialog.showModal();try{const data=await responseJson(await fetch(layerizeConfig.historyUrl,{headers:{Accept:'application/json'},cache:'no-store'}));renderLayerizeHistory(data.jobs||[]);}catch(error){list.innerHTML=`<div class="ps-panel-empty">${escapeHtml(error.message)}</div>`;}}
+function renderLayerizeHistory(jobs){const list=document.getElementById('layerizeHistoryList');list.replaceChildren();if(!jobs.length){list.innerHTML='<div class="ps-panel-empty">No Layerize jobs yet.</div>';return;}jobs.forEach(job=>{const card=document.createElement('article');card.className='ps-layerize-job';const image=document.createElement('img');image.alt=`Layerize job ${job.id}`;if(job.previewUrl)image.src=job.previewUrl;const body=document.createElement('div');body.className='ps-layerize-job-body';const meta=document.createElement('div');meta.className='ps-layerize-job-meta';const name=document.createElement('strong');name.textContent=`Job #${job.id}`;const status=document.createElement('span');status.className=`ps-layerize-job-status ${job.status}`;status.textContent=job.status;meta.append(name,status);const date=document.createElement('span');date.textContent=job.createdAt?new Date(job.createdAt).toLocaleString():'';const button=document.createElement('button');button.type='button';button.textContent=job.status==='ready'?`Import ${job.layers.length} layers`:job.status==='failed'?'Failed':'Processing…';button.disabled=job.status!=='ready';button.addEventListener('click',async()=>{const project=activeProject();if(!project){toast('Open a document before importing Layerize history.');return;}button.disabled=true;button.textContent='Importing…';try{await importLayerizeResult(project,job,selectedLayers().map(layer=>layer.id));document.getElementById('layerizeHistoryDialog').close();toast(`Imported Layerize job #${job.id}.`);}catch(error){toast(error.message);button.disabled=false;button.textContent=`Import ${job.layers.length} layers`;}});body.append(meta,date);if(job.error){const error=document.createElement('span');error.className='ps-layerize-error';error.textContent=job.error;body.append(error);}body.append(button);card.append(image,body);list.append(card);});}
 async function exportActiveProjectAsPsd(){
     const project=activeProject();if(!project||state.busy)return;setBusy(true);
     try{
@@ -231,6 +264,7 @@ document.getElementById('newProjectForm').addEventListener('submit',event=>{even
 document.getElementById('swapDimensions').addEventListener('click',()=>{const width=document.getElementById('projectWidth'),height=document.getElementById('projectHeight'),next=width.value;width.value=height.value;height.value=next;selectedDocumentTemplateId=null;renderTemplateGrid();});
 for(const id of ['projectWidth','projectHeight','documentUnit','documentDpi'])document.getElementById(id).addEventListener('input',()=>{selectedDocumentTemplateId=null;renderTemplateGrid();});
 document.getElementById('localFileInput').addEventListener('change',async event=>{const file=event.target.files[0];event.target.value='';if(!file)return;try{await openLocalFile(file);}catch(error){toast(error.message||'Could not open that local file.');}});
+document.querySelector('[data-close-layerize-history]').addEventListener('click',()=>document.getElementById('layerizeHistoryDialog').close());
 const opacityInput=document.getElementById('layerOpacity'),opacitySlider=document.getElementById('layerOpacitySlider'),opacityPopover=document.getElementById('opacityPopover');
 function showOpacitySlider(){if(activeLayer())opacityPopover.hidden=false;}
 document.getElementById('opacityTrigger').addEventListener('click',()=>{if(activeLayer())opacityPopover.hidden=!opacityPopover.hidden;});

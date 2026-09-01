@@ -7,6 +7,7 @@ use App\Models\Prompt;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Throwable;
 use ZipArchive;
@@ -25,17 +26,32 @@ class LayerController extends Controller
         return view('layers.index', compact('layers'));
     }
 
+    public function history()
+    {
+        $layers = Layer::query()->where('user_id', auth()->id())->latest()->limit(50)->get();
+
+        return response()->json([
+            'success' => true,
+            'jobs' => $layers->map(fn (Layer $layer) => $this->layerPayload($layer))->values(),
+        ]);
+    }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'image' => ['required', 'string', 'max:200000'],
-        ]);
+        if ($request->hasFile('image')) {
+            $request->validate(['image' => ['required', 'image', 'max:20480']]);
+            $path = $request->file('image')->store('layerize-inputs/'.auth()->id(), 'public');
+            $image = Storage::disk('public')->url($path);
+        } else {
+            $validated = $request->validate(['image' => ['required', 'string', 'max:200000']]);
+            $image = $validated['image'];
+        }
 
-        $layer = DB::transaction(function () use ($validated) {
+        $layer = DB::transaction(function () use ($image) {
             $layer = Layer::create([
                 'user_id' => auth()->id(),
                 'model' => self::MODEL,
-                'input_image' => $validated['image'],
+                'input_image' => $image,
                 'status' => 0,
             ]);
 
@@ -48,7 +64,7 @@ class LayerController extends Controller
                 'width' => 1024,
                 'height' => 1024,
                 'upload_to_s3' => false,
-                'input_images' => [$validated['image']],
+                'input_images' => [$image],
             ]);
 
             $layer->update(['prompt_id' => $prompt->id]);
@@ -61,6 +77,7 @@ class LayerController extends Controller
             'message' => 'Layerize job queued.',
             'id' => $layer->id,
             'url' => route('layers.show', $layer),
+            'statusUrl' => route('layers.status', $layer),
         ]);
     }
 
@@ -89,16 +106,8 @@ class LayerController extends Controller
         $this->authorizeLayer($layer);
         $layer->refresh();
 
-        return response()->json([
-            'success' => true,
-            'status' => match ((int) $layer->status) {
-                2 => 'ready',
-                4 => 'failed',
-                default => 'pending',
-            },
-            'url' => route('layers.show', $layer),
-            'error' => $layer->error,
-        ]);
+        return response()->json(['success' => true] + $this->layerPayload($layer));
+
     }
 
     public function download(Layer $layer, int $index)
@@ -210,6 +219,30 @@ class LayerController extends Controller
         };
     }
 
+    private function layerPayload(Layer $layer): array
+    {
+        $status = match ((int) $layer->status) { 2 => 'ready', 4 => 'failed', default => 'pending' };
+        $results = collect($layer->layers ?? [])->map(fn (array $item, int $index) => [
+            'index' => $index,
+            'name' => data_get($item, 'name', $index === 0 ? 'Base image' : "Layer {$index}"),
+            'description' => data_get($item, 'description'),
+            'zIndex' => (int) data_get($item, 'z_index', $index),
+            'bounds' => data_get($item, 'bounding_box.absolute'),
+            'width' => data_get($item, 'image.width'),
+            'height' => data_get($item, 'image.height'),
+            'url' => route('layers.download', [$layer, $index]),
+        ])->values();
+
+        return [
+            'id' => $layer->id,
+            'status' => $status,
+            'createdAt' => $layer->created_at?->toIso8601String(),
+            'url' => route('layers.show', $layer),
+            'error' => $layer->error,
+            'previewUrl' => $status === 'ready' && $results->isNotEmpty() ? $results->first()['url'] : $layer->input_image,
+            'layers' => $status === 'ready' ? $results : [],
+        ];
+    }
     private function authorizeLayer(Layer $layer): void
     {
         abort_unless((int) $layer->user_id === (int) auth()->id(), 403);

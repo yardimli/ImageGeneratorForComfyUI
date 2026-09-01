@@ -29,6 +29,9 @@ button { color: inherit; cursor: pointer; }
 .ps-options button { min-width: 27px; border: 0; background: transparent; }
 .ps-options label { display: flex; align-items: center; gap: 5px; white-space: nowrap; }
 .ps-options-tool { display: grid; place-items: center; width: 24px; font-size: 18px; }
+.ps-layerize-progress { display: flex; align-items: center; gap: 7px; margin-left: 4px; padding: 4px 9px; color: #e8e8e8; background: #343434; border: 1px solid #676767; border-radius: 3px; font-size: 11px; white-space: nowrap; }
+.ps-layerize-progress[hidden] { display: none; }
+.ps-layerize-spinner { width: 14px; height: 14px; border: 2px solid #777; border-top-color: #eee; border-radius: 50%; animation: ps-spin .7s linear infinite; }
 .ps-toolbar-align { display: flex; align-items: center; gap: 5px; }
 .ps-toolbar-align > span { display: flex; align-items: center; }
 .ps-toolbar-align button { display: grid; place-items: center; width: 25px; min-width: 25px; height: 26px; padding: 2px; }
@@ -128,6 +131,19 @@ button { color: inherit; cursor: pointer; }
 .ps-dialog input, .ps-dialog select { width: 100%; padding: 8px; color: white; background: #2d2d2d; border: 1px solid #777; }
 .ps-size-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ps-dialog-note { margin: 0; color: #aaa; }
+.ps-layerize-dialog { width: min(760px, calc(100vw - 40px)); max-width: none; }
+.ps-layerize-dialog header button { margin-left: auto; border: 0; background: transparent; }
+.ps-layerize-history { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 12px; max-height: min(640px, calc(100vh - 120px)); padding: 14px; overflow-y: auto; }
+.ps-layerize-job { display: grid; grid-template-rows: 126px auto; min-width: 0; background: #343434; border: 1px solid #626262; }
+.ps-layerize-job img { width: 100%; height: 126px; object-fit: contain; background: repeating-conic-gradient(#555 0 25%,#666 0 50%) 50%/12px 12px; }
+.ps-layerize-job-body { display: grid; gap: 7px; padding: 10px; }
+.ps-layerize-job-meta { display: flex; justify-content: space-between; gap: 8px; color: #c9c9c9; font-size: 11px; }
+.ps-layerize-job-status { text-transform: capitalize; }
+.ps-layerize-job-status.ready { color: #9fe2ae; }
+.ps-layerize-job-status.failed { color: #ff9b9b; }
+.ps-layerize-job button { min-height: 28px; color: #fff; background: #397bb5; border: 1px solid #7aa9d2; }
+.ps-layerize-job button:disabled { color: #aaa; background: #4a4a4a; border-color: #555; cursor: default; }
+.ps-layerize-error { color: #ffaaaa; font-size: 11px; }
 
 .ps-icon, .ps-tool-icon { display: inline-block; width: 18px; height: 18px; object-fit: contain; filter: invert(var(--gs-invert)); }
 .ps-tools { overflow: visible; }

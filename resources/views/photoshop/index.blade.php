@@ -3,12 +3,13 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Photoshop · {{ config('app.name', 'DreamCover') }}</title>
     <link rel="icon" type="image/png" href="{{ asset('images/favicon-32x32.png') }}">
     @vite('resources/js/photoshop.js')
 </head>
 <body class="ps-body">
-<div id="photoshopApp" class="ps-app">
+<div id="photoshopApp" class="ps-app" data-layerize-store-url="{{ route('layers.store') }}" data-layerize-history-url="{{ route('layers.history') }}">
     <header class="ps-menubar">
         <a class="ps-brand" href="{{ route('home') }}" title="Back to DreamCover"><img src="{{ asset('images/favicon-32x32.png') }}" alt="DreamCover"></a>
         <nav id="menuBar" aria-label="Application menus"></nav>
@@ -16,7 +17,7 @@
     </header>
 
     <section class="ps-options" aria-label="Tool options">
-        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span>
+        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span><span id="layerizeProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Layerizing selected layers…</span></span>
         <span class="ps-divider"></span>
         <label><input id="autoSelect" type="checkbox" checked> Auto-select</label>
 
@@ -61,6 +62,10 @@
     <input id="localFileInput" type="file" accept=".psd,image/*" hidden>
     <div id="toast" class="ps-toast" role="status" hidden></div>
 
+    <dialog id="layerizeHistoryDialog" class="ps-dialog ps-layerize-dialog">
+        <header><h2>Layerize history</h2><button type="button" data-close-layerize-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+        <div id="layerizeHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading Layerize history…</div></div>
+    </dialog>
     <dialog id="newProjectDialog" class="ps-dialog ps-new-dialog">
         <form method="dialog" id="newProjectForm">
             <header><h2>New document</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
