@@ -52,7 +52,7 @@
                 </div>
                 <div class="ps-lock-row">Lock: <img class="ps-icon" src="{{ asset('ps-icons/lrs-lock.png') }}" alt="Lock layer"></div>
                 <div id="layersPanel" class="ps-layer-list"></div>
-                <div class="ps-panel-footer"><button type="button" title="Layer effects"><img class="ps-icon" src="{{ asset('ps-icons/lrs-fx.png') }}" alt=""></button><button type="button" title="Add mask"><img class="ps-icon" src="{{ asset('ps-icons/lrs-mask.png') }}" alt=""></button><button type="button" data-action="newBlankLayer" title="New layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-newlayer.png') }}" alt=""></button></div>
+                <div class="ps-panel-footer"><button type="button" title="Layer effects"><img class="ps-icon" src="{{ asset('ps-icons/lrs-fx.png') }}" alt=""></button><button type="button" title="Add mask"><img class="ps-icon" src="{{ asset('ps-icons/lrs-mask.png') }}" alt=""></button><button type="button" data-action="newLayerFolder" title="New layer group"><img class="ps-icon" src="{{ asset('ps-icons/lrs-folder.png') }}" alt=""></button><button type="button" data-action="newBlankLayer" title="New layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-newlayer.png') }}" alt=""></button></div>
             </section>
             <section class="ps-panel-view" data-panel-view="properties"><div id="propertiesPanel" class="ps-properties-panel"></div></section>
             <section class="ps-panel-view" data-panel-view="history"><div id="historyPanel" class="ps-history-panel"></div></section>

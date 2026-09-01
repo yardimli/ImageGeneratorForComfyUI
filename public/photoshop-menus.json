@@ -19,7 +19,7 @@
     {"label":"Image Size…","visible":false},{"label":"Canvas Size…","visible":false},{"label":"Image Rotation","visible":false,"children":[{"label":"90° Clockwise","visible":false},{"label":"180°","visible":false}]},{"label":"Crop","visible":false}
   ]},
   {"id":"layer","label":"Layer","visible":true,"items":[
-    {"label":"New","visible":true,"children":[{"label":"Layer…","action":"newBlankLayer","visible":true},{"label":"Text Layer…","action":"addTextLayer","visible":true},{"label":"Group…","visible":false},{"label":"Background from Layer","visible":false}]},
+    {"label":"New","visible":true,"children":[{"label":"Layer…","action":"newBlankLayer","visible":true},{"label":"Text Layer…","action":"addTextLayer","visible":true},{"label":"Group from Layers…","action":"newLayerFolder","visible":true},{"label":"Background from Layer","visible":false}]},
     {"label":"Duplicate Layer…","action":"duplicateLayer","visible":true},{"label":"Rename Layer…","action":"renameLayer","visible":true},{"label":"Delete","enabled":false,"visible":true},
     {"separator":true,"visible":true},{"label":"Layerize Selected Layers…","action":"layerize","visible":true},{"label":"Layerize History…","action":"layerizeHistory","visible":true},
     {"separator":true,"visible":true},{"label":"Layer Style","visible":false,"children":[{"label":"Blending Options…","visible":false},{"label":"Drop Shadow…","visible":false}]},

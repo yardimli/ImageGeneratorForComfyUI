@@ -88,8 +88,14 @@ button { color: inherit; cursor: pointer; }
 .ps-layer-row.dragging { opacity: .45; }
 .ps-layer-row.drag-before { box-shadow: inset 0 2px #8fc9ff; }
 .ps-layer-row.drag-after { box-shadow: inset 0 -2px #8fc9ff; }
-.ps-layer-eye { border: 0; background: transparent; }
-.ps-layer-thumb { width: 31px; height: 31px; object-fit: contain; background: repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 50%/8px 8px; border: 1px solid #777; }
+.ps-layer-row.drag-inside { background: #4d6680; box-shadow: inset 0 0 0 1px #8fc9ff; }
+.ps-layer-eye { display: grid; place-items: center; width: 19px; height: 19px; padding: 0; border: 1px solid transparent; background: transparent; }
+.ps-layer-thumb { display: block; width: auto; height: auto; max-width: 31px; max-height: 31px; object-fit: fill; background: repeating-conic-gradient(#ddd 0 25%,#fff 0 50%) 50%/8px 8px; border: 1px solid #777; }
+.ps-layer-row > .ps-layer-thumb, .ps-layer-folder-thumb { justify-self: end; }
+.ps-layer-folder-thumb { display: flex; align-items: center; gap: 2px; min-width: 31px; }
+.ps-layer-folder-thumb > .ps-icon { width: 21px; height: 21px; }
+.ps-folder-toggle { display: grid; place-items: center; width: 11px; height: 18px; padding: 0; border: 0; background: transparent; }
+.ps-folder-toggle .ps-icon { width: 8px; height: 8px; }
 .ps-layer-name { padding-left: 9px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ps-layer-name strong, .ps-layer-name small { display: block; overflow: hidden; text-overflow: ellipsis; }
 .ps-layer-name small { margin-top: 2px; color: #c8c8c8; font-size: 10px; }
@@ -165,6 +171,7 @@ button { color: inherit; cursor: pointer; }
 .ps-layer-filter-icons { display: flex; align-items: center; gap: 10px; letter-spacing: 0; }
 .ps-layer-filter-icons .ps-icon, .ps-lock-row .ps-icon { width: 15px; height: 15px; }
 .ps-layer-eye .ps-icon { width: 17px; height: 17px; }
+.ps-layer-eye.hidden-layer { border-color: #707070; }
 .ps-layer-eye.hidden-layer .ps-icon { opacity: 0; }
 .ps-property-identity small { display: flex; align-items: center; gap: 5px; }
 .ps-property-identity small .ps-icon { width: 13px; height: 13px; }

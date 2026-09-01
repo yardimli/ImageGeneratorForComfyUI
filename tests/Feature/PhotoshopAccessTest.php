@@ -17,7 +17,9 @@ class PhotoshopAccessTest extends TestCase
         $this->actingAs(User::factory()->make())
             ->get('/photoshop')
             ->assertOk()
-            ->assertSee('localFileInput');
+            ->assertSee('localFileInput')
+            ->assertSee('newLayerFolder')
+            ->assertSee('lrs-folder.png');
     }
 
     public function test_cloud_project_api_is_not_available(): void
