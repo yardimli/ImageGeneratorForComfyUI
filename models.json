@@ -1,0 +1,569 @@
+{
+  "models": [
+    {
+      "name": "ByteDance Seedream V4.5 Edit",
+      "endpoint_id": "fal-ai/bytedance/seedream/v4.5/edit",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "image_urls": {
+          "type": "array<string>",
+          "required": true,
+          "max_items": 10,
+          "notes": "If more than 10 images are supplied, only the last 10 are used."
+        },
+        "image_size": {
+          "type": "ImageSize | enum",
+          "required": false,
+          "allowed_values": [
+            "square_hd",
+            "square",
+            "portrait_4_3",
+            "portrait_16_9",
+            "landscape_4_3",
+            "landscape_16_9",
+            "auto_2K",
+            "auto_4K"
+          ],
+          "constraints": {
+            "width_min": 1920,
+            "width_max": 4096,
+            "height_min": 1920,
+            "height_max": 4096,
+            "total_pixels_min": "2560*1440",
+            "total_pixels_max": "4096*4096"
+          }
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 6
+        },
+        "max_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 6,
+          "notes": "Enables multi-image generation when greater than 1. Total image inputs + outputs must not exceed 15."
+        },
+        "seed": {
+          "type": "integer",
+          "required": false
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "required": false,
+          "default": true
+        }
+      }
+    },
+    {
+      "name": "ByteDance Seedream V5 Lite Edit",
+      "endpoint_id": "fal-ai/bytedance/seedream/v5/lite/edit",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "image_urls": {
+          "type": "array<string>",
+          "required": true,
+          "max_items": 10,
+          "notes": "If more than 10 images are supplied, only the last 10 are used."
+        },
+        "image_size": {
+          "type": "ImageSize | enum",
+          "required": false,
+          "default": "auto_2K",
+          "allowed_values": [
+            "square_hd",
+            "square",
+            "portrait_4_3",
+            "portrait_16_9",
+            "landscape_4_3",
+            "landscape_16_9",
+            "auto_2K",
+            "auto_3K"
+          ],
+          "constraints": {
+            "total_pixels_min": "2560*1440",
+            "total_pixels_max": "3072*3072"
+          }
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 6
+        },
+        "max_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 6,
+          "notes": "Enables multi-image generation when greater than 1."
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "required": false,
+          "default": true
+        }
+      }
+    },
+    {
+      "name": "xAI Grok Imagine Image Edit",
+      "endpoint_id": "xai/grok-imagine-image/edit",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "image_urls": {
+          "type": "array<string>",
+          "required": false,
+          "max_items": 3
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 4
+        },
+        "resolution": {
+          "type": "enum",
+          "required": false,
+          "default": "1k",
+          "allowed_values": [
+            "1k",
+            "2k"
+          ]
+        },
+        "output_format": {
+          "type": "enum",
+          "required": false,
+          "default": "jpeg",
+          "allowed_values": [
+            "jpeg",
+            "png",
+            "webp"
+          ]
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        }
+      }
+    },
+    {
+      "name": "Z-Image Turbo Image To Image",
+      "endpoint_id": "fal-ai/z-image/turbo/image-to-image",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "image_url": {
+          "type": "string",
+          "required": true,
+          "max_items": 1
+        },
+        "image_size": {
+          "type": "ImageSize | enum",
+          "required": false,
+          "default": "auto",
+          "allowed_values": [
+            "square_hd",
+            "square",
+            "portrait_4_3",
+            "portrait_16_9",
+            "landscape_4_3",
+            "landscape_16_9",
+            "auto"
+          ]
+        },
+        "num_inference_steps": {
+          "type": "integer",
+          "required": false,
+          "default": 8,
+          "min": 1,
+          "max": 8
+        },
+        "seed": {
+          "type": "integer",
+          "required": false
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 4
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "required": false,
+          "default": true
+        },
+        "output_format": {
+          "type": "enum",
+          "required": false,
+          "default": "png",
+          "allowed_values": [
+            "jpeg",
+            "png",
+            "webp"
+          ]
+        },
+        "acceleration": {
+          "type": "enum",
+          "required": false,
+          "default": "regular",
+          "allowed_values": [
+            "none",
+            "regular",
+            "high"
+          ]
+        },
+        "enable_prompt_expansion": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "notes": "Enabling prompt expansion increases price by 0.0025 credits per request."
+        },
+        "strength": {
+          "type": "float",
+          "required": false,
+          "default": 0.6,
+          "min": 0.0,
+          "max": 1.0
+        }
+      }
+    },
+    {
+      "name": "Z-Image Turbo Image To Image LoRA",
+      "endpoint_id": "fal-ai/z-image/turbo/image-to-image/lora",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "image_url": {
+          "type": "string",
+          "required": true,
+          "max_items": 1
+        },
+        "image_size": {
+          "type": "ImageSize | enum",
+          "required": false,
+          "default": "auto",
+          "allowed_values": [
+            "square_hd",
+            "square",
+            "portrait_4_3",
+            "portrait_16_9",
+            "landscape_4_3",
+            "landscape_16_9",
+            "auto"
+          ]
+        },
+        "num_inference_steps": {
+          "type": "integer",
+          "required": false,
+          "default": 8,
+          "min": 1,
+          "max": 8
+        },
+        "seed": {
+          "type": "integer",
+          "required": false
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 4
+        },
+        "enable_safety_checker": {
+          "type": "boolean",
+          "required": false,
+          "default": true
+        },
+        "output_format": {
+          "type": "enum",
+          "required": false,
+          "default": "png",
+          "allowed_values": [
+            "jpeg",
+            "png",
+            "webp"
+          ]
+        },
+        "acceleration": {
+          "type": "enum",
+          "required": false,
+          "default": "regular",
+          "allowed_values": [
+            "none",
+            "regular",
+            "high"
+          ]
+        },
+        "enable_prompt_expansion": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "notes": "Enabling prompt expansion increases price by 0.0025 credits per request."
+        },
+        "strength": {
+          "type": "float",
+          "required": false,
+          "default": 0.6,
+          "min": 0.0,
+          "max": 1.0
+        },
+        "loras": {
+          "type": "array<LoRAInput>",
+          "required": false,
+          "default": [],
+          "max_items": 3
+        }
+      }
+    },
+    {
+      "name": "Gemini 3 Pro Image Preview Edit (Nano Banana Pro)",
+      "endpoint_id": "fal-ai/gemini-3-pro-image-preview/edit",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 4
+        },
+        "seed": {
+          "type": "integer",
+          "required": false
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "required": false,
+          "default": "auto",
+          "allowed_values": [
+            "auto",
+            "21:9",
+            "16:9",
+            "3:2",
+            "4:3",
+            "5:4",
+            "1:1",
+            "4:5",
+            "3:4",
+            "2:3",
+            "9:16"
+          ]
+        },
+        "output_format": {
+          "type": "enum",
+          "required": false,
+          "default": "png",
+          "allowed_values": [
+            "jpeg",
+            "png",
+            "webp"
+          ]
+        },
+        "safety_tolerance": {
+          "type": "enum",
+          "required": false,
+          "default": "4",
+          "allowed_values": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ]
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "image_urls": {
+          "type": "array<string>",
+          "required": true
+        },
+        "resolution": {
+          "type": "enum",
+          "required": false,
+          "default": "1K",
+          "allowed_values": [
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "limit_generations": {
+          "type": "boolean",
+          "required": false,
+          "default": false,
+          "notes": "Limit each prompting round to one generated image."
+        },
+        "enable_web_search": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        }
+      }
+    },
+    {
+      "name": "Nano Banana 2 Edit",
+      "endpoint_id": "fal-ai/nano-banana-2/edit",
+      "mode": "image-to-image",
+      "parameters": {
+        "prompt": {
+          "type": "string",
+          "required": true
+        },
+        "num_images": {
+          "type": "integer",
+          "required": false,
+          "default": 1,
+          "min": 1,
+          "max": 4
+        },
+        "seed": {
+          "type": "integer",
+          "required": false
+        },
+        "aspect_ratio": {
+          "type": "enum",
+          "required": false,
+          "default": "auto",
+          "allowed_values": [
+            "auto",
+            "21:9",
+            "16:9",
+            "3:2",
+            "4:3",
+            "5:4",
+            "1:1",
+            "4:5",
+            "3:4",
+            "2:3",
+            "9:16",
+            "4:1",
+            "1:4",
+            "8:1",
+            "1:8"
+          ]
+        },
+        "output_format": {
+          "type": "enum",
+          "required": false,
+          "default": "png",
+          "allowed_values": [
+            "jpeg",
+            "png",
+            "webp"
+          ]
+        },
+        "safety_tolerance": {
+          "type": "enum",
+          "required": false,
+          "default": "4",
+          "allowed_values": [
+            "1",
+            "2",
+            "3",
+            "4",
+            "5",
+            "6"
+          ]
+        },
+        "sync_mode": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "image_urls": {
+          "type": "array<string>",
+          "required": true,
+          "max_items": 14
+        },
+        "resolution": {
+          "type": "enum",
+          "required": false,
+          "default": "1K",
+          "allowed_values": [
+            "0.5K",
+            "1K",
+            "2K",
+            "4K"
+          ]
+        },
+        "limit_generations": {
+          "type": "boolean",
+          "required": false,
+          "default": true,
+          "notes": "Limit each prompting round to one generated image and ignore intermediate images."
+        },
+        "enable_web_search": {
+          "type": "boolean",
+          "required": false,
+          "default": false
+        },
+        "thinking_level": {
+          "type": "enum",
+          "required": false,
+          "allowed_values": [
+            "minimal",
+            "high"
+          ],
+          "notes": "Omit to disable model thinking."
+        }
+      }
+    }
+  ]
+}

@@ -111,42 +111,20 @@
                 <p id="imageToImageLayerHint" class="ps-dialog-note"></p>
                 <label>Prompt<textarea id="imageToImagePrompt" rows="5" required placeholder="Describe the image you want to create…"></textarea></label>
                 <label>Model
-                    <input id="imageToImageModel" type="search" list="imageToImageModelList" autocomplete="off" required placeholder="Type to filter image-to-image models…">
-                    <datalist id="imageToImageModelList">
+                    <select id="imageToImageModel" required>
+                        <option value="" selected disabled>Select a configured image-to-image model…</option>
                         @foreach ($imageModels as $model)
-                            @php($metadata = $model['metadata'] ?? [])
-                            <option value="{{ $model['endpoint_id'] }}">{{ ($metadata['display_name'] ?? $model['endpoint_id']).' — '.$model['endpoint_id'].(!empty($metadata['category']) ? ' · '.$metadata['category'] : '') }}</option>
+                            <option value="{{ $model['endpoint_id'] }}">{{ ($model['name'] ?? $model['endpoint_id']).' — '.$model['endpoint_id'] }}</option>
                         @endforeach
-                    </datalist>
-                </label>
-                <label>Output resolution
-                    <select id="imageToImageResolution">
-                        <optgroup label="1MP">
-                            <option value="1:1-1024" data-width="1024" data-height="1024">1:1 (1024 × 1024)</option>
-                            <option value="3:2-1024" data-width="1216" data-height="832">3:2 (1216 × 832) Landscape</option>
-                            <option value="4:3-1024" data-width="1152" data-height="896">4:3 (1152 × 896) Landscape</option>
-                            <option value="16:9-1024" data-width="1344" data-height="768">16:9 (1344 × 768) Landscape</option>
-                            <option value="21:9-1024" data-width="1536" data-height="640">21:9 (1536 × 640) Landscape</option>
-                            <option value="2:3-1024" data-width="832" data-height="1216">2:3 (832 × 1216) Portrait</option>
-                            <option value="3:4-1024" data-width="896" data-height="1152">3:4 (896 × 1152) Portrait</option>
-                            <option value="9:16-1024" data-width="768" data-height="1344">9:16 (768 × 1344) Portrait</option>
-                            <option value="9:21-1024" data-width="640" data-height="1536">9:21 (640 × 1536) Portrait</option>
-                        </optgroup>
-                        <optgroup label="2MP">
-                            <option value="1:1-1408" data-width="1408" data-height="1408">1:1 (1408 × 1408)</option>
-                            <option value="3:2-1408" data-width="1728" data-height="1152">3:2 (1728 × 1152) Landscape</option>
-                            <option value="4:3-1408" data-width="1664" data-height="1216">4:3 (1664 × 1216) Landscape</option>
-                            <option value="16:9-1408" data-width="1920" data-height="1088">16:9 (1920 × 1088) Landscape</option>
-                            <option value="21:9-1408" data-width="2176" data-height="960">21:9 (2176 × 960) Landscape</option>
-                            <option value="2:3-1408" data-width="1152" data-height="1728">2:3 (1152 × 1728) Portrait</option>
-                            <option value="3:4-1408" data-width="1216" data-height="1664">3:4 (1216 × 1664) Portrait</option>
-                            <option value="9:16-1408" data-width="1088" data-height="1920">9:16 (1088 × 1920) Portrait</option>
-                            <option value="9:21-1408" data-width="960" data-height="2176">9:21 (960 × 2176) Portrait</option>
-                        </optgroup>
                     </select>
                 </label>
-                <label class="ps-resolution-checkbox"><input id="imageToImageSameSize" type="checkbox"> Send output resolution same as picture</label>
-                <p id="imageToImageResolutionHint" class="ps-dialog-note"></p>
+                <div id="imageToImageParameters" class="ps-model-parameters" hidden></div>
+                <label class="ps-resolution-checkbox"><input id="imageToImageAutoCrop" type="checkbox" checked> Auto-crop transparent edges on layers</label>
+                <label id="imageToImageTransparentColorRow" hidden>Replace transparent areas with
+                    <select id="imageToImageTransparentColor">
+                        <option value="white" selected>White</option><option value="black">Black</option><option value="green">Green</option><option value="blue">Blue</option><option value="red">Red</option>
+                    </select>
+                </label>
             </div>
             <footer><button value="generate">Generate</button><button value="cancel" class="secondary">Cancel</button></footer>
         </form>
@@ -157,7 +135,17 @@
     </dialog>    <dialog id="genAiPromptDialog" class="ps-dialog ps-gen-ai-dialog">
         <form method="dialog" id="genAiPromptForm">
             <header class="ps-draggable-dialog-handle"><h2>Generate AI edit</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
-            <div class="ps-dialog-body"><p id="genAiRegionHint" class="ps-gen-ai-region-hint"></p><label>Instructions<textarea id="genAiPrompt" rows="7" required placeholder="Describe all edits for the colored regions…"></textarea></label><p class="ps-dialog-note">The flattened selected layers and colored rectangles will be sent to fal.ai.</p></div>
+            <div class="ps-dialog-body">
+                <p id="genAiRegionHint" class="ps-gen-ai-region-hint"></p>
+                <label>Instructions<textarea id="genAiPrompt" rows="7" required placeholder="Describe all edits for the colored regions…"></textarea></label>
+                <label class="ps-resolution-checkbox"><input id="genAiAutoCrop" type="checkbox" checked> Auto-crop transparent edges on selected layers</label>
+                <label id="genAiTransparentColorRow" hidden>Replace transparent areas with
+                    <select id="genAiTransparentColor">
+                        <option value="white" selected>White</option><option value="black">Black</option><option value="green">Green</option><option value="blue">Blue</option><option value="red">Red</option>
+                    </select>
+                </label>
+                <p class="ps-dialog-note">The flattened selected layers and colored rectangles will be sent to fal.ai.</p>
+            </div>
             <footer><button value="generate">Generate</button><button value="cancel" class="secondary">Cancel</button></footer>
         </form>
     </dialog>
@@ -232,5 +220,6 @@
     </dialog>
 
 </div>
+<script id="imageToImageModelsData" type="application/json">@json($imageModels)</script>
 </body>
 </html>

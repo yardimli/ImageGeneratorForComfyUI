@@ -339,6 +339,30 @@ class RenderJobService
                 'enable_safety_checker' => true,
                 'enhance_prompt_mode' => 'standard',
             ];
+        } elseif ($prompt->notes === 'photoshop-image-to-image') {
+            $model = app(FalModelService::class)->model($modelName);
+            if ($model === null) {
+                throw new \RuntimeException('The configured image-to-image model is no longer available.');
+            }
+
+            $arguments = ['prompt' => $prompt->generated_prompt];
+            foreach ($prompt->model_parameters ?? [] as $name => $value) {
+                $arguments[$name] = $value;
+            }
+            // This worker relies on queue status and result URLs.
+            $arguments['sync_mode'] = false;
+
+            if (array_key_exists('image_urls', $model['parameters'])) {
+                if ($imageReferences === []) {
+                    throw new \RuntimeException('The image-to-image inputs could not be prepared.');
+                }
+                $arguments['image_urls'] = $imageReferences;
+            } elseif (array_key_exists('image_url', $model['parameters'])) {
+                if ($imageReferences === []) {
+                    throw new \RuntimeException('The image-to-image input could not be prepared.');
+                }
+                $arguments['image_url'] = $imageReferences[0];
+            }
         } else {
             $arguments = [
                 'prompt' => $prompt->generated_prompt,
@@ -411,9 +435,9 @@ class RenderJobService
             ? $data['response_url']
             : null;
 
-        if ($this->isSeedreamProModel($modelName)) {
-            // Seedream Pro is a partner endpoint whose identifier intentionally
-            // does not use the fal-ai/ prefix. Keep its full path and prefer the
+        if ($this->usesFullEndpointPath($modelName)) {
+            // Partner endpoints intentionally do not use the fal-ai/ prefix.
+            // Keep their full path and prefer the
             // authoritative URLs returned by the submission response.
             $statusUrl = is_string($data['status_url'] ?? null)
                 ? $data['status_url']
@@ -426,7 +450,9 @@ class RenderJobService
             // Preserve the original ProcessRenderJobs behavior for existing
             // fal-ai models: poll through the first model path segment.
             $pollingBaseUrl = $this->falPollingBaseUrl($modelName, $requestId);
-            $statusUrl = "{$pollingBaseUrl}/status";
+            $statusUrl = is_string($data['status_url'] ?? null)
+                ? $data['status_url']
+                : "{$pollingBaseUrl}/status";
             $baseResultUrls = [
                 $pollingBaseUrl,
                 $submittedResultUrl,
@@ -522,15 +548,11 @@ class RenderJobService
 
     private function falSubmitUrl(string $modelName): string
     {
-        $normalizedModelName = Str::startsWith($modelName, 'fal-ai/')
-            ? Str::after($modelName, 'fal-ai/')
-            : $modelName;
-
-        if ($this->isSeedreamProModel($normalizedModelName)) {
-            return "https://queue.fal.run/{$normalizedModelName}";
+        if (Str::startsWith($modelName, 'fal-ai/') || $this->usesFullEndpointPath($modelName)) {
+            return "https://queue.fal.run/{$modelName}";
         }
 
-        return "https://queue.fal.run/fal-ai/{$normalizedModelName}";
+        return "https://queue.fal.run/fal-ai/{$modelName}";
     }
 
     private function isSeedreamProModel(string $modelName): bool
@@ -540,6 +562,11 @@ class RenderJobService
             : $modelName;
 
         return Str::startsWith($normalizedModelName, 'bytedance/seedream/v5/pro/');
+    }
+
+    private function usesFullEndpointPath(string $modelName): bool
+    {
+        return Str::startsWith($modelName, ['bytedance/', 'xai/']);
     }
 
     private function falPollingBaseUrl(string $modelName, string $requestId): string

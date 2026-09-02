@@ -11,6 +11,10 @@ class FalModelService
     /** @return array<int, array<string, mixed>> */
     public function cachedModels(string $category = 'text-to-image'): array
     {
+        if ($category === 'image-to-image') {
+            return $this->configuredImageToImageModels();
+        }
+
         $models = Cache::get($this->modelsCacheKey($category));
 
         if (is_array($models)) {
@@ -31,6 +35,10 @@ class FalModelService
     /** @return array<int, array<string, mixed>> */
     public function models(string $category = 'text-to-image'): array
     {
+        if ($category === 'image-to-image') {
+            return $this->configuredImageToImageModels();
+        }
+
         $cacheKey = $this->modelsCacheKey($category);
         if (Cache::has($cacheKey)) {
             return $this->withoutLoraModels(Cache::get($cacheKey, []));
@@ -42,6 +50,10 @@ class FalModelService
     /** @return array<int, array<string, mixed>> */
     public function refreshModels(string $category = 'text-to-image'): array
     {
+        if ($category === 'image-to-image') {
+            return $this->configuredImageToImageModels();
+        }
+
         $models = [];
         $cursor = null;
         $seenCursors = [];
@@ -115,7 +127,25 @@ class FalModelService
 
     public function lastUpdatedAt(string $category = 'text-to-image'): ?string
     {
+        if ($category === 'image-to-image') {
+            $path = base_path('models.json');
+
+            return is_file($path) ? date(DATE_ATOM, filemtime($path)) : null;
+        }
+
         return Cache::get($this->updatedAtCacheKey($category));
+    }
+
+    /** @return array<string, mixed>|null */
+    public function model(string $endpointId, string $category = 'image-to-image'): ?array
+    {
+        foreach ($this->models($category) as $model) {
+            if (($model['endpoint_id'] ?? null) === $endpointId) {
+                return $model;
+            }
+        }
+
+        return null;
     }
 
     private function modelsCacheKey(string $category): string
@@ -144,6 +174,42 @@ class FalModelService
             return stripos($endpointId, 'lora') === false
                 && stripos($displayName, 'lora') === false;
         }));
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function configuredImageToImageModels(): array
+    {
+        $path = base_path('models.json');
+        if (! is_file($path)) {
+            throw new RuntimeException('The image-to-image model configuration is missing.');
+        }
+
+        $payload = json_decode((string) file_get_contents($path), true);
+        if (! is_array($payload) || ! is_array($payload['models'] ?? null)) {
+            throw new RuntimeException('models.json does not contain a valid model list.');
+        }
+
+        $models = [];
+        foreach ($payload['models'] as $model) {
+            if (! is_array($model)
+                || ($model['mode'] ?? null) !== 'image-to-image'
+                || ! is_string($model['endpoint_id'] ?? null)
+                || ! is_array($model['parameters'] ?? null)) {
+                continue;
+            }
+
+            $model['metadata'] = array_merge([
+                'display_name' => $model['name'] ?? $model['endpoint_id'],
+                'category' => 'image-to-image',
+            ], is_array($model['metadata'] ?? null) ? $model['metadata'] : []);
+            $models[] = $model;
+        }
+
+        if ($models === []) {
+            throw new RuntimeException('models.json does not define any image-to-image models.');
+        }
+
+        return $models;
     }
 
     /** @return array<string, mixed> */

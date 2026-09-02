@@ -19,6 +19,8 @@ const photoshopApp=document.getElementById('photoshopApp');
 const layerizeConfig={storeUrl:photoshopApp.dataset.layerizeStoreUrl,historyUrl:photoshopApp.dataset.layerizeHistoryUrl,csrfToken:document.querySelector('meta[name="csrf-token"]')?.content||''};
 const genAiConfig={storeUrl:photoshopApp.dataset.genAiStoreUrl,historyUrl:photoshopApp.dataset.genAiHistoryUrl,csrfToken:layerizeConfig.csrfToken};
 const imageToImageConfig={storeUrl:photoshopApp.dataset.imageToImageStoreUrl,historyUrl:photoshopApp.dataset.imageToImageHistoryUrl,csrfToken:layerizeConfig.csrfToken};
+const imageToImageModels=JSON.parse(document.getElementById('imageToImageModelsData')?.textContent||'[]');
+const managedImageToImageParameters=new Set(['prompt','image_url','image_urls','sync_mode']);
 const genAiColors=[{name:'red',stroke:'#ef4444'},{name:'green',stroke:'#22c55e'},{name:'yellow',stroke:'#facc15'},{name:'blue',stroke:'#3b82f6'},{name:'purple',stroke:'#a855f7'}];
 
 const toolGroups = [
@@ -180,41 +182,72 @@ function cropTransparentCanvas(canvas){
     cropped.getContext('2d').drawImage(canvas,left,top,width,height,0,0,width,height);
     return {canvas:cropped,x:left,y:top,width,height};
 }
-async function imageToImageLayerCanvas(project,layer){
+function replaceTransparentPixels(canvas,colorName){
+    const colors={white:'#ffffff',black:'#000000',green:'#00a651',blue:'#0066ff',red:'#e53935'},filled=transparentCanvas(canvas.width,canvas.height),context=filled.getContext('2d');
+    context.fillStyle=colors[colorName]||colors.white;context.fillRect(0,0,filled.width,filled.height);context.drawImage(canvas,0,0);return filled;
+}
+function prepareAiCanvas(canvas,autoCrop,colorName){
+    if(autoCrop)return cropTransparentCanvas(canvas);
+    const filled=replaceTransparentPixels(canvas,colorName);return {canvas:filled,x:0,y:0,width:filled.width,height:filled.height};
+}
+async function imageToImageLayerCanvas(project,layer,autoCrop,colorName){
     const rendered=await layerCanvasForExport(layer),opacity=effectiveLayerOpacity(project,layer);
     let canvas=rendered.canvas;
     if(opacity<1){const faded=transparentCanvas(canvas.width,canvas.height),context=faded.getContext('2d');context.globalAlpha=Math.max(0,opacity);context.drawImage(canvas,0,0);canvas=faded;}
-    return cropTransparentCanvas(canvas);
+    return prepareAiCanvas(canvas,autoCrop,colorName);
+}
+function imageToImageModel(){const endpoint=document.getElementById('imageToImageModel').value;return imageToImageModels.find(model=>model.endpoint_id===endpoint)||null;}
+function parameterLabel(name){return name.split('_').map(word=>word.charAt(0).toUpperCase()+word.slice(1)).join(' ');}
+function renderImageToImageParameters(){
+    const container=document.getElementById('imageToImageParameters'),model=imageToImageModel();container.replaceChildren();if(!model){container.hidden=true;return;}
+    Object.entries(model.parameters||{}).filter(([name])=>!managedImageToImageParameters.has(name)).forEach(([name,definition])=>{
+        const label=document.createElement('label'),title=document.createElement('span');title.textContent=parameterLabel(name);label.append(title);let input;
+        if(Array.isArray(definition.allowed_values)){
+            input=document.createElement('select');
+            if(!Object.hasOwn(definition,'default')){const option=document.createElement('option');option.value='';option.textContent='Model default';input.append(option);}
+            definition.allowed_values.forEach(value=>{const option=document.createElement('option');option.value=String(value);option.textContent=String(value);option.selected=value===definition.default;input.append(option);});
+        }else if(String(definition.type).includes('boolean')){
+            label.classList.add('ps-resolution-checkbox');input=document.createElement('input');input.type='checkbox';input.checked=Boolean(definition.default);label.replaceChildren(input,title);
+        }else if(String(definition.type).includes('array')){
+            input=document.createElement('textarea');input.rows=3;input.placeholder='JSON array, for example []';input.value=JSON.stringify(definition.default??[]);label.classList.add('ps-parameter-wide');
+        }else{
+            input=document.createElement('input');input.type=String(definition.type).includes('integer')||String(definition.type).includes('float')?'number':'text';
+            if(definition.min!==undefined)input.min=String(definition.min);if(definition.max!==undefined)input.max=String(definition.max);if(String(definition.type).includes('float'))input.step='any';if(definition.default!==undefined)input.value=String(definition.default);
+        }
+        input.dataset.modelParameter=name;input.dataset.parameterType=String(definition.type||'string');label.append(input);
+        if(definition.notes){const note=document.createElement('small');note.className='ps-dialog-note';note.textContent=definition.notes;label.append(note);}
+        container.append(label);
+    });container.hidden=!container.childElementCount;updateImageToImageLayerHint();
+}
+function collectImageToImageParameters(){
+    const parameters={};document.querySelectorAll('#imageToImageParameters [data-model-parameter]').forEach(input=>{const name=input.dataset.modelParameter,type=input.dataset.parameterType;if(type.includes('boolean'))parameters[name]=input.checked;else if(input.value!==''){if(type.includes('array')){try{parameters[name]=JSON.parse(input.value);}catch{throw new Error(parameterLabel(name)+' must be a valid JSON array.');}if(!Array.isArray(parameters[name]))throw new Error(parameterLabel(name)+' must be a JSON array.');}else if(type.includes('integer'))parameters[name]=Number.parseInt(input.value,10);else if(type.includes('float'))parameters[name]=Number.parseFloat(input.value);else parameters[name]=input.value;}});return parameters;
+}
+function updateTransparentColorControl(prefix){const autoCrop=document.getElementById(prefix+'AutoCrop').checked;document.getElementById(prefix+'TransparentColorRow').hidden=autoCrop;}
+function updateImageToImageLayerHint(){
+    const count=state.imageToImageAnchorLayerIds.length,autoCrop=document.getElementById('imageToImageAutoCrop').checked,model=imageToImageModel(),imageDefinition=model?.parameters?.image_urls||model?.parameters?.image_url,max=imageDefinition?.max_items||(model?.parameters?.image_url?1:null);
+    document.getElementById('imageToImageLayerHint').textContent=count+' selected layer'+(count===1?'':'s')+' will be '+(autoCrop?'cropped and ':'sent ')+'separately.'+(max?' This model accepts up to '+max+'.':'');
 }
 function nearestMultipleOfEight(value){return Math.max(8,Math.min(8192,Math.round(Number(value)/8)*8));}
-function imageToImageOutputSize(){
-    const project=activeProject(),same=document.getElementById('imageToImageSameSize').checked,select=document.getElementById('imageToImageResolution');
-    if(same)return {width:nearestMultipleOfEight(project?.width||1024),height:nearestMultipleOfEight(project?.height||1024),resolution:'custom'};
-    const option=select.selectedOptions[0];return {width:Number(option?.dataset.width)||1024,height:Number(option?.dataset.height)||1024,resolution:select.value};
-}
-function updateImageToImageResolution(){
-    const same=document.getElementById('imageToImageSameSize').checked,select=document.getElementById('imageToImageResolution'),size=imageToImageOutputSize();
-    select.disabled=same;document.getElementById('imageToImageResolutionHint').textContent='Output: '+size.width+' × '+size.height+' px'+(same?' (nearest dimensions divisible by 8)':'');
-}
+function imageToImageOutputSize(){const project=activeProject();return {width:nearestMultipleOfEight(project?.width||1024),height:nearestMultipleOfEight(project?.height||1024),resolution:'model'};}
 function updateImageToImageProgress(){document.getElementById('imageToImageProgress').hidden=state.imageToImageRunning===0;}
 function openImageToImageDialog(){
     const project=activeProject(),layers=selectedLayers();if(!project||!layers.length){toast('Select at least one layer for Image to Image.');return;}
     state.imageToImageAnchorLayerIds=layers.map(layer=>layer.id);
-    document.getElementById('imageToImageLayerHint').textContent=layers.length+' selected layer'+(layers.length===1?'':'s')+' will be cropped and sent separately.';
-    document.getElementById('imageToImageSameSize').checked=false;updateImageToImageResolution();
+    updateImageToImageLayerHint();
     const dialog=document.getElementById('imageToImageDialog');dialog.showModal();document.getElementById('imageToImagePrompt').focus();
 }
 async function submitImageToImage(){
     const project=activeProject(),anchorIds=[...state.imageToImageAnchorLayerIds],layers=project?.layers.filter(layer=>anchorIds.includes(layer.id))||[];
     const prompt=document.getElementById('imageToImagePrompt').value.trim(),model=document.getElementById('imageToImageModel').value.trim();
-    const allowedModels=new Set([...document.getElementById('imageToImageModelList').options].map(option=>option.value));
+    const allowedModels=new Set(imageToImageModels.map(item=>item.endpoint_id));
     if(!project||!layers.length){toast('The selected layers are no longer available.');return;}
     if(!prompt){toast('Enter a prompt.');return;}if(!allowedModels.has(model)){toast('Choose a model from the filtered model list.');return;}
     const button=document.querySelector('#imageToImageForm button[value="generate"]'),size=imageToImageOutputSize();button.disabled=true;state.imageToImageRunning+=1;updateImageToImageProgress();
     try{
-        const form=new FormData();form.append('prompt',prompt);form.append('model',model);form.append('width',String(size.width));form.append('height',String(size.height));form.append('resolution',size.resolution);
+        const autoCrop=document.getElementById('imageToImageAutoCrop').checked,color=document.getElementById('imageToImageTransparentColor').value,parameters=collectImageToImageParameters();
+        const form=new FormData();form.append('prompt',prompt);form.append('model',model);form.append('width',String(size.width));form.append('height',String(size.height));form.append('resolution',size.resolution);form.append('parameters',JSON.stringify(parameters));
         let sent=0;
-        for(const layer of layers){const cropped=await imageToImageLayerCanvas(project,layer);if(!cropped)continue;form.append('images[]',await canvasToBlob(cropped.canvas),'layer-'+(++sent)+'.png');}
+        for(const layer of layers){const prepared=await imageToImageLayerCanvas(project,layer,autoCrop,color);if(!prepared)continue;form.append('images[]',await canvasToBlob(prepared.canvas),'layer-'+(++sent)+'.png');}
         if(!sent)throw new Error('The selected layers contain no visible pixels.');
         const queued=await responseJson(await fetch(imageToImageConfig.storeUrl,{method:'POST',headers:{Accept:'application/json','X-CSRF-TOKEN':imageToImageConfig.csrfToken},body:form}));
         document.getElementById('imageToImageDialog').close();toast('Image to Image #'+queued.id+' queued.');await pollImageToImageJob(queued.statusUrl,{projectId:project.id,anchorIds});
@@ -294,7 +327,7 @@ async function submitGenAiEdit(){
     const project=activeProject(),prompt=document.getElementById('genAiPrompt').value.trim(),regions=state.genAiRegions.map(region=>({...region})),anchorIds=[...state.genAiAnchorLayerIds],layers=project?.layers.filter(layer=>anchorIds.includes(layer.id))||[];if(!project||!layers.length){toast('The selected layers are no longer available.');return;}if(!prompt){toast('Enter instructions for the edit.');return;}
     const button=document.querySelector('#genAiPromptForm button[value="generate"]');button.disabled=true;state.genAiRunning+=1;updateGenAiProgress();
     try{
-        const flattened=await renderComposite(project,layers),cropped=cropTransparentCanvas(flattened);if(!cropped)throw new Error('The selected layers contain no visible pixels.');const annotated=cropped.canvas,context=annotated.getContext('2d');context.lineWidth=Math.max(5,project.width/180);regions.forEach(region=>{context.strokeStyle=region.stroke;context.strokeRect(region.x-cropped.x,region.y-cropped.y,region.width,region.height);});const blob=await canvasToBlob(annotated);
+        const autoCrop=document.getElementById('genAiAutoCrop').checked,color=document.getElementById('genAiTransparentColor').value,flattened=await renderComposite(project,layers),prepared=prepareAiCanvas(flattened,autoCrop,color);if(!prepared)throw new Error('The selected layers contain no visible pixels.');const annotated=prepared.canvas,context=annotated.getContext('2d');context.lineWidth=Math.max(5,project.width/180);regions.forEach(region=>{context.strokeStyle=region.stroke;context.strokeRect(region.x-prepared.x,region.y-prepared.y,region.width,region.height);});const blob=await canvasToBlob(annotated);
         const form=new FormData();form.append('image',blob,'photoshop-gen-ai.png');form.append('prompt',prompt);form.append('width',String(project.width));form.append('height',String(project.height));regions.forEach(region=>form.append('colors[]',region.color));
         const queued=await responseJson(await fetch(genAiConfig.storeUrl,{method:'POST',headers:{Accept:'application/json','X-CSRF-TOKEN':genAiConfig.csrfToken},body:form}));document.getElementById('genAiPromptDialog').close();endGenAiSelectionMode();toast('Gen AI edit #'+queued.id+' queued.');await pollGenAiJob(queued.statusUrl,{projectId:project.id,anchorIds});
     }catch(error){toast(error.message||'The Gen AI edit failed.');}
@@ -515,8 +548,9 @@ document.getElementById('canvasSizeForm').addEventListener('submit',event=>{even
 document.querySelector('[data-close-layerize-history]').addEventListener('click',()=>document.getElementById('layerizeHistoryDialog').close());
 document.querySelector('[data-close-gen-ai-history]').addEventListener('click',()=>document.getElementById('genAiHistoryDialog').close());
 document.querySelector('[data-close-image-to-image-history]').addEventListener('click',()=>document.getElementById('imageToImageHistoryDialog').close());
-document.getElementById('imageToImageResolution').addEventListener('change',updateImageToImageResolution);
-document.getElementById('imageToImageSameSize').addEventListener('change',updateImageToImageResolution);
+document.getElementById('imageToImageModel').addEventListener('change',renderImageToImageParameters);
+document.getElementById('imageToImageAutoCrop').addEventListener('change',()=>{updateTransparentColorControl('imageToImage');updateImageToImageLayerHint();});
+document.getElementById('genAiAutoCrop').addEventListener('change',()=>updateTransparentColorControl('genAi'));
 document.getElementById('imageToImageForm').addEventListener('submit',event=>{event.preventDefault();if(event.submitter?.value==='generate')submitImageToImage();else{state.imageToImageAnchorLayerIds=[];document.getElementById('imageToImageDialog').close();}});
 document.getElementById('genAiRegionSelect').addEventListener('change',event=>{state.genAiActiveIndex=Number(event.target.value);renderGenAiRegions();});
 document.getElementById('deleteGenAiRegion').addEventListener('click',deleteActiveGenAiRegion);
@@ -564,5 +598,5 @@ document.getElementById('canvas').addEventListener('pointerdown',event=>{if(stat
 window.addEventListener('resize',()=>{if(activeProject())fitScreen();else updateDocumentStatus();});
 window.addEventListener('beforeunload',()=>{state.binaryAssetUrls.forEach(url=>URL.revokeObjectURL(url));const previewUrl=document.getElementById('imageSizePreview')?.dataset.objectUrl;if(previewUrl)URL.revokeObjectURL(previewUrl);});
 
-async function init(){buildTools();updateSaveUi();try{await Promise.all([buildMenus(),loadDocumentTemplates()]);}catch(error){toast(error.message);}}
+async function init(){buildTools();updateSaveUi();renderImageToImageParameters();updateTransparentColorControl('imageToImage');updateTransparentColorControl('genAi');try{await Promise.all([buildMenus(),loadDocumentTemplates()]);}catch(error){toast(error.message);}}
 init();

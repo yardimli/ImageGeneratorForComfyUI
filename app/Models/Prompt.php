@@ -33,6 +33,7 @@
 			'input_image_2',
 			'input_image_2_strength',
 			'input_images', // START MODIFICATION
+			'model_parameters',
 			'left_padding',
 			'right_padding',
 			'top_padding',
@@ -51,6 +52,7 @@
 		protected $casts = [
 			'upload_to_s3' => 'boolean',
 			'input_images' => 'array', // END MODIFICATION
+			'model_parameters' => 'array',
 		];
 
 		protected $appends = [

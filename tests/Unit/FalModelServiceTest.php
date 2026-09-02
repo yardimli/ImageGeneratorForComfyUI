@@ -87,7 +87,7 @@ class FalModelServiceTest extends TestCase
         $this->assertSame(0.025, $service->price('fal-ai/new')['unit_price']);
     }
 
-    public function test_it_keeps_separate_catalogues_for_different_model_categories(): void
+    public function test_image_to_image_catalogue_comes_from_the_local_configuration(): void
     {
         Http::fake(function ($request) {
             $category = $request->data()['category'];
@@ -106,10 +106,20 @@ class FalModelServiceTest extends TestCase
 
         $this->assertSame('fal-ai/text-to-image', $service->models()[0]['endpoint_id']);
         $this->assertSame(
-            'fal-ai/image-to-image',
+            'fal-ai/bytedance/seedream/v4.5/edit',
             $service->models('image-to-image')[0]['endpoint_id']
         );
-        Http::assertSentCount(2);
+        $this->assertCount(7, $service->models('image-to-image'));
+        $this->assertArrayHasKey('parameters', $service->models('image-to-image')[0]);
+        $this->assertSame(
+            'fal-ai/z-image/turbo/image-to-image/lora',
+            $service->models('image-to-image')[4]['endpoint_id']
+        );
+        $this->assertSame(
+            ['fal-ai/gemini-3-pro-image-preview/edit', 'fal-ai/nano-banana-2/edit'],
+            array_slice(array_column($service->models('image-to-image'), 'endpoint_id'), -2)
+        );
+        Http::assertSentCount(1);
     }
 
     public function test_cached_models_never_fetches_the_catalogue(): void
@@ -126,9 +136,10 @@ class FalModelServiceTest extends TestCase
 
         $this->assertSame('fal-ai/cached-text-model', $service->cachedModels()[0]['endpoint_id']);
         $this->assertSame(
-            'fal-ai/cached-image-model',
+            'fal-ai/bytedance/seedream/v4.5/edit',
             $service->cachedModels('image-to-image')[0]['endpoint_id']
         );
+        $this->assertCount(7, $service->cachedModels('image-to-image'));
         $this->assertSame([], $service->cachedModels('unknown-category'));
         Http::assertNothingSent();
     }

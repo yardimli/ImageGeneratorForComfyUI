@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class PhotoshopGenAiController extends Controller
@@ -54,7 +55,7 @@ class PhotoshopGenAiController extends Controller
     public function storeImageToImage(Request $request, FalModelService $falModels)
     {
         try {
-            $allowedModels = array_column($falModels->models('image-to-image'), 'endpoint_id');
+            $models = $falModels->models('image-to-image');
         } catch (Throwable $exception) {
             report($exception);
 
@@ -64,15 +65,31 @@ class PhotoshopGenAiController extends Controller
             ], 503);
         }
 
+        $allowedModels = array_column($models, 'endpoint_id');
         $validated = $request->validate([
             'prompt' => ['required', 'string', 'max:5000'],
             'model' => ['required', 'string', Rule::in($allowedModels)],
             'width' => ['required', 'integer', 'min:8', 'max:8192', 'multiple_of:8'],
             'height' => ['required', 'integer', 'min:8', 'max:8192', 'multiple_of:8'],
             'resolution' => ['required', 'string', 'max:40'],
+            'parameters' => ['nullable', 'json', 'max:20000'],
             'images' => ['required', 'array', 'min:1'],
             'images.*' => ['required', 'image', 'max:20480'],
         ]);
+
+        $model = collect($models)->firstWhere('endpoint_id', $validated['model']);
+        $usesSingleImage = array_key_exists('image_url', $model['parameters']);
+        $imageDefinition = $model['parameters']['image_urls'] ?? $model['parameters']['image_url'] ?? [];
+        $maxImages = max(1, (int) ($imageDefinition['max_items'] ?? ($usesSingleImage ? 1 : 10)));
+        if (count($request->file('images', [])) > $maxImages) {
+            throw ValidationException::withMessages([
+                'images' => "The selected model accepts at most {$maxImages} input image".($maxImages === 1 ? '.' : 's.'),
+            ]);
+        }
+        $parameters = $this->normalizeModelParameters(
+            json_decode($validated['parameters'] ?? '{}', true, 512, JSON_THROW_ON_ERROR),
+            $model['parameters'],
+        );
 
         $images = collect($request->file('images'))
             ->map(function ($image) {
@@ -91,6 +108,7 @@ class PhotoshopGenAiController extends Controller
             $validated['resolution'],
             $images,
             self::IMAGE_TO_IMAGE_MARKER,
+            $parameters,
         );
 
         return response()->json([
@@ -142,8 +160,9 @@ class PhotoshopGenAiController extends Controller
         string $resolution,
         array $images,
         string $marker,
+        array $modelParameters = [],
     ): Prompt {
-        return DB::transaction(function () use ($text, $model, $width, $height, $resolution, $images, $marker) {
+        return DB::transaction(function () use ($text, $model, $width, $height, $resolution, $images, $marker, $modelParameters) {
             $setting = PromptSetting::create([
                 'user_id' => auth()->id(),
                 'generation_type' => 'prompt',
@@ -165,6 +184,7 @@ class PhotoshopGenAiController extends Controller
                 'input_images_1' => '',
                 'input_images_2' => '',
                 'input_images' => $images,
+                'model_parameters' => $modelParameters,
             ]);
 
             return Prompt::create([
@@ -179,8 +199,79 @@ class PhotoshopGenAiController extends Controller
                 'upload_to_s3' => false,
                 'input_images' => $images,
                 'notes' => $marker,
+                'model_parameters' => $modelParameters,
             ]);
         });
+    }
+
+    /** @param array<string, mixed> $values
+     *  @param array<string, array<string, mixed>> $definitions
+     *  @return array<string, mixed>
+     */
+    private function normalizeModelParameters(array $values, array $definitions): array
+    {
+        $managed = ['prompt', 'image_url', 'image_urls', 'sync_mode'];
+        $allowed = array_diff(array_keys($definitions), $managed);
+        $unknown = array_diff(array_keys($values), $allowed);
+        if ($unknown !== []) {
+            throw ValidationException::withMessages([
+                'parameters' => 'Unsupported model parameter: '.reset($unknown).'.',
+            ]);
+        }
+
+        $normalized = [];
+        foreach ($allowed as $name) {
+            $definition = $definitions[$name];
+            $hasValue = array_key_exists($name, $values) && $values[$name] !== '' && $values[$name] !== null;
+            if (! $hasValue) {
+                if (array_key_exists('default', $definition)) {
+                    $normalized[$name] = $definition['default'];
+                }
+                continue;
+            }
+
+            $value = $values[$name];
+            $type = (string) ($definition['type'] ?? 'string');
+            if (str_contains($type, 'integer')) {
+                if (filter_var($value, FILTER_VALIDATE_INT) === false) {
+                    throw ValidationException::withMessages(["parameters.{$name}" => 'Must be an integer.']);
+                }
+                $value = (int) $value;
+            } elseif (str_contains($type, 'float')) {
+                if (! is_numeric($value)) {
+                    throw ValidationException::withMessages(["parameters.{$name}" => 'Must be a number.']);
+                }
+                $value = (float) $value;
+            } elseif (str_contains($type, 'boolean')) {
+                $value = filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                if ($value === null) {
+                    throw ValidationException::withMessages(["parameters.{$name}" => 'Must be true or false.']);
+                }
+            } elseif (str_contains($type, 'array')) {
+                if (! is_array($value)) {
+                    throw ValidationException::withMessages(["parameters.{$name}" => 'Must be an array.']);
+                }
+            } elseif (! is_string($value)) {
+                throw ValidationException::withMessages(["parameters.{$name}" => 'Must be a string.']);
+            }
+
+            if (isset($definition['allowed_values']) && ! in_array($value, $definition['allowed_values'], true)) {
+                throw ValidationException::withMessages(["parameters.{$name}" => 'Choose one of the available values.']);
+            }
+            if (isset($definition['min']) && $value < $definition['min']) {
+                throw ValidationException::withMessages(["parameters.{$name}" => "Must be at least {$definition['min']}."]);
+            }
+            if (isset($definition['max']) && $value > $definition['max']) {
+                throw ValidationException::withMessages(["parameters.{$name}" => "Must not exceed {$definition['max']}."]);
+            }
+            if (is_array($value) && isset($definition['max_items']) && count($value) > $definition['max_items']) {
+                throw ValidationException::withMessages(["parameters.{$name}" => "Must contain no more than {$definition['max_items']} items."]);
+            }
+
+            $normalized[$name] = $value;
+        }
+
+        return $normalized;
     }
 
     private function historyResponse(string $marker)

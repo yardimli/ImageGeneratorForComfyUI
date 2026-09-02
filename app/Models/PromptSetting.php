@@ -29,6 +29,7 @@
 			'input_images_1',
 			'input_images_2',
 			'input_images', // START MODIFICATION
+			'model_parameters',
 			'left_padding',
 			'right_padding',
 			'top_padding',
@@ -48,6 +49,7 @@
 			'append_to_prompt' => 'boolean',
 			'upload_to_s3' => 'boolean',
 			'input_images' => 'array', // END MODIFICATION
+			'model_parameters' => 'array',
 		];
 
 
