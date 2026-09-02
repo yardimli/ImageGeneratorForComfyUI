@@ -342,7 +342,7 @@ class RenderJobService
         } else {
             $arguments = [
                 'prompt' => $prompt->generated_prompt,
-                'image_size' => $modelName === 'bytedance/seedream/v5/pro/edit'
+                'image_size' => $modelName === 'bytedance/seedream/v5/pro/edit' && $prompt->notes === 'photoshop-gen-ai'
                     ? 'auto_2K'
                     : [
                         'width' => $prompt->width ?? 1024,

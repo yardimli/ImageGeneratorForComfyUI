@@ -9,7 +9,7 @@
     @vite('resources/js/photoshop.js')
 </head>
 <body class="ps-body">
-<div id="photoshopApp" class="ps-app" data-layerize-store-url="{{ route('layers.store') }}" data-layerize-history-url="{{ route('layers.history') }}" data-gen-ai-store-url="{{ route('photoshop.gen-ai.store') }}" data-gen-ai-history-url="{{ route('photoshop.gen-ai.history') }}">
+<div id="photoshopApp" class="ps-app" data-layerize-store-url="{{ route('layers.store') }}" data-layerize-history-url="{{ route('layers.history') }}" data-gen-ai-store-url="{{ route('photoshop.gen-ai.store') }}" data-gen-ai-history-url="{{ route('photoshop.gen-ai.history') }}" data-image-to-image-store-url="{{ route('photoshop.image-to-image.store') }}" data-image-to-image-history-url="{{ route('photoshop.image-to-image.history') }}">
     <header class="ps-menubar">
         <a class="ps-brand" href="{{ route('home') }}" title="Back to DreamCover"><img src="{{ asset('images/favicon-32x32.png') }}" alt="DreamCover"></a>
         <nav id="menuBar" aria-label="Application menus"></nav>
@@ -17,7 +17,7 @@
     </header>
 
     <section class="ps-options" aria-label="Tool options">
-        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span><span id="layerizeProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Layerizing selected layers…</span></span><span id="genAiProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Generating selected edits…</span></span>
+        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span><span id="layerizeProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Layerizing selected layers…</span></span><span id="genAiProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Generating selected edits…</span></span><span id="imageToImageProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Generating image to image…</span></span>
         <span class="ps-divider"></span>
         <label><input id="autoSelect" type="checkbox" checked> Auto-select</label>
 
@@ -104,7 +104,57 @@
         <header><h2>Layerize history</h2><button type="button" data-close-layerize-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
         <div id="layerizeHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading Layerize history…</div></div>
     </dialog>
-    <dialog id="genAiPromptDialog" class="ps-dialog ps-gen-ai-dialog">
+    <dialog id="imageToImageDialog" class="ps-dialog ps-gen-ai-dialog">
+        <form method="dialog" id="imageToImageForm">
+            <header><h2>Image to Image</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+            <div class="ps-dialog-body">
+                <p id="imageToImageLayerHint" class="ps-dialog-note"></p>
+                <label>Prompt<textarea id="imageToImagePrompt" rows="5" required placeholder="Describe the image you want to create…"></textarea></label>
+                <label>Model
+                    <input id="imageToImageModel" type="search" list="imageToImageModelList" autocomplete="off" required placeholder="Type to filter image-to-image models…">
+                    <datalist id="imageToImageModelList">
+                        @foreach ($imageModels as $model)
+                            @php($metadata = $model['metadata'] ?? [])
+                            <option value="{{ $model['endpoint_id'] }}">{{ ($metadata['display_name'] ?? $model['endpoint_id']).' — '.$model['endpoint_id'].(!empty($metadata['category']) ? ' · '.$metadata['category'] : '') }}</option>
+                        @endforeach
+                    </datalist>
+                </label>
+                <label>Output resolution
+                    <select id="imageToImageResolution">
+                        <optgroup label="1MP">
+                            <option value="1:1-1024" data-width="1024" data-height="1024">1:1 (1024 × 1024)</option>
+                            <option value="3:2-1024" data-width="1216" data-height="832">3:2 (1216 × 832) Landscape</option>
+                            <option value="4:3-1024" data-width="1152" data-height="896">4:3 (1152 × 896) Landscape</option>
+                            <option value="16:9-1024" data-width="1344" data-height="768">16:9 (1344 × 768) Landscape</option>
+                            <option value="21:9-1024" data-width="1536" data-height="640">21:9 (1536 × 640) Landscape</option>
+                            <option value="2:3-1024" data-width="832" data-height="1216">2:3 (832 × 1216) Portrait</option>
+                            <option value="3:4-1024" data-width="896" data-height="1152">3:4 (896 × 1152) Portrait</option>
+                            <option value="9:16-1024" data-width="768" data-height="1344">9:16 (768 × 1344) Portrait</option>
+                            <option value="9:21-1024" data-width="640" data-height="1536">9:21 (640 × 1536) Portrait</option>
+                        </optgroup>
+                        <optgroup label="2MP">
+                            <option value="1:1-1408" data-width="1408" data-height="1408">1:1 (1408 × 1408)</option>
+                            <option value="3:2-1408" data-width="1728" data-height="1152">3:2 (1728 × 1152) Landscape</option>
+                            <option value="4:3-1408" data-width="1664" data-height="1216">4:3 (1664 × 1216) Landscape</option>
+                            <option value="16:9-1408" data-width="1920" data-height="1088">16:9 (1920 × 1088) Landscape</option>
+                            <option value="21:9-1408" data-width="2176" data-height="960">21:9 (2176 × 960) Landscape</option>
+                            <option value="2:3-1408" data-width="1152" data-height="1728">2:3 (1152 × 1728) Portrait</option>
+                            <option value="3:4-1408" data-width="1216" data-height="1664">3:4 (1216 × 1664) Portrait</option>
+                            <option value="9:16-1408" data-width="1088" data-height="1920">9:16 (1088 × 1920) Portrait</option>
+                            <option value="9:21-1408" data-width="960" data-height="2176">9:21 (960 × 2176) Portrait</option>
+                        </optgroup>
+                    </select>
+                </label>
+                <label class="ps-resolution-checkbox"><input id="imageToImageSameSize" type="checkbox"> Send output resolution same as picture</label>
+                <p id="imageToImageResolutionHint" class="ps-dialog-note"></p>
+            </div>
+            <footer><button value="generate">Generate</button><button value="cancel" class="secondary">Cancel</button></footer>
+        </form>
+    </dialog>
+    <dialog id="imageToImageHistoryDialog" class="ps-dialog ps-layerize-dialog">
+        <header><h2>Image to Image history</h2><button type="button" data-close-image-to-image-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+        <div id="imageToImageHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading Image to Image history…</div></div>
+    </dialog>    <dialog id="genAiPromptDialog" class="ps-dialog ps-gen-ai-dialog">
         <form method="dialog" id="genAiPromptForm">
             <header class="ps-draggable-dialog-handle"><h2>Generate AI edit</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
             <div class="ps-dialog-body"><p id="genAiRegionHint" class="ps-gen-ai-region-hint"></p><label>Instructions<textarea id="genAiPrompt" rows="7" required placeholder="Describe all edits for the colored regions…"></textarea></label><p class="ps-dialog-note">The flattened selected layers and colored rectangles will be sent to fal.ai.</p></div>

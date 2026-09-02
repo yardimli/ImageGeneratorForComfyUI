@@ -382,6 +382,9 @@ button { color: inherit; cursor: pointer; }
 .ps-gen-ai-dialog::backdrop { background: #0002; }
 .ps-gen-ai-dialog form { display: grid; grid-template-rows: auto minmax(0, 1fr) auto; }
 .ps-gen-ai-dialog textarea { min-height: 150px; resize: vertical; }
+.ps-gen-ai-dialog input[type="search"], .ps-gen-ai-dialog textarea { box-sizing: border-box; width: 100%; padding: 8px; color: #fff; background: #2d2d2d; border: 1px solid #777; }
+.ps-gen-ai-dialog .ps-resolution-checkbox { display: flex; grid-template-columns: none; align-items: center; gap: 8px; }
+.ps-gen-ai-dialog .ps-resolution-checkbox input { width: auto; margin: 0; }
 .ps-draggable-dialog-handle { cursor: move; touch-action: none; }
 .ps-gen-ai-region-hint { margin: 0; padding: 9px 11px; color: #eee; background: #333; border-left: 4px solid #a855f7; }
 .ps-layerize-job-body small { display: -webkit-box; max-height: 48px; overflow: hidden; color: #bbb; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }

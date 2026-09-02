@@ -8,7 +8,7 @@ const state = {
     tool: 'move', zoom: 1, zooms: new Map(), selection: null, clipboard: null,
     moveable: null, inspectorPanel: null, histories: new Map(), imageElements: new Map(), imageSources: new Map(), binaryAssets: new Map(), binaryAssetUrls: new Set(),
     dirtyProjects: new Set(), savedSignatures: new Map(), loadingFile: null, newDocumentClipboard: null, newDocumentUsesClipboard: false, clipboardReadToken: 0,
-    busy: false, layerizeRunning: 0, genAiRunning: 0, genAiMode: false, genAiRegions: [], genAiDraft: null, genAiActiveIndex: -1, genAiAnchorLayerIds: [], genAiPreviousTool: 'move', canvasRevision: 0, infoCompositeKey: null, infoCompositePromise: null, infoPointer: null, infoRequestToken: 0, nextProjectId: 1, nextLayerId: 1, nextFolderId: 1,
+    busy: false, layerizeRunning: 0, genAiRunning: 0, imageToImageRunning: 0, imageToImageAnchorLayerIds: [], genAiMode: false, genAiRegions: [], genAiDraft: null, genAiActiveIndex: -1, genAiAnchorLayerIds: [], genAiPreviousTool: 'move', canvasRevision: 0, infoCompositeKey: null, infoCompositePromise: null, infoPointer: null, infoRequestToken: 0, nextProjectId: 1, nextLayerId: 1, nextFolderId: 1,
 };
 
 let documentTemplateCategories = [];
@@ -18,6 +18,7 @@ const iconBase = '/ps-icons/';
 const photoshopApp=document.getElementById('photoshopApp');
 const layerizeConfig={storeUrl:photoshopApp.dataset.layerizeStoreUrl,historyUrl:photoshopApp.dataset.layerizeHistoryUrl,csrfToken:document.querySelector('meta[name="csrf-token"]')?.content||''};
 const genAiConfig={storeUrl:photoshopApp.dataset.genAiStoreUrl,historyUrl:photoshopApp.dataset.genAiHistoryUrl,csrfToken:layerizeConfig.csrfToken};
+const imageToImageConfig={storeUrl:photoshopApp.dataset.imageToImageStoreUrl,historyUrl:photoshopApp.dataset.imageToImageHistoryUrl,csrfToken:layerizeConfig.csrfToken};
 const genAiColors=[{name:'red',stroke:'#ef4444'},{name:'green',stroke:'#22c55e'},{name:'yellow',stroke:'#facc15'},{name:'blue',stroke:'#3b82f6'},{name:'purple',stroke:'#a855f7'}];
 
 const toolGroups = [
@@ -56,7 +57,7 @@ const actions = {
     pasteInPlace: () => pasteClipboard(true), newBlankLayer: createBlankLayer, newLayerFolder: createLayerFolder,
     deleteLayers: requestDeleteSelected,
     addTextLayer: () => addTextLayerAtCenter(), duplicateLayer, renameLayer,
-    layerize: startLayerize, layerizeHistory: showLayerizeHistory, genAiEdit: startGenAiSelectionMode, genAiHistory: showGenAiHistory,
+    layerize: startLayerize, layerizeHistory: showLayerizeHistory, imageToImage: openImageToImageDialog, imageToImageHistory: showImageToImageHistory, genAiEdit: startGenAiSelectionMode, genAiHistory: showGenAiHistory,
     restoreAspectRatio: restoreActiveLayerAspectRatio,
     zoomIn: () => setZoom(state.zoom*1.2), zoomOut: () => setZoom(state.zoom/1.2),
     fitScreen, actualPixels: () => setZoom(1),
@@ -170,6 +171,74 @@ async function layerCanvasForExport(layer){
 function exportTextData(layer){const text=clonePlain(layer.textData)||{text:layer.text||'Text',style:{font:{name:'ArialMT'},fontSize:36,fillColor:{r:0,g:0,b:0}}};text.text=layer.text||text.text||'Text';const transform=Array.isArray(text.transform)&&text.transform.length>=6?[...text.transform]:[1,0,0,1,layer.x,layer.y+(Number(text.style?.fontSize)||36)];transform[4]+=layer.x-(layer.text_origin_x??layer.x);transform[5]+=layer.y-(layer.text_origin_y??layer.y);text.transform=transform;return text;}
 async function renderComposite(project,layers=project.layers){const canvas=transparentCanvas(project.width,project.height),ctx=canvas.getContext('2d');for(const layer of [...layers].sort((a,b)=>a.z_index-b.z_index)){if(!layerIsVisible(project,layer))continue;const image=await loadImage(layer.image_url);ctx.save();ctx.globalAlpha=effectiveLayerOpacity(project,layer);ctx.globalCompositeOperation=canvasBlendMode(layer.blendMode);ctx.translate(layer.x+layer.width/2,layer.y+layer.height/2);ctx.rotate(layer.rotation*Math.PI/180);ctx.drawImage(image,-layer.width/2,-layer.height/2,layer.width,layer.height);ctx.restore();}return canvas;}
 function canvasToBlob(canvas){return new Promise((resolve,reject)=>canvas.toBlob(blob=>blob?resolve(blob):reject(new Error('Could not prepare the selected layers.')),'image/png'));}
+function cropTransparentCanvas(canvas){
+    const context=canvas.getContext('2d',{willReadFrequently:true}),pixels=context.getImageData(0,0,canvas.width,canvas.height).data;
+    let left=canvas.width,top=canvas.height,right=-1,bottom=-1;
+    for(let y=0;y<canvas.height;y+=1){for(let x=0;x<canvas.width;x+=1){if(pixels[(y*canvas.width+x)*4+3]===0)continue;left=Math.min(left,x);top=Math.min(top,y);right=Math.max(right,x);bottom=Math.max(bottom,y);}}
+    if(right<left||bottom<top)return null;
+    const width=right-left+1,height=bottom-top+1,cropped=transparentCanvas(width,height);
+    cropped.getContext('2d').drawImage(canvas,left,top,width,height,0,0,width,height);
+    return {canvas:cropped,x:left,y:top,width,height};
+}
+async function imageToImageLayerCanvas(project,layer){
+    const rendered=await layerCanvasForExport(layer),opacity=effectiveLayerOpacity(project,layer);
+    let canvas=rendered.canvas;
+    if(opacity<1){const faded=transparentCanvas(canvas.width,canvas.height),context=faded.getContext('2d');context.globalAlpha=Math.max(0,opacity);context.drawImage(canvas,0,0);canvas=faded;}
+    return cropTransparentCanvas(canvas);
+}
+function nearestMultipleOfEight(value){return Math.max(8,Math.min(8192,Math.round(Number(value)/8)*8));}
+function imageToImageOutputSize(){
+    const project=activeProject(),same=document.getElementById('imageToImageSameSize').checked,select=document.getElementById('imageToImageResolution');
+    if(same)return {width:nearestMultipleOfEight(project?.width||1024),height:nearestMultipleOfEight(project?.height||1024),resolution:'custom'};
+    const option=select.selectedOptions[0];return {width:Number(option?.dataset.width)||1024,height:Number(option?.dataset.height)||1024,resolution:select.value};
+}
+function updateImageToImageResolution(){
+    const same=document.getElementById('imageToImageSameSize').checked,select=document.getElementById('imageToImageResolution'),size=imageToImageOutputSize();
+    select.disabled=same;document.getElementById('imageToImageResolutionHint').textContent='Output: '+size.width+' × '+size.height+' px'+(same?' (nearest dimensions divisible by 8)':'');
+}
+function updateImageToImageProgress(){document.getElementById('imageToImageProgress').hidden=state.imageToImageRunning===0;}
+function openImageToImageDialog(){
+    const project=activeProject(),layers=selectedLayers();if(!project||!layers.length){toast('Select at least one layer for Image to Image.');return;}
+    state.imageToImageAnchorLayerIds=layers.map(layer=>layer.id);
+    document.getElementById('imageToImageLayerHint').textContent=layers.length+' selected layer'+(layers.length===1?'':'s')+' will be cropped and sent separately.';
+    document.getElementById('imageToImageSameSize').checked=false;updateImageToImageResolution();
+    const dialog=document.getElementById('imageToImageDialog');dialog.showModal();document.getElementById('imageToImagePrompt').focus();
+}
+async function submitImageToImage(){
+    const project=activeProject(),anchorIds=[...state.imageToImageAnchorLayerIds],layers=project?.layers.filter(layer=>anchorIds.includes(layer.id))||[];
+    const prompt=document.getElementById('imageToImagePrompt').value.trim(),model=document.getElementById('imageToImageModel').value.trim();
+    const allowedModels=new Set([...document.getElementById('imageToImageModelList').options].map(option=>option.value));
+    if(!project||!layers.length){toast('The selected layers are no longer available.');return;}
+    if(!prompt){toast('Enter a prompt.');return;}if(!allowedModels.has(model)){toast('Choose a model from the filtered model list.');return;}
+    const button=document.querySelector('#imageToImageForm button[value="generate"]'),size=imageToImageOutputSize();button.disabled=true;state.imageToImageRunning+=1;updateImageToImageProgress();
+    try{
+        const form=new FormData();form.append('prompt',prompt);form.append('model',model);form.append('width',String(size.width));form.append('height',String(size.height));form.append('resolution',size.resolution);
+        let sent=0;
+        for(const layer of layers){const cropped=await imageToImageLayerCanvas(project,layer);if(!cropped)continue;form.append('images[]',await canvasToBlob(cropped.canvas),'layer-'+(++sent)+'.png');}
+        if(!sent)throw new Error('The selected layers contain no visible pixels.');
+        const queued=await responseJson(await fetch(imageToImageConfig.storeUrl,{method:'POST',headers:{Accept:'application/json','X-CSRF-TOKEN':imageToImageConfig.csrfToken},body:form}));
+        document.getElementById('imageToImageDialog').close();toast('Image to Image #'+queued.id+' queued.');await pollImageToImageJob(queued.statusUrl,{projectId:project.id,anchorIds});
+    }catch(error){toast(error.message||'Image to Image failed.');}
+    finally{button.disabled=false;state.imageToImageRunning=Math.max(0,state.imageToImageRunning-1);updateImageToImageProgress();}
+}
+async function pollImageToImageJob(statusUrl,context){
+    for(let attempt=0;attempt<400;attempt+=1){const job=await responseJson(await fetch(statusUrl,{headers:{Accept:'application/json'},cache:'no-store'}));if(job.status==='ready'){const project=state.projects.get(context.projectId);if(project){await importImageToImageResult(project,job,context.anchorIds);toast('Image to Image #'+job.id+' added as a new layer.');}else toast('Image to Image #'+job.id+' is ready in history.');return;}if(job.status==='failed')throw new Error('The Image to Image generation failed.');await wait(3000);}throw new Error('The generation is still processing. Open Image to Image History to check it later.');
+}
+async function importImageToImageResult(project,job,anchorIds=[]){
+    if(!job.previewUrl)throw new Error('This generation has no image.');
+    const response=await fetch(job.previewUrl,{headers:{Accept:'image/*'}});if(!response.ok)throw new Error('Could not load the generated image.');
+    const png=await imageFileToPng(await response.blob()),anchors=project.layers.filter(layer=>anchorIds.includes(layer.id)),topAnchor=anchors.reduce((top,layer)=>!top||layer.z_index>top.z_index?layer:top,null),parentId=topAnchor?.parentId||null,siblings=treeChildren(project,parentId);
+    let insertAt=topAnchor?siblings.findIndex(node=>node.kind==='layer'&&node.item.id===topAnchor.id):0;if(insertAt<0)insertAt=0;siblings.forEach((node,index)=>node.item.order=index>=insertAt?index+1:index);
+    const layer=newLayer(project,{name:'Image to Image #'+job.id,dataUrl:png.dataUrl,x:(project.width-png.width)/2,y:(project.height-png.height)/2,width:png.width,height:png.height,parentId,order:insertAt});project.layers.push(layer);normalizeProjectTree(project);recordProjectHistory(project,'Import Image to Image #'+job.id);if(project.id===state.activeProjectId){selectOnlyLayer(layer.id);render();}else renderTabs();
+}
+async function showImageToImageHistory(){
+    const dialog=document.getElementById('imageToImageHistoryDialog'),list=document.getElementById('imageToImageHistoryList');list.innerHTML='<div class="ps-panel-empty">Loading Image to Image history…</div>';dialog.showModal();
+    try{const data=await responseJson(await fetch(imageToImageConfig.historyUrl,{headers:{Accept:'application/json'},cache:'no-store'}));renderImageToImageHistory(data.jobs||[]);}catch(error){list.innerHTML='<div class="ps-panel-empty">'+escapeHtml(error.message)+'</div>';}
+}
+function renderImageToImageHistory(jobs){
+    const dialog=document.getElementById('imageToImageHistoryDialog'),list=document.getElementById('imageToImageHistoryList');list.replaceChildren();if(!jobs.length){list.innerHTML='<div class="ps-panel-empty">No Image to Image generations yet.</div>';return;}
+    jobs.forEach(job=>{const card=document.createElement('article');card.className='ps-layerize-job';const image=document.createElement('img');image.alt='Image to Image '+job.id;if(job.previewUrl)image.src=job.previewUrl;const body=document.createElement('div');body.className='ps-layerize-job-body';const name=document.createElement('strong');name.textContent='Generation #'+job.id;const meta=document.createElement('span');meta.textContent=(job.model||'')+' · '+job.width+' × '+job.height;const date=document.createElement('span');date.textContent=job.createdAt?new Date(job.createdAt).toLocaleString():'';const excerpt=document.createElement('small');excerpt.textContent=job.prompt||'';const button=document.createElement('button');button.type='button';button.textContent=job.status==='ready'?'Import image':job.status==='failed'?'Failed':'Processing…';button.disabled=job.status!=='ready';button.addEventListener('click',async()=>{const project=activeProject();if(!project){toast('Open a document before importing an image.');return;}button.disabled=true;button.textContent='Importing…';try{await importImageToImageResult(project,job,selectedLayers().map(layer=>layer.id));dialog.close();}catch(error){toast(error.message);button.disabled=false;button.textContent='Import image';}});body.append(name,meta,date,excerpt,button);card.append(image,body);list.append(card);});
+}
 function updateLayerizeProgress(){document.getElementById('layerizeProgress').hidden=state.layerizeRunning===0;}
 function wait(milliseconds){return new Promise(resolve=>setTimeout(resolve,milliseconds));}
 async function responseJson(response){const data=await response.json().catch(()=>({}));if(!response.ok||data.success===false)throw new Error(data.message||data.error||`Layerize request failed (HTTP ${response.status}).`);return data;}
@@ -225,7 +294,7 @@ async function submitGenAiEdit(){
     const project=activeProject(),prompt=document.getElementById('genAiPrompt').value.trim(),regions=state.genAiRegions.map(region=>({...region})),anchorIds=[...state.genAiAnchorLayerIds],layers=project?.layers.filter(layer=>anchorIds.includes(layer.id))||[];if(!project||!layers.length){toast('The selected layers are no longer available.');return;}if(!prompt){toast('Enter instructions for the edit.');return;}
     const button=document.querySelector('#genAiPromptForm button[value="generate"]');button.disabled=true;state.genAiRunning+=1;updateGenAiProgress();
     try{
-        const annotated=await renderComposite(project,layers),context=annotated.getContext('2d');context.lineWidth=Math.max(5,project.width/180);regions.forEach(region=>{context.strokeStyle=region.stroke;context.strokeRect(region.x,region.y,region.width,region.height);});const blob=await new Promise(resolve=>annotated.toBlob(resolve,'image/png'));if(!blob)throw new Error('Could not prepare the edit image.');
+        const flattened=await renderComposite(project,layers),cropped=cropTransparentCanvas(flattened);if(!cropped)throw new Error('The selected layers contain no visible pixels.');const annotated=cropped.canvas,context=annotated.getContext('2d');context.lineWidth=Math.max(5,project.width/180);regions.forEach(region=>{context.strokeStyle=region.stroke;context.strokeRect(region.x-cropped.x,region.y-cropped.y,region.width,region.height);});const blob=await canvasToBlob(annotated);
         const form=new FormData();form.append('image',blob,'photoshop-gen-ai.png');form.append('prompt',prompt);form.append('width',String(project.width));form.append('height',String(project.height));regions.forEach(region=>form.append('colors[]',region.color));
         const queued=await responseJson(await fetch(genAiConfig.storeUrl,{method:'POST',headers:{Accept:'application/json','X-CSRF-TOKEN':genAiConfig.csrfToken},body:form}));document.getElementById('genAiPromptDialog').close();endGenAiSelectionMode();toast('Gen AI edit #'+queued.id+' queued.');await pollGenAiJob(queued.statusUrl,{projectId:project.id,anchorIds});
     }catch(error){toast(error.message||'The Gen AI edit failed.');}
@@ -445,6 +514,10 @@ document.getElementById('canvasSizeRelative').addEventListener('change',event=>{
 document.getElementById('canvasSizeForm').addEventListener('submit',event=>{event.preventDefault();if(event.submitter?.value==='cancel')document.getElementById('canvasSizeDialog').close();else applyCanvasSize(document.getElementById('canvasSizeWidth').value,document.getElementById('canvasSizeHeight').value,document.getElementById('canvasSizeRelative').checked);});
 document.querySelector('[data-close-layerize-history]').addEventListener('click',()=>document.getElementById('layerizeHistoryDialog').close());
 document.querySelector('[data-close-gen-ai-history]').addEventListener('click',()=>document.getElementById('genAiHistoryDialog').close());
+document.querySelector('[data-close-image-to-image-history]').addEventListener('click',()=>document.getElementById('imageToImageHistoryDialog').close());
+document.getElementById('imageToImageResolution').addEventListener('change',updateImageToImageResolution);
+document.getElementById('imageToImageSameSize').addEventListener('change',updateImageToImageResolution);
+document.getElementById('imageToImageForm').addEventListener('submit',event=>{event.preventDefault();if(event.submitter?.value==='generate')submitImageToImage();else{state.imageToImageAnchorLayerIds=[];document.getElementById('imageToImageDialog').close();}});
 document.getElementById('genAiRegionSelect').addEventListener('change',event=>{state.genAiActiveIndex=Number(event.target.value);renderGenAiRegions();});
 document.getElementById('deleteGenAiRegion').addEventListener('click',deleteActiveGenAiRegion);
 document.getElementById('confirmGenAiRegions').addEventListener('click',openGenAiPromptDialog);

@@ -161,6 +161,10 @@
 
 		Route::prefix('photoshop')->name('photoshop.')->group(function () {
 			Route::get('/', [PhotoshopController::class, 'index'])->name('index');
+			Route::post('/image-to-image', [PhotoshopGenAiController::class, 'storeImageToImage'])->name('image-to-image.store');
+			Route::get('/image-to-image/history', [PhotoshopGenAiController::class, 'imageToImageHistory'])->name('image-to-image.history');
+			Route::get('/image-to-image/{prompt}/status', [PhotoshopGenAiController::class, 'imageToImageStatus'])->name('image-to-image.status');
+			Route::get('/image-to-image/{prompt}/download', [PhotoshopGenAiController::class, 'imageToImageDownload'])->name('image-to-image.download');
 			Route::post('/gen-ai', [PhotoshopGenAiController::class, 'store'])->name('gen-ai.store');
 			Route::get('/gen-ai/history', [PhotoshopGenAiController::class, 'history'])->name('gen-ai.history');
 			Route::get('/gen-ai/{prompt}/status', [PhotoshopGenAiController::class, 'status'])->name('gen-ai.status');

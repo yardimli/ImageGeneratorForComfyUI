@@ -27,6 +27,9 @@
     {"label":"Arrange","visible":false,"children":[{"label":"Bring to Front","visible":false},{"label":"Send to Back","visible":false}]},{"label":"Align","visible":false,"children":[{"label":"Left Edges","visible":false},{"label":"Horizontal Centers","visible":false}]},{"label":"Merge Layers","visible":false}
   ]},
   {"id":"gen-ai","label":"Gen AI","visible":true,"items":[
+    {"label":"Image to Image…","action":"imageToImage","visible":true},
+    {"label":"Image to Image History…","action":"imageToImageHistory","visible":true},
+    {"separator":true,"visible":true},
     {"label":"Generative Edit…","action":"genAiEdit","visible":true},
     {"label":"Edit History…","action":"genAiHistory","visible":true},
     {"separator":true,"visible":true},

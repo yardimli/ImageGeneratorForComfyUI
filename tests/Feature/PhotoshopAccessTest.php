@@ -30,6 +30,11 @@ class PhotoshopAccessTest extends TestCase
             ->assertSee('newLayerFolder')
             ->assertSee('lrs-folder.png')
             ->assertSee('deleteLayersDialog')
+            ->assertSee('imageToImageDialog')
+            ->assertSee('imageToImageModelList')
+            ->assertSee('imageToImageResolution')
+            ->assertSee('imageToImageSameSize')
+            ->assertSee('imageToImageHistoryDialog')
             ->assertSee('lrs-bin.png');
     }
 
