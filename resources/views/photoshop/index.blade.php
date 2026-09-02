@@ -61,6 +61,7 @@
 
     <input id="localFileInput" type="file" accept=".psd,image/*" hidden>
     <input id="placeImageInput" type="file" accept="image/*" hidden>
+    <div id="layerAssetStore" hidden aria-hidden="true"></div>
     <div id="toast" class="ps-toast" role="status" hidden></div>
 
     <dialog id="layerizeHistoryDialog" class="ps-dialog ps-layerize-dialog">
@@ -113,6 +114,10 @@
                     <div id="templateGrid" class="ps-template-grid"></div>
                 </section>
                 <aside class="ps-document-settings">
+                    <button id="clipboardDocumentCard" type="button" class="ps-clipboard-document-card" hidden>
+                        <canvas id="clipboardDocumentPreview" aria-label="Clipboard image preview"></canvas>
+                        <span><strong>Create from Clipboard</strong><small id="clipboardDocumentDimensions"></small></span>
+                    </button>
                     <label>Name<input id="newProjectName" value="New Project" maxlength="120" required></label>
                     <div class="ps-dimension-grid">
                         <label>Width<input id="projectWidth" type="number" min="0.01" step="any" value="1280" required></label>

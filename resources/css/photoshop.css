@@ -236,6 +236,13 @@ button { color: inherit; cursor: pointer; }
 .ps-template-card strong { align-self: end; max-width: 100%; overflow: hidden; color: #cecece; font-size: 16px; line-height: 1.2; text-overflow: ellipsis; white-space: nowrap; }
 .ps-template-dimensions { align-self: start; color: #bbb; font-size: 14px; }
 .ps-document-settings { display: flex; flex-direction: column; gap: 14px; padding: 24px 28px; overflow-y: auto; background: #494949; }
+.ps-clipboard-document-card { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: center; gap: 14px; width: 100%; min-height: 106px; padding: 9px; color: #ddd; background: #373737; border: 1px solid #6c6c6c; border-radius: 4px; text-align: left; }
+.ps-clipboard-document-card[hidden] { display: none; }
+.ps-clipboard-document-card:hover, .ps-clipboard-document-card.selected { background: #303b45; border-color: #9ecaf0; box-shadow: inset 0 0 0 1px #659bca; }
+.ps-clipboard-document-card canvas { display: block; max-width: 88px; max-height: 88px; margin: auto; background: repeating-conic-gradient(#555 0 25%,#666 0 50%) 50%/10px 10px; border: 1px solid #777; }
+.ps-clipboard-document-card span { display: grid; gap: 7px; min-width: 0; }
+.ps-clipboard-document-card strong { font-size: 16px; }
+.ps-clipboard-document-card small { color: #bbb; font-size: 13px; }
 .ps-document-settings label { display: grid; gap: 6px; color: #e6e6e6; font-size: 16px; }
 .ps-document-settings input, .ps-document-settings select { height: 42px; padding: 7px 10px; border-color: #505050; border-radius: 4px; background: #252525; font-size: 17px; }
 .ps-dimension-grid { display: grid; grid-template-columns: minmax(80px, 1fr) 34px minmax(80px, 1fr) minmax(120px, 1.25fr); gap: 8px; align-items: end; }

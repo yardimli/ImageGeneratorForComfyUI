@@ -19,6 +19,8 @@ class PhotoshopAccessTest extends TestCase
             ->assertOk()
             ->assertSee('localFileInput')
             ->assertSee('placeImageInput')
+            ->assertSee('layerAssetStore')
+            ->assertSee('clipboardDocumentCard')
             ->assertSee('imageSizeDialog')
             ->assertSee('canvasSizeDialog')
             ->assertSee('canvasAnchorGrid')
