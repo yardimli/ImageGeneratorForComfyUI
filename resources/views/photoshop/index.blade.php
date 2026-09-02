@@ -30,14 +30,26 @@
 
     <main class="ps-workspace">
         <aside id="toolsPanel" class="ps-tools" aria-label="Tools"></aside>
-        <section id="stageViewport" class="ps-stage-viewport">
-            <div class="ps-ruler ps-ruler-x"></div><div class="ps-ruler ps-ruler-y"></div>
-            <div id="emptyState" class="ps-empty-state"><div class="ps-empty-mark">Ps</div><h1>Your local image workspace</h1><p>Create a document or open a PSD or image from your computer.</p><button type="button" data-action="newProject">New document</button><button type="button" data-action="openLocal">Open PSD or image</button></div>
-            <div id="canvasShell" class="ps-canvas-shell" hidden><div id="canvas" class="ps-canvas"><div id="selectionBox" class="ps-selection" hidden></div></div></div>
-        </section>
-        <aside class="ps-panels">
-            <div class="ps-panel-tabs" role="tablist"><button type="button" class="active" data-panel-tab="layers"><img class="ps-icon" src="{{ asset('ps-icons/panels-layers.png') }}" alt="">Layers</button><button type="button" data-panel-tab="properties"><img class="ps-icon" src="{{ asset('ps-icons/panels-properties.png') }}" alt="">Properties</button><button type="button" data-panel-tab="history"><img class="ps-icon" src="{{ asset('ps-icons/panels-history.png') }}" alt="">History</button></div>
-            <section class="ps-panel-view active" data-panel-view="layers">
+        <div class="ps-stage-column">
+            <div class="ps-stage-frame">
+                <section id="stageViewport" class="ps-stage-viewport">
+                    <div id="emptyState" class="ps-empty-state"><div class="ps-empty-mark">Ps</div><h1>Your local image workspace</h1><p>Create a document or open a PSD or image from your computer.</p><button type="button" data-action="newProject">New document</button><button type="button" data-action="openLocal">Open PSD or image</button></div>
+                    <div id="canvasShell" class="ps-canvas-shell" hidden><div id="canvas" class="ps-canvas"><div id="selectionBox" class="ps-selection" hidden></div><svg id="lassoSelection" class="ps-lasso-selection" hidden aria-hidden="true"><path class="ps-lasso-outline"></path><path class="ps-lasso-ants"></path></svg></div></div>
+                    <div id="selectionDimensionsTooltip" class="ps-selection-dimensions" hidden><span>W: <strong data-selection-width>0 px</strong></span><span>H: <strong data-selection-height>0 px</strong></span></div>
+                </section>
+                <div class="ps-ruler ps-ruler-x"></div><div class="ps-ruler ps-ruler-y"></div>
+            </div>
+            <footer class="ps-stage-status"><label><input id="zoomStatusInput" value="100.00" inputmode="decimal" aria-label="Zoom percentage"><span>%</span></label><span id="documentStatusSize">No document</span></footer>
+        </div>
+        <aside class="ps-panels ps-right-dock">
+            <div id="panelStack" class="ps-panel-stack">
+                <section class="ps-dock-panel ps-history-dock">
+                    <header class="ps-dock-header"><strong>History</strong><button type="button" title="History panel menu" aria-label="History panel menu">☰</button></header>
+                    <div id="historyPanel" class="ps-history-panel"></div>
+                </section>
+                <section class="ps-dock-panel ps-layers-dock">
+                    <header class="ps-dock-header"><strong>Layers</strong><button type="button" title="Layers panel menu" aria-label="Layers panel menu">☰</button></header>
+                    <div class="ps-panel-view active" data-panel-view="layers">
                 <div class="ps-layer-filter"><img class="ps-icon" src="{{ asset('ps-icons/tools-zoom.png') }}" alt=""><span>Kind</span><span class="ps-layer-filter-icons"><img class="ps-icon" src="{{ asset('ps-icons/pix_layer.png') }}" alt="Pixel layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-adj.png') }}" alt="Adjustment layer"><img class="ps-icon" src="{{ asset('ps-icons/tools-htype.png') }}" alt="Type layer"><img class="ps-icon" src="{{ asset('ps-icons/shape_layer.png') }}" alt="Shape layer"></span></div>
                 <div class="ps-layer-controls">
                     <select id="layerBlendMode" aria-label="Blend mode">
@@ -53,9 +65,32 @@
                 <div class="ps-lock-row">Lock: <img class="ps-icon" src="{{ asset('ps-icons/lrs-lock.png') }}" alt="Lock layer"></div>
                 <div id="layersPanel" class="ps-layer-list"></div>
                 <div class="ps-panel-footer"><button type="button" title="Layer effects"><img class="ps-icon" src="{{ asset('ps-icons/lrs-fx.png') }}" alt=""></button><button type="button" title="Add mask"><img class="ps-icon" src="{{ asset('ps-icons/lrs-mask.png') }}" alt=""></button><button type="button" data-action="newLayerFolder" title="New layer group"><img class="ps-icon" src="{{ asset('ps-icons/lrs-folder.png') }}" alt=""></button><button type="button" data-action="newBlankLayer" title="New layer"><img class="ps-icon" src="{{ asset('ps-icons/lrs-newlayer.png') }}" alt=""></button><button type="button" data-action="deleteLayers" title="Delete selected layers"><img class="ps-icon" src="{{ asset('ps-icons/lrs-bin.png') }}" alt=""></button></div>
+                    </div>
+                </section>
+            </div>
+            <section id="inspectorDock" class="ps-inspector-dock" hidden>
+                <section class="ps-inspector-view" data-inspector-view="info">
+                    <header class="ps-inspector-header">Info</header>
+                    <div id="infoPanel" class="ps-info-panel">
+                        <div class="ps-info-colors"><span>R: <strong data-info="r">0</strong></span><span>C: <strong data-info="c">0%</strong></span><span>G: <strong data-info="g">0</strong></span><span>M: <strong data-info="m">0%</strong></span><span>B: <strong data-info="b">0</strong></span><span>Y: <strong data-info="yellow">0%</strong></span><span>A: <strong data-info="a">0</strong></span><span>K: <strong data-info="k">0%</strong></span></div>
+                        <div class="ps-info-grid"><span>X: <strong data-info="x">0</strong></span><span>W: <strong data-info="w">0</strong></span><span>Y: <strong data-info="y">0</strong></span><span>H: <strong data-info="h">0</strong></span></div>
+                        <div class="ps-info-hsb"><span>H: <strong data-info="hue">0°</strong></span><span>S: <strong data-info="saturation">0%</strong></span><span>B: <strong data-info="brightness">0%</strong></span></div>
+                    </div>
+                </section>
+                <section class="ps-inspector-view" data-inspector-view="properties"><header class="ps-inspector-header">Properties</header><div id="propertiesPanel" class="ps-properties-panel"></div></section>
+                <section class="ps-inspector-view" data-inspector-view="brush"><header class="ps-inspector-header">Brush</header><div class="ps-brush-panel"><div class="ps-brush-sections"><label class="active">Tip Shape</label><label><input type="checkbox"> Tip Dynamics</label><label><input type="checkbox"> Scatter</label><label><input type="checkbox"> Texture</label><label><input type="checkbox"> Color Dynamics</label><label><input type="checkbox"> Transfer</label></div><div class="ps-brush-controls"><div class="ps-brush-presets"><span class="soft"></span><span class="hard"></span><span class="dot"></span><span class="round"></span><small>Soft</small><small>Hard</small><small>12</small><small>24</small></div><label>Size: <input type="number" value="15"> px</label><input type="range" min="1" max="200" value="15"><label>Angle: <input type="number" value="0">°</label><input type="range" min="-180" max="180" value="0"><label>Roundness: <input type="number" value="100">%</label><input type="range" min="1" max="100" value="100"><label>Hardness: <input type="number" value="100">%</label><input type="range" min="0" max="100" value="100"><label>Spacing: <input type="number" value="25">%</label><input type="range" min="1" max="100" value="25"><div class="ps-brush-preview"></div></div></div></section>
+                <section class="ps-inspector-view" data-inspector-view="character"><header class="ps-inspector-header">Character</header><div class="ps-type-panel"><div class="ps-control-pair"><select><option>DejaVu Sans</option><option>Arial</option><option>Georgia</option></select><select><option>Book</option><option>Bold</option><option>Italic</option></select></div><div class="ps-control-pair"><label>Size: <input value="24 px"></label><label>Tracking: <input value="0%"></label></div><label>Leading: <input value="24 px"> <input type="checkbox" checked> Auto</label><div class="ps-control-pair"><input value="↕ 100%"><input value="↔ 100%"></div><label>Baseline shift: <input value="0 px"> <input class="ps-color-chip" type="color" value="#000000"></label><div class="ps-type-options">P <em>P</em> Pᴾ Pₚ <u>P</u> <s>P</s> ﬂ œ</div><label>Digits: <select><option>LTR Arabic - 123</option></select></label></div></section>
+                <section class="ps-inspector-view" data-inspector-view="paragraph"><header class="ps-inspector-header">Paragraph</header><div class="ps-paragraph-panel"><div class="ps-paragraph-align"><button class="active">☰</button><button>☷</button><button>≡</button><button>☰</button><button>≡</button><button>☷</button></div><div class="ps-control-pair"><label>Left <input value="0 px"></label><label>Right <input value="0 px"></label></div><div class="ps-control-pair"><label>First line <input value="0 px"></label><label>Space before <input value="0 px"></label></div><div class="ps-control-pair"><label>Space after <input value="0 px"></label><label>Leading <input value="120%"></label></div><label>Direction: <select><option>Left to right</option><option>Right to left</option></select></label></div></section>
+                <section class="ps-inspector-view" data-inspector-view="gallery"><header class="ps-inspector-header">Gallery</header><div class="ps-gallery-controls"><button type="button" title="Gallery help">?</button><label>Keywords: <input id="galleryKeywords"></label><label><input id="galleryIsolated" type="checkbox"> Isolated</label></div><div id="galleryPanel" class="ps-gallery-panel"></div></section>
             </section>
-            <section class="ps-panel-view" data-panel-view="properties"><div id="propertiesPanel" class="ps-properties-panel"></div></section>
-            <section class="ps-panel-view" data-panel-view="history"><div id="historyPanel" class="ps-history-panel"></div></section>
+            <nav class="ps-panel-rail" aria-label="Panel tools">
+                <button type="button" data-inspector-panel="info" title="Info"><img class="ps-icon" src="{{ asset('ps-icons/panels-info.png') }}" alt=""></button>
+                <button type="button" data-inspector-panel="properties" title="Properties"><img class="ps-icon" src="{{ asset('ps-icons/panels-properties.png') }}" alt=""></button>
+                <button type="button" data-inspector-panel="brush" title="Brush"><img class="ps-icon" src="{{ asset('ps-icons/panels-brush.png') }}" alt=""></button>
+                <button type="button" data-inspector-panel="character" title="Character"><img class="ps-icon" src="{{ asset('ps-icons/panels-character.png') }}" alt=""></button>
+                <button type="button" data-inspector-panel="paragraph" title="Paragraph"><img class="ps-icon" src="{{ asset('ps-icons/panels-paragraph.png') }}" alt=""></button>
+                <button type="button" data-inspector-panel="gallery" title="Gallery"><img class="ps-icon" src="{{ asset('ps-icons/panels-navigator.png') }}" alt=""></button>
+            </nav>
         </aside>
     </main>
 
