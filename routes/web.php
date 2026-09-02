@@ -18,6 +18,7 @@
 	use App\Http\Controllers\PromptDictionaryController;
 	use App\Http\Controllers\PromptDictionaryImageController;
 	use App\Http\Controllers\PhotoshopController;
+	use App\Http\Controllers\PhotoshopGenAiController;
 	use App\Http\Controllers\QuizController;
 	use App\Http\Controllers\RenderQueueController;
 	use App\Http\Controllers\StoryController;
@@ -161,7 +162,10 @@
 
 		Route::prefix('photoshop')->name('photoshop.')->group(function () {
 			Route::get('/', [PhotoshopController::class, 'index'])->name('index');
-
+			Route::post('/gen-ai', [PhotoshopGenAiController::class, 'store'])->name('gen-ai.store');
+			Route::get('/gen-ai/history', [PhotoshopGenAiController::class, 'history'])->name('gen-ai.history');
+			Route::get('/gen-ai/{prompt}/status', [PhotoshopGenAiController::class, 'status'])->name('gen-ai.status');
+			Route::get('/gen-ai/{prompt}/download', [PhotoshopGenAiController::class, 'download'])->name('gen-ai.download');
 		});
 
 		Route::prefix('layers')->name('layers.')->group(function () {

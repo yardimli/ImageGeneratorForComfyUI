@@ -9,7 +9,7 @@
     @vite('resources/js/photoshop.js')
 </head>
 <body class="ps-body">
-<div id="photoshopApp" class="ps-app" data-layerize-store-url="{{ route('layers.store') }}" data-layerize-history-url="{{ route('layers.history') }}">
+<div id="photoshopApp" class="ps-app" data-layerize-store-url="{{ route('layers.store') }}" data-layerize-history-url="{{ route('layers.history') }}" data-gen-ai-store-url="{{ route('photoshop.gen-ai.store') }}" data-gen-ai-history-url="{{ route('photoshop.gen-ai.history') }}">
     <header class="ps-menubar">
         <a class="ps-brand" href="{{ route('home') }}" title="Back to DreamCover"><img src="{{ asset('images/favicon-32x32.png') }}" alt="DreamCover"></a>
         <nav id="menuBar" aria-label="Application menus"></nav>
@@ -17,13 +17,14 @@
     </header>
 
     <section class="ps-options" aria-label="Tool options">
-        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span><span id="layerizeProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Layerizing selected layers…</span></span>
+        <span id="activeToolIcon" class="ps-options-tool"><img class="ps-icon" src="{{ asset('ps-icons/tools-move.png') }}" alt=""></span><span id="activeToolName">Move Tool</span><span id="layerizeProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Layerizing selected layers…</span></span><span id="genAiProgress" class="ps-layerize-progress" hidden><span class="ps-layerize-spinner"></span><span>Generating selected edits…</span></span>
         <span class="ps-divider"></span>
         <label><input id="autoSelect" type="checkbox" checked> Auto-select</label>
 
         <label><input id="transformControls" type="checkbox" checked> Show transform controls</label>
         <span class="ps-divider"></span>
         <div class="ps-toolbar-align"><span><button type="button" data-align-layer="left" title="Align Left Edges"><img class="ps-icon" src="{{ asset('ps-icons/align-h0.png') }}" alt=""></button><button type="button" data-align-layer="hcenter" title="Center Horizontally"><img class="ps-icon" src="{{ asset('ps-icons/align-h1.png') }}" alt=""></button><button type="button" data-align-layer="right" title="Align Right Edges"><img class="ps-icon" src="{{ asset('ps-icons/align-h2.png') }}" alt=""></button><button type="button" data-align-layer="hgap" title="Distribute Horizontal Gaps"><img class="ps-icon" src="{{ asset('ps-icons/align-hG.png') }}" alt=""></button></span><span><button type="button" data-align-layer="top" title="Align Top Edges"><img class="ps-icon" src="{{ asset('ps-icons/align-v0.png') }}" alt=""></button><button type="button" data-align-layer="vcenter" title="Center Vertically"><img class="ps-icon" src="{{ asset('ps-icons/align-v1.png') }}" alt=""></button><button type="button" data-align-layer="bottom" title="Align Bottom Edges"><img class="ps-icon" src="{{ asset('ps-icons/align-v2.png') }}" alt=""></button><button type="button" data-align-layer="vgap" title="Distribute Vertical Gaps"><img class="ps-icon" src="{{ asset('ps-icons/align-vG.png') }}" alt=""></button></span><button type="button" class="ps-align-more" title="More alignment options">…</button><button type="button" class="ps-align-grid" data-align-layer="grid" title="Align to a Grid" aria-label="Align to a Grid">▦</button></div>
+        <div id="genAiRegionOptions" class="ps-gen-ai-region-options" hidden><strong>Gen AI regions</strong><span id="genAiRegionCount">0 rectangles</span><select id="genAiRegionSelect" aria-label="Selected edit rectangle"></select><button id="deleteGenAiRegion" type="button" title="Delete selected rectangle">Delete</button><button id="confirmGenAiRegions" class="confirm" type="button" title="Continue with these regions" aria-label="Continue">✓</button><button id="cancelGenAiRegions" type="button" title="Cancel Gen AI selection" aria-label="Cancel">✕</button></div>
     </section>
 
     <section id="documentTabs" class="ps-tabs" aria-label="Open projects"></section>
@@ -102,6 +103,17 @@
     <dialog id="layerizeHistoryDialog" class="ps-dialog ps-layerize-dialog">
         <header><h2>Layerize history</h2><button type="button" data-close-layerize-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
         <div id="layerizeHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading Layerize history…</div></div>
+    </dialog>
+    <dialog id="genAiPromptDialog" class="ps-dialog ps-gen-ai-dialog">
+        <form method="dialog" id="genAiPromptForm">
+            <header class="ps-draggable-dialog-handle"><h2>Generate AI edit</h2><button value="cancel" aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+            <div class="ps-dialog-body"><p id="genAiRegionHint" class="ps-gen-ai-region-hint"></p><label>Instructions<textarea id="genAiPrompt" rows="7" required placeholder="Describe all edits for the colored regions…"></textarea></label><p class="ps-dialog-note">The flattened selected layers and colored rectangles will be sent to fal.ai.</p></div>
+            <footer><button value="generate">Generate</button><button value="cancel" class="secondary">Cancel</button></footer>
+        </form>
+    </dialog>
+    <dialog id="genAiHistoryDialog" class="ps-dialog ps-layerize-dialog">
+        <header><h2>Gen AI edit history</h2><button type="button" data-close-gen-ai-history aria-label="Close"><img class="ps-icon" src="{{ asset('ps-icons/cross.png') }}" alt=""></button></header>
+        <div id="genAiHistoryList" class="ps-layerize-history"><div class="ps-panel-empty">Loading edit history…</div></div>
     </dialog>
     <dialog id="deleteLayersDialog" class="ps-dialog ps-confirm-dialog">
         <form method="dialog" id="deleteLayersForm">

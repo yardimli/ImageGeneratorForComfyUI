@@ -10,6 +10,10 @@ class SeedreamWorkflowAccessTest extends TestCase
     {
         $this->get('/image-editor-pro')->assertRedirect('/login');
         $this->post('/image-editor-pro/generate')->assertRedirect('/login');
+        $this->post('/photoshop/gen-ai')->assertRedirect('/login');
+        $this->get('/photoshop/gen-ai/history')->assertRedirect('/login');
+        $this->get('/photoshop/gen-ai/1/status')->assertRedirect('/login');
+        $this->get('/photoshop/gen-ai/1/download')->assertRedirect('/login');
     }
 
     public function test_layerize_requires_authentication(): void
