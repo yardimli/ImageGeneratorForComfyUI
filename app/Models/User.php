@@ -55,10 +55,6 @@
 			return $this->hasMany(Prompt::class);
 		}
 
-		public function albumCovers()
-		{
-			return $this->hasMany(GoodAlbumCover::class);
-		}
 
 		public function dictionaryEntries()
 		{

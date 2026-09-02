@@ -17,7 +17,6 @@ class UserController extends Controller
                 'prompts',
                 'prompts as images_count' => fn ($query) => $query->whereNotNull('filename'),
                 'stories',
-                'albumCovers',
                 'dictionaryEntries',
             ])
             ->withMax('prompts as last_generation_at', 'created_at')

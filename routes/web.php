@@ -1,6 +1,5 @@
 <?php
 
-	use App\Http\Controllers\AlbumCoverController;
 	use App\Http\Controllers\Admin\UserController as AdminUserController;
 	use App\Http\Controllers\Auth\RegisterController;
 	use App\Http\Controllers\CreateStoryController;
@@ -187,31 +186,6 @@
 				->whereNumber('promptId')
 				->name('delete');
 			Route::post('/requeue/{prompt}', [PromptController::class, 'requeuePrompt'])->name('requeue');
-		});
-
-		// --- Album Covers ---
-		Route::prefix('album-covers')->name('album-covers.')->group(function () {
-			Route::get('/', [AlbumCoverController::class, 'index'])->name('index');
-			Route::get('/liked', [AlbumCoverController::class, 'showLiked'])->name('liked');
-			Route::post('/update-liked', [AlbumCoverController::class, 'updateLiked'])->name('update-liked');
-			Route::post('/upload', [AlbumCoverController::class, 'upload'])->name('upload');
-			Route::post('/generate-prompts', [AlbumCoverController::class, 'generatePrompts'])->name('generate-prompts');
-			// START MODIFICATION: Add delete route for generated covers
-			Route::delete('/generated/{cover}', [AlbumCoverController::class, 'destroyGeneratedCover'])->name('generated.destroy');
-			// END MODIFICATION
-
-			Route::prefix('kontext')->name('kontext.')->group(function () {
-				Route::post('/generate', [AlbumCoverController::class, 'generateKontext'])->name('generate');
-				Route::post('/status', [AlbumCoverController::class, 'checkKontextStatus'])->name('status');
-			});
-
-			Route::prefix('{cover}')->group(function () {
-				Route::post('/update-prompt', [AlbumCoverController::class, 'updateMixPrompt'])->name('update-prompt');
-				Route::post('/update-notes', [AlbumCoverController::class, 'updateNotes'])->name('update-notes');
-				Route::post('/unlike', [AlbumCoverController::class, 'unlikeCover'])->name('unlike');
-				Route::post('/upscale', [AlbumCoverController::class, 'upscaleCover'])->name('upscale');
-				Route::get('/upscale-status/{prediction_id}', [AlbumCoverController::class, 'checkUpscaleStatus'])->name('upscale.status');
-			});
 		});
 
 		// --- Stories ---
