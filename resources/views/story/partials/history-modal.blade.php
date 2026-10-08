@@ -42,6 +42,9 @@
 				{{-- START MODIFICATION: Add button and hidden input for direct image uploads --}}
 				<input type="file" id="newImageUploadInput" class="d-none" accept="image/*">
 				<button type="button" class="btn btn-info me-auto" id="uploadNewImageBtn">Upload New Image</button>
+				@if($allowClipboardImage ?? false)
+					<button type="button" class="btn btn-info" id="pasteClipboardImageBtn" title="You can also press Ctrl+V or Cmd+V in this dialog">Paste from Clipboard</button>
+				@endif
 				{{-- END MODIFICATION --}}
 				<button type="button" class="btn btn-secondary" data-ui-dismiss="modal">Cancel</button>
 				<button type="button" class="btn btn-primary" id="addSelectedHistoryImageBtn">Use Selected Image</button>

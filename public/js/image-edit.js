@@ -185,6 +185,10 @@ document.addEventListener('DOMContentLoaded', function () {
 		});
 	}
 	
+	window.attachClipboardImagePicker(historyModalEl, (dataUrl) => {
+		historyModal.hide();
+		openCropper(dataUrl);
+	});
 	const uploadNewImageBtn = document.getElementById('uploadNewImageBtn');
 	const newImageUploadInput = document.getElementById('newImageUploadInput');
 	if (uploadNewImageBtn && newImageUploadInput) {

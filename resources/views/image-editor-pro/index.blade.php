@@ -17,7 +17,7 @@
         <section id="proImageSection" class="card">
             <div class="card-header">1. Choose one image and mark edit areas</div>
             <div class="card-body space-y-4">
-                @include('partials.single-image-picker')
+                @include('partials.single-image-picker', ['allowClipboardImage' => true])
                 <div id="proCanvasPanel" class="hidden space-y-3">
                     <p class="text-sm text-slate-500">Click “Add area”, then drag a rectangle over the image. Each area receives its own color prompt.</p>
                     <div class="flex flex-wrap gap-2">
@@ -76,6 +76,7 @@ window.seedreamProConfig = {
 };
 </script>
 <script src="{{ asset('vendor/cropperjs/1.6.1/cropper.min.js') }}"></script>
+<script src="{{ asset('js/clipboard-image-picker.js') }}?v={{ filemtime(public_path('js/clipboard-image-picker.js')) }}"></script>
 <script src="{{ asset('js/single-image-picker.js') }}?v={{ filemtime(public_path('js/single-image-picker.js')) }}"></script>
 <script src="{{ asset('js/image-editor-pro.js') }}?v={{ filemtime(public_path('js/image-editor-pro.js')) }}"></script>
 @endsection

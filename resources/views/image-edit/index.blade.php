@@ -143,7 +143,7 @@
 	
 	{{-- Include Modals --}}
 	@include('story.partials.cropper-modal')
-	@include('story.partials.history-modal')
+	@include('story.partials.history-modal', ['allowClipboardImage' => true])
 	
 	{{-- Template for input image thumbnails --}}
 	<template id="input-image-thumbnail-template">
@@ -246,5 +246,6 @@
 		});
 	</script>
 	<script src="{{asset('vendor/cropperjs/1.6.1/cropper.min.js')}}"></script>
+	<script src="{{ asset('js/clipboard-image-picker.js') }}?v={{ filemtime(public_path('js/clipboard-image-picker.js')) }}"></script>
 	<script src="{{ asset('js/image-edit.js') }}?v={{ filemtime(public_path('js/image-edit.js')) }}"></script>
 @endsection

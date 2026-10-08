@@ -136,6 +136,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    window.attachClipboardImagePicker?.(historyModalElement, (dataUrl) => {
+        historyModal.hide();
+        openCropper(dataUrl);
+    });
+
     selectButton.addEventListener('click', () => {
         loadHistory();
         historyModal.show();
